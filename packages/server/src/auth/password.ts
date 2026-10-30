@@ -20,7 +20,10 @@ export async function hashPassword(password: string): Promise<string> {
   return ['scrypt', PARAMS.N, PARAMS.r, PARAMS.p, salt.toString('base64url'), key.toString('base64url')].join('$');
 }
 
-export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+export const MIN_PASSWORD_LENGTH = 12;
+
+export async function verifyPassword(password: string, stored: string | undefined): Promise<boolean> {
+  if (!stored) return false;
   const [scheme, n, r, p, salt, hash] = stored.split('$');
   if (scheme !== 'scrypt' || !salt || !hash) return false;
 

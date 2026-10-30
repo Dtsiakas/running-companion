@@ -1,6 +1,6 @@
-import { DATA_DIR, TOKEN_CACHE_FILE } from '@companion/config';
+import { DATA_DIR, garminKey, settings, TOKEN_CACHE_FILE } from '@companion/config';
 import { openDatabase } from '@companion/db';
-import { createGarminApi } from '@companion/garmin-client';
+import { createGarminApi, InvalidApiKeyError } from '@companion/garmin-client';
 import { computeMetrics } from '@companion/metrics';
 import { runSync } from '@companion/sync';
 import { syncWeather, type WeatherSyncResult } from '@companion/weather';
@@ -34,13 +34,27 @@ export function isSyncRunning(): boolean {
   return running !== null;
 }
 
+/** Best effort: a settings file that can't be written must not turn a sync result into a failure. */
+function markKey(patch: { garminKeyRejectedAt: string | null }): void {
+  try {
+    settings().update(patch);
+  } catch {
+    // Ignored on purpose.
+  }
+}
+
 async function run(dbFile: string): Promise<SyncJobResult> {
   const started = Date.now();
   const db = openDatabase(dbFile);
   try {
-    const { api } = createGarminApi({ tokenCacheFile: TOKEN_CACHE_FILE, minIntervalMs: 250 });
+    const { api } = createGarminApi({ apiKey: garminKey(), tokenCacheFile: TOKEN_CACHE_FILE, minIntervalMs: 250 });
     // Progress lines are dropped: under the MCP stdio transport, stdout belongs to the protocol.
-    const summary = await runSync({ db, api, dataDir: DATA_DIR, log: () => {} });
+    const summary = await runSync({ db, api, dataDir: DATA_DIR, log: () => {} }).catch((error: unknown) => {
+      // Remembered so the app can say so: otherwise a dead key only shows as data that quietly stops updating.
+      if (error instanceof InvalidApiKeyError) markKey({ garminKeyRejectedAt: new Date().toISOString() });
+      throw error;
+    });
+    if (settings().read().garminKeyRejectedAt) markKey({ garminKeyRejectedAt: null });
     const metrics = computeMetrics(db);
     // Weather is extra: a network problem with Open-Meteo must never fail the Garmin sync.
     const weather = await syncWeather(db, fetch).catch(() => null);

@@ -33,10 +33,11 @@ packages/
   jobs/            single-flight Garmin sync + metrics, database preparation, read-only connections
   server/          web server: login, OAuth for Claude, /api, /mcp over HTTP, scheduled sync
   web/             dashboard PWA (React); `npm run build` writes packages/web/dist, which the server serves
-  config/          project paths and .env loading
+  config/          project paths, .env loading, the settings file
   cli/             command line entry points: sync, metrics, discover, auth:check
 data/              your data (gitignored)
   companion.db       the database
+  settings.json      password hash, session secret, Garmin key (owner-only; written by the setup page and Settings)
   fit/             original FIT file of every activity
 .cache/            bearer token cache (gitignored)
 ```
@@ -47,15 +48,16 @@ Requires Node 26 or newer (see `.nvmrc`). With nvm-windows: `nvm use 26.13.0`.
 Node 26 runs the server's TypeScript sources directly (type stripping), so the server has no build step; only the dashboard is built (`npm run build`). `erasableSyntaxOnly` in `tsconfig.json`
 rejects the few TypeScript features Node can't strip (enums, parameter properties, namespaces).
 
-1. Create a key at <https://connect.garmin.com/app/settings/personalApiToken>.
-   Garmin shows it only once.
-2. Copy `.env.example` to `.env` and paste the key after `GARMIN_PERSONAL_API_KEY=`.
-3. Install and check:
-
 ```sh
-npm install
-npm run auth:check
+npm ci
+npm run build
+npm start
 ```
+
+The server's log prints a setup link (`/setup?code=…`). Open it, choose a password and paste your Garmin key, which you
+create at <https://connect.garmin.com/app/settings/personalApiToken> (Garmin shows it only once; note the expiry date
+it shows too, and the app will remind you two weeks before). The first sync starts straight away. Everything set there
+can be changed later under Settings. No config file is needed; `.env.example` lists what the server optionally reads.
 
 ## Commands
 
@@ -66,7 +68,7 @@ npm run auth:check
 | `npm start` | Starts the web server: dashboard, `/api`, remote `/mcp`, scheduled sync (default http://localhost:8787) |
 | `npm run build` | Builds the dashboard into `packages/web/dist` (run after every pull that changes `packages/web`) |
 | `npm run dev:web` | Dashboard with instant reload on http://localhost:5173, proxying `/api` to a running `npm start` |
-| `npm run set-password` | Sets the web login password (stored as a scrypt hash) and creates the session secret, in `.env` |
+| `npm run set-password` | Sets a new login password from the server's terminal (forgot it?); logs out every browser |
 | `npm run sync` | First run: downloads all available history. Later runs: only what's new (plus the last 3 days, which Garmin finalises late) |
 | `npm run sync -- --since 2023-01-01` | Backfill down to a date, even through months without data |
 | `npm run sync -- --only sleep,hrv` | Sync some streams only: `activities`, `daily_wellness`, `sleep`, `hrv`, `weigh_ins` |
@@ -135,11 +137,13 @@ can change your data, and `query` stays SELECT-only. Claude's answers stay in th
 
 ## Web server
 
-`npm run set-password`, `npm run build`, then `npm start`, then open http://localhost:8787 and log in.
+`npm run build`, then `npm start`, then open the setup link from its log (first time) or http://localhost:8787.
 
 | Path | Access | Purpose |
 |---|---|---|
 | `/healthz` | public | Up or not, last sync time |
+| `/setup` | setup code | First start only: password and Garmin key; every other page waits for it |
+| `/api/settings` | session | Garmin key status and replacement, key expiry date, password change (the key is never sent back) |
 | `/login`, `/logout` | public | Dashboard login (password, 10 attempts per 15 min) |
 | `/.well-known/*`, `/authorize`, `/token`, `/register`, `/revoke` | public | OAuth 2.1 for Claude's connector (MCP SDK) |
 | `/oauth/consent` | password | Login + "Allow" step of the OAuth flow |
@@ -229,7 +233,7 @@ The script is safe to run again, and every step checks what's already done. In o
 5. The code in `/opt/running-companion`.
 6. Node from `.nvmrc`, then install, typecheck, tests and build.
 7. Tailscale and Funnel: the public HTTPS address, with no web port opened on the server.
-8. The Garmin key and dashboard password, typed hidden on the server, into `.env` (mode 600).
+8. The Garmin key and dashboard password, typed hidden on the server, into `data/settings.json` (mode 600).
 9. The first sync, then the systemd service (sandboxed: it can write only `data/` and `.cache/`).
 
 **Updates:** `running-companion-update.timer` runs `deploy/update.sh` every 5 minutes. When `main` has a new commit, it

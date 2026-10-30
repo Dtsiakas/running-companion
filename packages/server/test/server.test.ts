@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { after, before, test } from 'node:test';
+import { memorySettings } from '@companion/config';
 import { openDatabase, upsert } from '@companion/db';
 import { openReadOnly } from '@companion/jobs';
 import { computeMetrics } from '@companion/metrics';
@@ -40,7 +41,9 @@ before(async () => {
   base = `http://localhost:${(server.address() as AddressInfo).port}`;
 
   const { app } = createApp({
-    config: { publicUrl: new URL(base), port: 0, host: '127.0.0.1', sessionSecret: 'x'.repeat(40), passwordHash, trustProxy: false, syncHours: [6], cartoKey: null },
+    config: { publicUrl: new URL(base), port: 0, host: '127.0.0.1', trustProxy: false, syncHours: [6], cartoKey: null },
+    settings: memorySettings({ passwordHash, sessionSecret: 'x'.repeat(40) }),
+    checkGarminKey: async () => 'ok',
     readDb,
     writeDb,
     sync: async () => ({ synced: ++syncCalls }),

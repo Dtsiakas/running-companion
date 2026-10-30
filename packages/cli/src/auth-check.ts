@@ -5,12 +5,12 @@
  *   npm run auth:check
  */
 import { createGarminApi, GarminError } from '@companion/garmin-client';
-import { loadEnv, TOKEN_CACHE_FILE } from '@companion/config';
+import { loadEnv, TOKEN_CACHE_FILE, garminKey } from '@companion/config';
 
 loadEnv();
 
 try {
-  const { api, tokens } = createGarminApi({ tokenCacheFile: TOKEN_CACHE_FILE });
+  const { api, tokens } = createGarminApi({ apiKey: garminKey(), tokenCacheFile: TOKEN_CACHE_FILE });
   const token = await tokens.getToken();
   const hoursLeft = ((token.expiresAt - Date.now()) / 3_600_000).toFixed(1);
   console.log(`✓ Key accepted. Access token valid for ${hoursLeft}h.`);

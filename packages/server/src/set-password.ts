@@ -1,16 +1,15 @@
 /**
- * Sets the login password: asks for it twice (hidden), writes its scrypt hash to .env as PASSWORD_HASH,
- * and creates SESSION_SECRET if it doesn't exist yet. The password itself is never stored.
+ * Sets a new login password from the server's terminal: the way back in if you forgot it (the app's Settings
+ * screen changes it while you're logged in). Asks twice, hidden, and saves only its scrypt hash in the settings file.
+ * Also logs out every browser, as any password change should.
  *
  *   npm run set-password
  */
 import { randomBytes } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { ROOT } from '@companion/config';
-import { hashPassword } from './auth/password.ts';
+import { loadEnv, LockedSettingError, settings } from '@companion/config';
+import { hashPassword, MIN_PASSWORD_LENGTH as MIN_LENGTH } from './auth/password.ts';
 
-const MIN_LENGTH = 12;
+loadEnv();
 
 /** Reads a line without echoing it, so the password never appears on screen or in terminal history. */
 function askHidden(question: string): Promise<string> {
@@ -40,14 +39,6 @@ function askHidden(question: string): Promise<string> {
   });
 }
 
-/** Replaces KEY=… in .env, or appends it; every other line is kept as it is. */
-function setEnvValue(content: string, key: string, value: string): string {
-  const line = `${key}=${value}`;
-  const pattern = new RegExp(`^${key}=.*$`, 'm');
-  // A function replacement: the hash contains '$', which a replacement string would treat as a back-reference.
-  return pattern.test(content) ? content.replace(pattern, () => line) : `${content.replace(/\s*$/, '')}\n${line}\n`;
-}
-
 const password = await askHidden(`New password (at least ${MIN_LENGTH} characters): `);
 if (password.length < MIN_LENGTH) {
   console.error(`✗ Too short. Use at least ${MIN_LENGTH} characters; a passphrase of a few words works well.`);
@@ -58,12 +49,11 @@ if ((await askHidden('Repeat it: ')) !== password) {
   process.exit(1);
 }
 
-const envFile = join(ROOT, '.env');
-let env = existsSync(envFile) ? readFileSync(envFile, 'utf8') : '';
-env = setEnvValue(env, 'PASSWORD_HASH', await hashPassword(password));
-const hasSecret = /^SESSION_SECRET=.{32,}$/m.test(env);
-if (!hasSecret) env = setEnvValue(env, 'SESSION_SECRET', randomBytes(32).toString('base64url'));
-writeFileSync(envFile, env);
-
-console.log(`✓ Saved the password hash${hasSecret ? '' : ' and a new session secret'} to .env`);
-console.log('  Restart the server for it to take effect. Existing logins stay valid until SESSION_SECRET changes.');
+const store = settings();
+try {
+  store.update({ passwordHash: await hashPassword(password), ...(store.locked().has('sessionSecret') ? {} : { sessionSecret: randomBytes(32).toString('base64url') }) });
+} catch (error) {
+  console.error(`✗ ${error instanceof LockedSettingError ? error.message : String(error)}`);
+  process.exit(1);
+}
+console.log('✓ Saved. Every browser is logged out; log in with the new password. A running server picks it up straight away.');

@@ -5,6 +5,7 @@ import { Signals } from '../components/Signals.tsx';
 import { AskClaude } from '../components/AskClaude.tsx';
 import { LoadChart } from '../components/charts/LoadChart.tsx';
 import { SleepStages } from '../components/charts/SleepStages.tsx';
+import { KeyNotice } from '../components/KeyNotice.tsx';
 import { Lane } from '../components/Lane.tsx';
 import { Note } from '../components/Note.tsx';
 import { RunSummary } from '../components/RunSummary.tsx';
@@ -43,6 +44,8 @@ export function Today() {
         <p className={styles.date}>{longDay(t.date)}</p>
         <SyncButton lastSync={t.data_freshness.last_sync} />
       </header>
+
+      <KeyNotice />
 
       {/* The one loud element on the page: today's verdict, as a sentence. */}
       <section className={styles.verdict} data-status={status ?? 'none'} aria-live="polite">

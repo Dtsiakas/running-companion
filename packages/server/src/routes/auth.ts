@@ -7,7 +7,8 @@ import type { Sessions } from '../auth/session.ts';
 
 export interface AuthRouteOptions {
   sessions: Sessions;
-  passwordHash: string;
+  /** Read on each attempt: the password can change while the server runs. */
+  passwordHash: () => string | undefined;
   oauth: CompanionOAuthProvider;
 }
 
@@ -38,7 +39,7 @@ export function authRoutes({ sessions, passwordHash, oauth }: AuthRouteOptions):
 
   router.post('/login', passwordAttempts, form, async (req, res) => {
     const next = safeNext(req.body?.next);
-    if (!(await verifyPassword(String(req.body?.password ?? ''), passwordHash))) {
+    if (!(await verifyPassword(String(req.body?.password ?? ''), passwordHash()))) {
       return res.status(401).type('html').send(loginPage({ next, error: 'Wrong password.' }));
     }
     sessions.start(res);
@@ -73,7 +74,7 @@ export function authRoutes({ sessions, passwordHash, oauth }: AuthRouteOptions):
 
     // Approving requires being logged in, or the password right here.
     if (!sessions.isValid(req)) {
-      if (!(await verifyPassword(String(req.body?.password ?? ''), passwordHash))) {
+      if (!(await verifyPassword(String(req.body?.password ?? ''), passwordHash()))) {
         return res.status(401).type('html').send(
           consentPage({
             requestId,

@@ -33,7 +33,7 @@ const NAV: NavItem[] = [
 export function Layout() {
   const online = useOnline();
   const location = useLocation();
-  const secondaryActive = NAV.filter((n) => !n.primary).some((n) => location.pathname.startsWith(n.to));
+  const secondaryActive = [...NAV.filter((n) => !n.primary).map((n) => n.to), '/settings'].some((to) => location.pathname.startsWith(to));
 
   return (
     <div className={styles.shell}>
@@ -83,7 +83,7 @@ function useDismiss(open: boolean, close: () => void, ref: RefObject<HTMLElement
   }, [open, close, ref]);
 }
 
-/** The laptop's header menu: appearance and log out. Hidden on phones, where More holds the same. */
+/** The laptop's header menu: appearance, settings and log out. Hidden on phones, where More holds the same. */
 function HeaderMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -97,6 +97,9 @@ function HeaderMenu() {
       {open ? (
         <div id="header-menu" className={styles.menuPanel}>
           <Appearance />
+          <NavLink className={styles.menuItem} to="/settings">
+            Settings
+          </NavLink>
           <a className={styles.menuItem} href={SOURCE_URL} target="_blank" rel="noreferrer">
             Source code
           </a>
@@ -146,6 +149,12 @@ function MoreButton({ active }: { active: boolean }) {
                 </NavLink>
               </li>
             ))}
+            <li>
+              <NavLink to="/settings" className={({ isActive }) => [styles.tile, isActive ? styles.tileActive : ''].join(' ')}>
+                <Icon name="settings" />
+                <span>Settings</span>
+              </NavLink>
+            </li>
           </ul>
           <Appearance />
           <div className={styles.sheetFoot}>

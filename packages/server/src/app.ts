@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
+import type { SettingsStore } from '@companion/config';
 import { getFreshness } from '@companion/queries';
 import { mcpAuthRouter, getOAuthProtectedResourceMetadataUrl } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
@@ -9,12 +10,18 @@ import { CompanionOAuthProvider, SCOPE } from './auth/oauth-provider.ts';
 import { messagePage } from './auth/pages.ts';
 import { Sessions } from './auth/session.ts';
 import type { ServerConfig } from './config.ts';
+import type { KeyCheck } from './garmin-key.ts';
 import { apiRoutes } from './routes/api.ts';
 import { authRoutes } from './routes/auth.ts';
 import { mcpRoutes } from './routes/mcp.ts';
+import { needsSetup, newSetupCode, settingsRoutes } from './routes/settings.ts';
 
 export interface AppDependencies {
   config: ServerConfig;
+  /** Password, session secret, Garmin key, units: what setup and Settings change. */
+  settings: SettingsStore;
+  /** Tries a Garmin key before saving it. */
+  checkGarminKey: (key: string) => Promise<KeyCheck>;
   /** Read-only connection for everything that only reads (API, MCP tools). */
   readDb: DatabaseSync;
   /** Write connection for OAuth state. Garmin syncs open their own. */
@@ -28,6 +35,10 @@ export interface AppDependencies {
 export interface App {
   app: Express;
   oauth: CompanionOAuthProvider;
+  /** True until the setup page has been filled in. */
+  needsSetup: () => boolean;
+  /** The code the setup page asks for; print it where only the server's owner sees it. */
+  setupCode: string;
 }
 
 /**
@@ -36,6 +47,8 @@ export interface App {
  *
  * Route map:
  *   /healthz                          public: is it up, when did it last sync
+ *   /setup                            first start only: password, Garmin key, units (everything else waits for it)
+ *   /api/settings                     the Settings screen, session cookie required
  *   /login, /logout                   dashboard login
  *   /.well-known/*, /authorize, /token, /register, /revoke   OAuth for Claude (implemented by the MCP SDK)
  *   /oauth/consent                    our login + "Allow" page in the OAuth flow
@@ -44,9 +57,10 @@ export interface App {
  *   /*                                the dashboard's files (public: they hold no data)
  */
 export function createApp(deps: AppDependencies): App {
-  const { config } = deps;
+  const { config, settings } = deps;
   const app = express();
-  const sessions = new Sessions(config.sessionSecret, config.publicUrl.protocol === 'https:');
+  const sessions = new Sessions(() => settings.read().sessionSecret ?? '', config.publicUrl.protocol === 'https:');
+  const setupCode = newSetupCode();
   const oauth = new CompanionOAuthProvider(deps.writeDb);
   const mcpUrl = new URL('/mcp', config.publicUrl);
 
@@ -59,7 +73,17 @@ export function createApp(deps: AppDependencies): App {
     res.json({ ok: true, lastSync: getFreshness(deps.readDb).last_sync, syncRunning: deps.isSyncRunning() });
   });
 
-  app.use(authRoutes({ sessions, passwordHash: config.passwordHash, oauth }));
+  app.use(
+    settingsRoutes({
+      settings,
+      sessions,
+      setupCode,
+      checkGarminKey: deps.checkGarminKey,
+      syncSoon: () => void deps.sync().catch((error: unknown) => console.error(`Sync failed: ${error instanceof Error ? error.message : String(error)}`)),
+    }),
+  );
+
+  app.use(authRoutes({ sessions, passwordHash: () => settings.read().passwordHash, oauth }));
 
   app.use(
     mcpAuthRouter({
@@ -101,7 +125,7 @@ export function createApp(deps: AppDependencies): App {
     if (!res.headersSent) res.status(500).json({ error: 'Internal error' });
   });
 
-  return { app, oauth };
+  return { app, oauth, needsSetup: () => needsSetup(settings), setupCode };
 }
 
 /**

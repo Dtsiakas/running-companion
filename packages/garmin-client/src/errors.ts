@@ -8,7 +8,7 @@ export class MissingApiKeyError extends GarminError {
 
   constructor(keyFile: string) {
     super(
-      'No Garmin Personal API key found. Set GARMIN_PERSONAL_API_KEY in .env, ' +
+      "No Garmin Personal API key yet. Add it in the app's Settings, set GARMIN_PERSONAL_API_KEY, " +
         `or save the key (and nothing else) to ${keyFile}.`,
     );
   }

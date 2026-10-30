@@ -5,7 +5,7 @@
 #   ssh -t ubuntu@<server IP> "sudo bash setup.sh"
 #
 # Safe to run again: every step checks what is already done. It asks for the Garmin key and the dashboard password
-# on the server, hidden as you type; neither is ever shown, logged or sent anywhere but the server's .env file.
+# on the server, hidden as you type; neither is ever shown, logged or sent anywhere but the server's data/settings.json.
 
 set -euo pipefail
 
@@ -163,6 +163,8 @@ ok "Public address: $PUBLIC_URL"
 # 8. Settings: Garmin key and dashboard password ---------------------------------------------------------------------------
 log '8/9  Settings'
 ENV_FILE=$APP_DIR/.env
+# The app moves the key from .env into data/settings.json the first time it starts, so look in both.
+SETTINGS_FILE=$APP_DIR/data/settings.json
 [ -f "$ENV_FILE" ] || install -m 600 -o "$APP_USER" -g "$APP_USER" /dev/null "$ENV_FILE"
 # KEY=value in .env, replaced or appended. awk reads the value from the environment, so no character in it needs escaping.
 set_env() {
@@ -172,7 +174,7 @@ set_env() {
   cat "$ENV_FILE.tmp" >"$ENV_FILE"
   rm -f "$ENV_FILE.tmp"
 }
-if ! grep -qE '^GARMIN_PERSONAL_API_KEY=.+' "$ENV_FILE"; then
+if ! grep -qE '^GARMIN_PERSONAL_API_KEY=.+' "$ENV_FILE" && ! grep -qs '"garminKey"' "$SETTINGS_FILE"; then
   echo '  Your Garmin key: https://connect.garmin.com/app/settings/personalApiToken'
   echo '  (Create a new one for the server, so the laptop and the server each have their own and either can be revoked.)'
   read -rsp '  Paste the Garmin key (hidden): ' GARMIN_KEY
@@ -187,14 +189,14 @@ set_env TRUST_PROXY true
 set_env TZ "$TIMEZONE"
 chown "$APP_USER:$APP_USER" "$ENV_FILE"
 chmod 600 "$ENV_FILE"
-as_app 'npm run --silent auth:check' || fail 'Garmin rejected the key. Run the script again to enter it again (delete the GARMIN_PERSONAL_API_KEY line in .env first).'
-if ! grep -qE '^PASSWORD_HASH=.+' "$ENV_FILE"; then
+as_app 'npm run --silent auth:check' || fail 'Garmin rejected the key. Open the dashboard after setup and paste a new one in Settings, or delete data/settings.json and run this again.'
+if ! grep -qs '"passwordHash"' "$SETTINGS_FILE"; then
   echo '  Now choose the dashboard password (a few words work well).'
 fi
-until grep -qE '^PASSWORD_HASH=.+' "$ENV_FILE"; do
+until grep -qs '"passwordHash"' "$SETTINGS_FILE"; do
   as_app 'npm run --silent set-password' || true
 done
-ok 'Settings saved in .env (readable only by the app)'
+ok 'Settings saved in data/settings.json (readable only by the app)'
 
 # 9. First sync, then start ---------------------------------------------------------------------------------------------------
 log '9/9  First sync and start'

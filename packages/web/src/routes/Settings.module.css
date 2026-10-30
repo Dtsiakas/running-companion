@@ -1,0 +1,84 @@
+.keyState {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.small {
+  color: var(--ink-3);
+  font-size: var(--text-sm);
+  max-width: 60ch;
+}
+
+.form {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 28rem;
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--rule);
+}
+
+/* The first thing in its section: no divider above it. */
+.first {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.form h3 {
+  font-size: var(--text-md);
+}
+
+.form label {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.form input {
+  font: inherit;
+  font-size: var(--text-md);
+  color: var(--ink);
+  padding: var(--space-2) var(--space-3);
+  min-height: 2.75rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.form input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.form input[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.actions button {
+  min-height: 2.75rem;
+}
+
+.error {
+  color: var(--bad);
+  font-size: var(--text-sm);
+}
+
+.done {
+  color: var(--good);
+  font-size: var(--text-sm);
+}
+
+/* The menus give Appearance its own padding; here it lines up with the rest of the page. */
+.appearance {
+  max-width: 28rem;
+  margin-inline: calc(-1 * var(--space-3));
+}

@@ -19,5 +19,7 @@ Include what you found, how to reproduce it, and what an attacker could do with 
 ## How the app is meant to be run
 
 Each person runs their own copy for their own data. The server listens on `127.0.0.1` and should be reached only
-through HTTPS (Tailscale Funnel or a reverse proxy). The login password and `SESSION_SECRET` protect everything; keep
-`.env` private, and use a long password.
+through HTTPS (Tailscale Funnel or a reverse proxy). The login password and the session secret protect everything;
+both live in `data/settings.json` (readable by its owner only, with the Garmin key), so keep the data folder private, and
+use a long password. Until the setup page is filled in, it asks for a code printed in the server's log, so whoever
+finds a fresh install's address first can't claim it.

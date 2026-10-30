@@ -1,6 +1,9 @@
+import { ensureSessionSecret, type SettingsStore } from '@companion/config';
+
 /**
- * Server settings, all from environment variables (.env locally, the service environment on the server).
- * Validated once at startup: a missing secret should stop the server, not surface as a confusing error later.
+ * How the server runs: environment variables (.env locally, the service environment on a server), validated once at
+ * startup. What a person sets up (password, Garmin key, units) lives in the settings store instead, and the session
+ * secret is created there on first start, so a fresh install starts without any configuration.
  */
 export interface ServerConfig {
   /** The address people and Claude use to reach the server, e.g. https://companion.example.ts.net. */
@@ -8,10 +11,6 @@ export interface ServerConfig {
   port: number;
   /** Interface to listen on. 127.0.0.1: only reachable through the tunnel or reverse proxy in front of it. */
   host: string;
-  /** Signs session cookies. Changing it logs out every browser. */
-  sessionSecret: string;
-  /** scrypt hash of the login password, created with `npm run set-password`. */
-  passwordHash: string;
   /** Set when a proxy (Tailscale, Caddy) sits in front: makes client IPs and HTTPS detection correct. */
   trustProxy: boolean;
   /** Local hours at which the scheduled sync runs. */
@@ -23,11 +22,7 @@ export interface ServerConfig {
 export const DEFAULT_SYNC_HOURS = [6, 8, 10, 12, 14, 16, 18, 20, 22];
 
 export function loadServerConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
-  const missing = ['SESSION_SECRET', 'PASSWORD_HASH'].filter((name) => !env[name]);
-  if (missing.length) {
-    throw new Error(`Missing ${missing.join(' and ')} in .env. Run: npm run set-password`);
-  }
-  if (env.SESSION_SECRET!.length < 32) throw new Error('SESSION_SECRET must be at least 32 characters. Run: npm run set-password');
+  if (env.SESSION_SECRET && env.SESSION_SECRET.length < 32) throw new Error('SESSION_SECRET must be at least 32 characters, or leave it unset and the app creates one.');
 
   const port = Number(env.PORT ?? 8787);
   const publicUrl = new URL(env.PUBLIC_URL ?? `http://localhost:${port}`);
@@ -38,10 +33,13 @@ export function loadServerConfig(env: NodeJS.ProcessEnv = process.env): ServerCo
     publicUrl,
     port,
     host: env.HOST ?? '127.0.0.1',
-    sessionSecret: env.SESSION_SECRET!,
-    passwordHash: env.PASSWORD_HASH!,
     trustProxy: env.TRUST_PROXY === 'true',
     syncHours,
     cartoKey: env.CARTO_API_KEY?.trim() || null,
   };
+}
+
+/** Creates the session secret on first start (kept in the settings file); an environment variable wins. */
+export function prepareSettings(store: SettingsStore): void {
+  ensureSessionSecret(store);
 }

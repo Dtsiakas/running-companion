@@ -11,7 +11,7 @@ import { openDatabase } from '@companion/db';
 import { createGarminApi, GarminError } from '@companion/garmin-client';
 import { computeMetrics } from '@companion/metrics';
 import { runSync, STREAM_NAMES, tableStats, type StreamName } from '@companion/sync';
-import { DATA_DIR, DB_FILE, loadEnv, TOKEN_CACHE_FILE } from '@companion/config';
+import { DATA_DIR, DB_FILE, loadEnv, TOKEN_CACHE_FILE, garminKey } from '@companion/config';
 
 loadEnv();
 
@@ -33,7 +33,7 @@ const started = Date.now();
 const db = openDatabase(DB_FILE);
 
 try {
-  const { api } = createGarminApi({ tokenCacheFile: TOKEN_CACHE_FILE, minIntervalMs: Number(args.delay) });
+  const { api } = createGarminApi({ apiKey: garminKey(), tokenCacheFile: TOKEN_CACHE_FILE, minIntervalMs: Number(args.delay) });
   const summary = await runSync(
     { db, api, dataDir: DATA_DIR, log: (message) => console.log(message) },
     {

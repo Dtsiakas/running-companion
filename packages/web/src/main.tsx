@@ -15,6 +15,7 @@ import { ApiError } from './api/client.ts';
 import { Layout } from './components/Layout.tsx';
 import { Body } from './routes/Body.tsx';
 import { NotFound } from './routes/NotFound.tsx';
+import { Settings } from './routes/Settings.tsx';
 import { Progress } from './routes/Progress.tsx';
 import { RouteError } from './routes/RouteError.tsx';
 import { Run } from './routes/Run.tsx';
@@ -55,6 +56,7 @@ const router = createBrowserRouter([
           { path: '/sleep', element: <Sleep /> },
           { path: '/body', element: <Body /> },
           { path: '/progress', element: <Progress /> },
+          { path: '/settings', element: <Settings /> },
           { path: '*', element: <NotFound /> },
         ],
       },

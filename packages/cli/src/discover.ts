@@ -11,7 +11,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
 import { createGarminApi, daysAgo, GarminError, GarminHttpError, toCalendarDate } from '@companion/garmin-client';
-import { DATA_DIR, loadEnv, ROOT, TOKEN_CACHE_FILE } from '@companion/config';
+import { DATA_DIR, loadEnv, ROOT, TOKEN_CACHE_FILE, garminKey } from '@companion/config';
 import { extractFitFile, summarizeFit, type FitSummary } from '@companion/sync';
 import { describeShape, isEmptyData } from './shape.ts';
 
@@ -38,7 +38,7 @@ const results: ProbeResult[] = [];
 
 let garmin: ReturnType<typeof createGarminApi>;
 try {
-  garmin = createGarminApi({ tokenCacheFile: TOKEN_CACHE_FILE });
+  garmin = createGarminApi({ apiKey: garminKey(), tokenCacheFile: TOKEN_CACHE_FILE });
   await garmin.tokens.getToken();
   console.log('✓ Authenticated with Garmin\n');
 } catch (error) {

@@ -43,6 +43,13 @@ const paths = {
       <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20.5h7M10 17h4" />
     </>
   ),
+  settings: (
+    <>
+      <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+      <circle cx="15" cy="7" r="2" />
+      <circle cx="9" cy="17" r="2" />
+    </>
+  ),
   more: (
     <>
       <circle cx="5.5" cy="12" r="1.6" />

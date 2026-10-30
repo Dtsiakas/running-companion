@@ -7,7 +7,7 @@ export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
 }
 
-function layout(title: string, body: string): string {
+function layout(title: string, body: string, width = 380): string {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -19,15 +19,21 @@ function layout(title: string, body: string): string {
   @media (prefers-color-scheme: dark) { :root { --bg: #151614; --card: #1e201d; --text: #ecece6; --muted: #9c9d95; --accent: #6fbf8f; --border: #33352f; --error: #e88; } }
   * { box-sizing: border-box; }
   body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
-  main { width: 100%; max-width: 380px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 28px; }
+  main { width: 100%; max-width: ${width}px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 28px; }
   h1 { font-size: 20px; margin: 0 0 4px; }
   p { color: var(--muted); margin: 0 0 20px; }
   label { display: block; font-size: 14px; margin-bottom: 6px; }
-  input[type=password] { width: 100%; padding: 10px 12px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
+  input[type=password], input[type=text], input[type=date] { width: 100%; padding: 10px 12px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
   .actions { display: flex; gap: 8px; }
   button { flex: 1; padding: 10px; font: inherit; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
   button.secondary { background: transparent; color: var(--text); border-color: var(--border); }
   .error { color: var(--error); margin-bottom: 16px; }
+  h2 { font-size: 16px; margin: 24px 0 4px; }
+  h2:first-of-type { margin-top: 8px; }
+  .hint { font-size: 14px; margin: -10px 0 16px; }
+  fieldset { border: 0; padding: 0; margin: 0 0 16px; display: flex; gap: 16px; }
+  fieldset label { display: flex; align-items: center; gap: 6px; font-size: 16px; margin: 0; }
+  a { color: var(--accent); }
   strong { color: var(--text); }
 </style>
 </head>
@@ -70,6 +76,52 @@ ${error ? `<div class="error">${escapeHtml(error)}</div>` : ''}
     <button type="submit" name="action" value="approve">Allow</button>
   </div>
 </form>`,
+  );
+}
+
+export interface SetupForm {
+  codeRequired: boolean;
+  code?: string;
+  expiresOn?: string;
+  error?: string;
+}
+
+/**
+ * First start: the only page there is until it's done. The setup code proves the person filling it in can see the
+ * server's log, so whoever finds a fresh install's address first can't claim it.
+ */
+export function setupPage({ codeRequired, code = '', expiresOn = '', error }: SetupForm): string {
+  return layout(
+    'Set up',
+    `<h1>Set up Running Companion</h1>
+<p>A password and your Garmin key, once. You can change both later in Settings.</p>
+${error ? `<div class="error" role="alert">${escapeHtml(error)}</div>` : ''}
+<form method="post" action="/setup">
+  ${
+    codeRequired
+      ? `<label for="code">Setup code</label>
+  <input id="code" name="code" type="text" value="${escapeHtml(code)}" autocomplete="off" spellcheck="false" required>
+  <p class="hint">Printed in the server's log when it started.</p>`
+      : `<input type="hidden" name="code" value="${escapeHtml(code)}">`
+  }
+  <h2>Password</h2>
+  <p class="hint" style="margin-top:0">For this app only. At least 12 characters; a few words in a row works well.</p>
+  <label for="password">New password</label>
+  <input id="password" name="password" type="password" autocomplete="new-password" minlength="12" required>
+  <label for="repeat">Repeat it</label>
+  <input id="repeat" name="repeat" type="password" autocomplete="new-password" minlength="12" required>
+
+  <h2>Garmin</h2>
+  <p class="hint" style="margin-top:0">Create a Personal API key at <a href="https://connect.garmin.com/app/settings/personalApiToken" target="_blank" rel="noreferrer">Garmin Connect</a> and paste it here. It stays on this server and is never shown again. You can skip this and add it later.</p>
+  <label for="key">API key</label>
+  <input id="key" name="key" type="password" autocomplete="off" spellcheck="false">
+  <label for="expires">Expires on (optional)</label>
+  <input id="expires" name="expires" type="date" value="${escapeHtml(expiresOn)}">
+  <p class="hint">Garmin shows the date when you create the key. With it, the app reminds you two weeks before.</p>
+
+  <div class="actions"><button type="submit">Finish setup</button></div>
+</form>`,
+    460,
   );
 }
 

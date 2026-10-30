@@ -17,11 +17,12 @@ export const SESSION_COOKIE = 'companion_session';
 const SESSION_DAYS = 30;
 
 export class Sessions {
-  readonly #secret: string;
+  readonly #secret: () => string;
   readonly #secure: boolean;
 
-  constructor(secret: string, secure: boolean) {
-    this.#secret = secret;
+  /** The secret is read on each use: changing the password replaces it, which ends every other session. */
+  constructor(secret: string | (() => string), secure: boolean) {
+    this.#secret = typeof secret === 'string' ? () => secret : secret;
     this.#secure = secure;
   }
 
@@ -73,7 +74,7 @@ export class Sessions {
   };
 
   #sign(payload: string): string {
-    return createHmac('sha256', this.#secret).update(payload).digest('base64url');
+    return createHmac('sha256', this.#secret()).update(payload).digest('base64url');
   }
 }
 

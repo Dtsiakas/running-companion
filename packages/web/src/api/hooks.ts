@@ -147,3 +147,32 @@ export function useFormTrend() {
 export function useMapConfig() {
   return useQuery({ queryKey: ['map-config'], queryFn: () => api<{ provider: 'carto' | 'osm'; key: string | null }>('/api/map'), staleTime: Infinity });
 }
+
+// Settings --------------------------------------------------------------------------------------------------
+
+/** Mirrors the server's /api/settings answer (packages/server/src/routes/settings.ts). The key itself never comes back. */
+export interface SettingsResponse {
+  garmin: {
+    state: 'missing' | 'rejected' | 'expired' | 'expiring' | 'ok';
+    source: 'settings' | 'environment' | 'file' | null;
+    addedOn: string | null;
+    expiresOn: string | null;
+    daysLeft: number | null;
+    rejectedAt: string | null;
+  };
+  units: 'metric' | 'imperial';
+  locked: { password: boolean; garminKey: boolean; units: boolean };
+}
+
+export function useSettings() {
+  return useQuery({ queryKey: ['settings'], queryFn: () => api<SettingsResponse>('/api/settings') });
+}
+
+/** PUTs one setting; the answer is the new settings, which replaces the cached copy. */
+export function useSaveSetting<T>(path: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: T) => api<SettingsResponse>(`/api/settings${path}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+    onSuccess: (settings) => client.setQueryData(['settings'], settings),
+  });
+}
