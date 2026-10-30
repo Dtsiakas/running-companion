@@ -1,0 +1,64 @@
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3) var(--space-5);
+  margin-top: var(--space-4);
+}
+
+.metric {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+  flex: 1 1 240px;
+  max-width: 360px;
+}
+
+.metric select {
+  font: inherit;
+  font-size: var(--text-md);
+  color: var(--ink);
+  background: var(--raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+}
+
+/* A segmented control: one choice of four, the chosen one filled. */
+.ranges {
+  display: flex;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.ranges button {
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: var(--raised);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.ranges button + button {
+  border-left: 1px solid var(--rule);
+}
+
+.ranges button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--surface);
+  font-weight: 600;
+}
+
+.result {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  transition: opacity 0.15s;
+}
+
+/* While the next metric loads, the previous chart stays but dims. */
+.result[data-stale] {
+  opacity: 0.5;
+}

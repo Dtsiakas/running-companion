@@ -1,0 +1,47 @@
+.days {
+  display: grid;
+  gap: var(--space-4) var(--space-6);
+}
+
+@media (min-width: 600px) {
+  .days {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.label {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-3);
+  margin-bottom: var(--space-1);
+}
+
+.best {
+  display: grid;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.best strong {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.best span {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.avoid,
+.fine {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.avoid span {
+  color: var(--warn);
+}

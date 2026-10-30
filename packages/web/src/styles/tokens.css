@@ -1,0 +1,80 @@
+/*
+ * Design tokens. Components use these roles, never raw values, so light and dark mode are two
+ * deliberately chosen sets rather than an automatic inversion.
+ *
+ * Colour roles
+ *   surface / raised   page background / slightly lifted areas (last run, menus)
+ *   ink, ink-2, ink-3  primary text / secondary text / labels and axes
+ *   rule               hairlines between sections
+ *   accent             Aegean blue: links, active navigation, focus
+ *   lane, lane-band    the baseline lanes: the track, and your normal range drawn on it
+ *   good/warn/bad      recovery status only (green/amber/red). Never used for decoration or data series.
+ *   series-1/2         chart lines (validated for colour-blind separation in both themes)
+ *   intensity-*        low/moderate/high, one hue light→strong (validated as an ordinal ramp)
+ */
+:root {
+  color-scheme: light;
+  --surface: #eef1ef;
+  --raised: #ffffff;
+  --ink: #14212b;
+  --ink-2: #44535d;
+  --ink-3: #66747d;
+  --rule: #d3dbd9;
+  --accent: #2463a6;
+  --lane: #dde5e7;
+  --lane-band: #b9cde3;
+  --good: #0ca30c;
+  --warn: #c98500;
+  --bad: #d03b3b;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --intensity-low: #86b6ef;
+  --intensity-moderate: #2a78d6;
+  --intensity-high: #104281;
+
+  --font-body: 'Barlow', system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+
+  /* Type scale: a modular scale (ratio ~1.25) from a 16px base. */
+  --text-xs: 0.8125rem; /* 13 */
+  --text-sm: 0.875rem; /* 14 */
+  --text-md: 1rem; /* 16 */
+  --text-lg: 1.25rem; /* 20 */
+  --text-xl: 1.5625rem; /* 25 */
+  --text-2xl: 2rem; /* 32 */
+  --text-3xl: 2.75rem; /* 44 */
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --content-width: 1080px;
+}
+
+/* Dark mode is set on <html data-theme="dark"> by public/theme.js: from the device setting, or the choice in the menu. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --surface: #0e171d;
+  --raised: #15222a;
+  --ink: #e7edef;
+  --ink-2: #aab7be;
+  --ink-3: #85939c;
+  --rule: #233139;
+  --accent: #7aaee8;
+  --lane: #1a2a33;
+  --lane-band: #27455f;
+  --good: #2fbf3a;
+  --warn: #fab219;
+  --bad: #e66767;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --intensity-low: #184f95;
+  --intensity-moderate: #3987e5;
+  --intensity-high: #9ec5f4;
+}

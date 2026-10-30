@@ -1,0 +1,66 @@
+.figure {
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.map {
+  height: 280px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--raised);
+  /* Leaflet's panes use z-indexes up to 1000; keep them under the app's sticky navigation. */
+  isolation: isolate;
+  z-index: 0;
+}
+
+.tall {
+  height: 360px;
+}
+
+@media (min-width: 900px) {
+  .map {
+    height: 360px;
+  }
+
+  .tall {
+    height: 440px;
+  }
+}
+
+.scale {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.scale i {
+  flex: 0 1 10rem;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.map :global(.leaflet-control-attribution) {
+  font-size: 10px;
+  background: color-mix(in srgb, var(--raised) 80%, transparent);
+  color: var(--ink-3);
+}
+
+.map :global(.leaflet-control-attribution a) {
+  color: var(--ink-2);
+}
+
+/* OpenStreetMap has no dark style: invert the tiles and turn the hues back, so water stays blue and the map sits
+   quietly under the route instead of glaring white. Only the tiles, never the route drawn on top. */
+.map[data-invert='true'] :global(.leaflet-tile-pane) {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.85) saturate(0.6);
+}
+
+/* CARTO's dark labels are dim grey on near-black; brightening only the label layer turns the text near-white while
+   its dark halo stays dark, so names read clearly over the streets. */
+.map :global(.leaflet-pane[data-labels='dark']) {
+  filter: brightness(2.4) contrast(1.1);
+}

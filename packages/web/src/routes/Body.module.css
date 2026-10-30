@@ -1,0 +1,27 @@
+.assessment {
+  font-size: var(--text-sm);
+  max-width: 70ch;
+  margin-bottom: var(--space-3);
+}
+
+.assessment[data-tone='good'] span {
+  color: var(--good);
+}
+
+.assessment[data-tone='concern'] span {
+  color: var(--warn);
+}
+
+/* Its own line under the value, so the big number never wraps around it on a phone. */
+.change {
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+table td.wrap {
+  white-space: normal;
+  min-width: 9rem;
+}

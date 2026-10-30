@@ -1,0 +1,112 @@
+.month {
+  margin-top: var(--space-5);
+}
+
+.monthTitle {
+  font-size: var(--text-lg);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--rule);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* The whole row is the link: a big touch target on a phone. */
+.row {
+  display: grid;
+  grid-template-columns: 3.25rem 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--rule);
+  color: inherit;
+  text-decoration: none;
+}
+
+.row:hover .name {
+  color: var(--accent);
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.day {
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+
+.main {
+  display: grid;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.details {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.km {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.km small {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.more {
+  justify-self: start;
+  margin-top: var(--space-5);
+}
+
+.places {
+  border-block: 1px solid var(--rule);
+  padding: var(--space-3) 0;
+}
+
+.places summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+  padding: var(--space-1) 0;
+}
+
+.places[open] summary {
+  margin-bottom: var(--space-3);
+}
+
+.placeList {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.placeList li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.placeList span {
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,17 @@
+.section {
+  margin-top: var(--space-6);
+  /* Sections sit in grids (page, columns); without this a wide table inside stretches the layout. */
+  min-width: 0;
+}
+
+.heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.heading > h2 {
+  font-size: var(--text-xl);
+}

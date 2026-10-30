@@ -1,0 +1,18 @@
+.note > summary {
+  display: inline-block;
+  cursor: pointer;
+  color: var(--accent);
+  font-size: var(--text-sm);
+  list-style: none;
+}
+
+.note > summary::-webkit-details-marker {
+  display: none;
+}
+
+.note > p {
+  margin-top: var(--space-2);
+  max-width: 62ch;
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+}

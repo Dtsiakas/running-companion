@@ -1,0 +1,8 @@
+# Store text files with LF line endings in the repo and check them out as LF on every OS,
+# so edits from Windows and from Linux tools never show up as whole-file changes.
+* text=auto eol=lf
+
+# Binary files: never touch line endings
+*.fit binary
+*.zip binary
+*.db binary

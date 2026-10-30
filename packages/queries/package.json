@@ -1,0 +1,13 @@
+{
+  "name": "@companion/queries",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@companion/weather": "*"
+  }
+}

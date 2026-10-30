@@ -1,0 +1,19 @@
+.loading {
+  color: var(--ink-3);
+  padding: var(--space-6) 0;
+}
+
+.error {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  padding: var(--space-5) 0;
+}
+
+.error > button {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+  cursor: pointer;
+}

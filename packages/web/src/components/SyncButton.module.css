@@ -1,0 +1,10 @@
+.sync {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.when {
+  color: var(--ink-3);
+}

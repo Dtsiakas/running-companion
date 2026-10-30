@@ -1,0 +1,32 @@
+[Unit]
+Description=Running Companion (dashboard, API, MCP, scheduled Garmin sync)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=companion
+Group=companion
+WorkingDirectory=/opt/running-companion
+Environment=NODE_ENV=production
+ExecStart=/usr/local/bin/node --disable-warning=ExperimentalWarning packages/server/src/main.ts
+Restart=on-failure
+RestartSec=5
+
+# Sandboxing: the app can write only its data and token cache. Everything else on the system is read-only or hidden,
+# so a bug or a compromised dependency can't modify the code, the system or other users' files.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/running-companion/data /opt/running-companion/.cache
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
