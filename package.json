@@ -12,6 +12,7 @@
     "start": "node packages/server/src/main.ts",
     "up": "node --disable-warning=ExperimentalWarning packages/cli/src/up.ts",
     "down": "node --disable-warning=ExperimentalWarning packages/cli/src/down.ts",
+    "demo": "node --disable-warning=ExperimentalWarning packages/cli/src/demo.ts",
     "set-password": "node packages/server/src/set-password.ts",
     "dev:web": "npm run dev -w @companion/web",
     "build": "npm run build -w @companion/web",

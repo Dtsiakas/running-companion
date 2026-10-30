@@ -12,6 +12,23 @@ export const STATUS_TEXT: Record<Status, { title: string; detail: string; label:
   red: { label: 'Two signals off', title: 'Two signals are off. Consider an easier day than planned.', detail: 'Two independent recovery systems are outside your normal range at the same time.' },
 };
 
+/**
+ * The green detail names only what was measured: a watch without HRV, or a night without the watch, mustn't read as
+ * "HRV and sleep are fine".
+ */
+export function greenDetail(measured: { hrv: boolean; restingHr: boolean; sleep: boolean }): string {
+  const parts = [measured.hrv && 'HRV', measured.restingHr && 'resting heart rate', measured.sleep && 'sleep', 'training load'].filter(Boolean) as string[];
+  const list = parts.length === 1 ? parts[0]! : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
+  const sentence = `${list.charAt(0).toUpperCase()}${list.slice(1)} ${parts.length === 1 ? 'is' : 'are'}${parts.length > 2 ? ' all' : ''} within your normal range.`;
+  return sentence;
+}
+
+/** True when a stream has data from the last `days` days: older means the watch isn't recording it (any more). */
+export function recentlyRecorded(lastDate: string | null, today: string, days = 30): boolean {
+  if (!lastDate) return false;
+  return (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${lastDate}T00:00:00Z`)) / 86_400_000 <= days;
+}
+
 export function percentDifference(value: number | null | undefined, reference: number | null | undefined): number | null {
   if (value === null || value === undefined || !reference) return null;
   return Math.round(((value - reference) / reference) * 100);

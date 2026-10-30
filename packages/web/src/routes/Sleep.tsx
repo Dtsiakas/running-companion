@@ -33,10 +33,21 @@ export function Sleep() {
   return (
     <div className={blocks.page}>
       <h1 className={blocks.title}>Sleep and stress</h1>
-      {sleep.tonight ? <Tonight tonight={sleep.tonight} /> : null}
-      <SleepNeed sleep={sleep} />
-      <Timing sleep={sleep} />
-      {sleep.stages ? <Stages stages={sleep.stages} /> : null}
+      {sleep.nights.length ? (
+        <>
+          {sleep.tonight ? <Tonight tonight={sleep.tonight} /> : null}
+          <SleepNeed sleep={sleep} />
+          <Timing sleep={sleep} />
+          {sleep.stages ? <Stages stages={sleep.stages} /> : null}
+        </>
+      ) : (
+        <Section title="Sleep">
+          <p className={blocks.explain}>
+            No sleep recorded in the last four weeks. Wearing the watch at night adds sleep and its timing, HRV, overnight breathing and Body Battery’s
+            overnight recharge.
+          </p>
+        </Section>
+      )}
       <Battery stress={stress} />
       <div className={blocks.columns}>
         {stress.sources ? <Sources sources={stress.sources} /> : null}
@@ -65,12 +76,13 @@ function Tonight({ tonight }: { tonight: NonNullable<SleepReport['tonight']> }) 
             Asleep by <strong>{tonight.step.asleep_by}</strong>
           </p>
           <p className={styles.lead}>
-            In bed by {tonight.step.in_bed_by}: half an hour earlier than your usual {tonight.usual_bed}, for about {hoursText(tonight.step.hours)} before your {basis} wake-up at {tonight.wake}.
+            In bed by {tonight.step.in_bed_by}: half an hour earlier than your usual {tonight.usual_bed}, for about {hoursText(tonight.step.hours)} before your{' '}
+            {basis} wake-up at {tonight.wake}.
           </p>
           <p className={blocks.explain}>
-            {needFrom} tonight is {hoursText(tonight.need_h)}. Meeting it before {tonight.wake} would mean being asleep by {tonight.asleep_by}, {spanText(tonight.gap_min)} earlier than you usually
-            fall asleep. A jump that big rarely holds, because the body clock moves slowly; moving 30 minutes at a time and keeping each step for a few nights does. Morning daylight and
-            a fixed wake-up time help it move.
+            {needFrom} tonight is {hoursText(tonight.need_h)}. Meeting it before {tonight.wake} would mean being asleep by {tonight.asleep_by},{' '}
+            {spanText(tonight.gap_min)} earlier than you usually fall asleep. A jump that big rarely holds, because the body clock moves slowly; moving 30
+            minutes at a time and keeping each step for a few nights does. Morning daylight and a fixed wake-up time help it move.
           </p>
         </>
       ) : (
@@ -81,10 +93,16 @@ function Tonight({ tonight }: { tonight: NonNullable<SleepReport['tonight']> }) 
           <p className={styles.lead}>
             In bed by {tonight.in_bed_by} for {hoursText(tonight.need_h)} of sleep before your {basis} wake-up at {tonight.wake}.
           </p>
-          <p className={blocks.explain}>{needFrom} tonight is {hoursText(tonight.need_h)}, counted back from the time you usually wake on a {basis === 'usual' ? 'day like tomorrow' : basis}.</p>
+          <p className={blocks.explain}>
+            {needFrom} tonight is {hoursText(tonight.need_h)}, counted back from the time you usually wake on a{' '}
+            {basis === 'usual' ? 'day like tomorrow' : basis}.
+          </p>
         </>
       )}
-      <Note>Garmin sets your sleep need each night from your baseline, recent sleep, training load and HRV, so it goes up after hard days and short nights. In bed by allows {tonight.settle_min} minutes to fall asleep. The wake-up time is your median over the last four weeks for tomorrow’s kind of day.</Note>
+      <Note>
+        Garmin sets your sleep need each night from your baseline, recent sleep, training load and HRV, so it goes up after hard days and short nights. In bed
+        by allows {tonight.settle_min} minutes to fall asleep. The wake-up time is your median over the last four weeks for tomorrow’s kind of day.
+      </Note>
     </Section>
   );
 }
@@ -118,7 +136,10 @@ function SleepNeed({ sleep }: { sleep: SleepReport }) {
         </>
       ) : null}
       <SleepVsNeed nights={sleep.nights.slice(-14)} />
-      <Note>Debt is the sum of what each night fell short of Garmin’s need; a long night doesn’t cancel a short one hour for hour. One or two longer nights help, but earlier nights help more than lie-ins, because lie-ins push the body clock later.</Note>
+      <Note>
+        Debt is the sum of what each night fell short of Garmin’s need; a long night doesn’t cancel a short one hour for hour. One or two longer nights help,
+        but earlier nights help more than lie-ins, because lie-ins push the body clock later.
+      </Note>
     </Section>
   );
 }
@@ -132,7 +153,10 @@ function Timing({ sleep }: { sleep: SleepReport }) {
           <div>
             <dt>Bedtime varies by</dt>
             <dd>
-              ±{c.bed_sd_min} min<small className={styles.sub}>{RATING[c.bed_rating]}, {c.earliest_bed} to {c.latest_bed}</small>
+              ±{c.bed_sd_min} min
+              <small className={styles.sub}>
+                {RATING[c.bed_rating]}, {c.earliest_bed} to {c.latest_bed}
+              </small>
             </dd>
           </div>
           <div>
@@ -155,8 +179,9 @@ function Timing({ sleep }: { sleep: SleepReport }) {
       ) : null}
       <SleepDiary nights={sleep.nights} target={sleep.tonight?.asleep_by ?? null} />
       <Note>
-        The spread is the standard deviation over the last two weeks: under 30 minutes is regular, over an hour is irregular. The weekend shift compares the middle of your sleep on weekend nights with
-        weeknights; over an hour works like flying a time zone away every weekend and back on Monday. Regular timing is linked to better sleep and daytime energy even at the same number of hours.
+        The spread is the standard deviation over the last two weeks: under 30 minutes is regular, over an hour is irregular. The weekend shift compares the
+        middle of your sleep on weekend nights with weeknights; over an hour works like flying a time zone away every weekend and back on Monday. Regular timing
+        is linked to better sleep and daytime energy even at the same number of hours.
       </Note>
     </Section>
   );
@@ -175,17 +200,25 @@ function Stages({ stages }: { stages: NonNullable<SleepReport['stages']> }) {
           <div key={label}>
             <dt>{label}</dt>
             <dd>
-              {stage.pct}%<small className={styles.sub}>{stage.status === 'in_range' ? `in Garmin’s ${stage.ideal[0]}–${stage.ideal[1]}%` : `${stage.status === 'low' ? 'below' : 'above'} Garmin’s ${stage.ideal[0]}–${stage.ideal[1]}%`}</small>
+              {stage.pct}%
+              <small className={styles.sub}>
+                {stage.status === 'in_range'
+                  ? `in Garmin’s ${stage.ideal[0]}–${stage.ideal[1]}%`
+                  : `${stage.status === 'low' ? 'below' : 'above'} Garmin’s ${stage.ideal[0]}–${stage.ideal[1]}%`}
+              </small>
             </dd>
           </div>
         ))}
       </dl>
       {stages.rem.status === 'low' ? (
         <p className={blocks.explain}>
-          REM comes mostly in the last hours of the night, so short nights and early alarms cut it first. More time asleep, not anything else, is what brings it back. Alcohol in the evening also suppresses it.
+          REM comes mostly in the last hours of the night, so short nights and early alarms cut it first. More time asleep, not anything else, is what brings it
+          back. Alcohol in the evening also suppresses it.
         </p>
       ) : null}
-      <Note>Averages over the last {stages.nights} nights. {NOTES.sleepScore}</Note>
+      <Note>
+        Averages over the last {stages.nights} nights. {NOTES.sleepScore}
+      </Note>
     </Section>
   );
 }
@@ -269,8 +302,8 @@ function Sources({ sources }: { sources: NonNullable<StressReport['sources']> })
         </table>
       </div>
       <Note>
-        Garmin tags part of each day to events: sleep, naps, workouts, stressful spells, and rest periods that didn’t recharge. The rest is the steady cost of being awake and the small top-ups of
-        sitting still. Sleep is almost the whole charging side, so it decides whether the day ends in credit.
+        Garmin tags part of each day to events: sleep, naps, workouts, stressful spells, and rest periods that didn’t recharge. The rest is the steady cost of
+        being awake and the small top-ups of sitting still. Sleep is almost the whole charging side, so it decides whether the day ends in credit.
       </Note>
     </Section>
   );
@@ -314,7 +347,10 @@ function StressTime({ stress }: { stress: StressReport }) {
           </div>
         ) : null}
       </dl>
-      <Note>{NOTES.stress} The last two weeks here, against the ten weeks before; workdays and weekends over eight weeks. Time at rest and asleep isn’t counted as stressed.</Note>
+      <Note>
+        {NOTES.stress} The last two weeks here, against the ten weeks before; workdays and weekends over eight weeks. Time at rest and asleep isn’t counted as
+        stressed.
+      </Note>
     </Section>
   );
 }

@@ -7,8 +7,9 @@
   "dependencies": {
     "@companion/config": "*",
     "@companion/db": "*",
+    "@companion/demo": "*",
     "@companion/garmin-client": "*",
-    "@companion/sync": "*",
-    "@companion/metrics": "*"
+    "@companion/metrics": "*",
+    "@companion/sync": "*"
   }
 }

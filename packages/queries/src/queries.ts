@@ -469,6 +469,17 @@ export function getTrend(db: DatabaseSync, metricName: string, period: 'week' | 
   };
 }
 
+/**
+ * The trend metrics with any data at all. A watch without HRV, a runner without a scale or someone who only runs on a
+ * treadmill shouldn't be offered charts that can only ever be empty.
+ */
+export function getAvailableTrendMetrics(db: DatabaseSync): TrendMetricName[] {
+  return (Object.keys(TREND_METRICS) as TrendMetricName[]).filter((name) => {
+    const trend = getTrend(db, name, 'month');
+    return !!trend.points?.some((p) => p.raw !== null && p.raw !== 0);
+  });
+}
+
 // Raw SQL --------------------------------------------------------------------------------------------------
 
 const MAX_ROWS = 200;

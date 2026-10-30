@@ -15,6 +15,11 @@ export interface ServerConfig {
   trustProxy: boolean;
   /** Local hours at which the scheduled sync runs. */
   syncHours: number[];
+  /**
+   * Demo mode (DEMO_MODE=true, set by `npm run demo`): generated data, no login, no Garmin, settings read-only.
+   * Anyone who can reach the server sees everything, so use it only for data that isn't anyone's.
+   */
+  demo: boolean;
   /** Optional CARTO basemaps key (free for personal use): nicer light and dark maps. Without it, OpenStreetMap tiles. */
   cartoKey: string | null;
 }
@@ -36,6 +41,7 @@ export function loadServerConfig(env: NodeJS.ProcessEnv = process.env): ServerCo
     trustProxy: env.TRUST_PROXY === 'true',
     syncHours,
     cartoKey: env.CARTO_API_KEY?.trim() || null,
+    demo: env.DEMO_MODE === 'true',
   };
 }
 

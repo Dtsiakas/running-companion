@@ -22,17 +22,26 @@ export function Settings() {
         <h1 className={blocks.title}>Settings</h1>
       </header>
 
-      <Section title="Garmin key">
-        <KeyState garmin={s.garmin} />
-        {s.locked.garminKey ? (
-          <p className={blocks.explain}>The key is set on the server (GARMIN_PERSONAL_API_KEY). Change it there.</p>
-        ) : (
-          <>
-            <ReplaceKey hasKey={s.garmin.source !== null} />
-            {s.garmin.source === 'settings' ? <ExpiryDate expiresOn={s.garmin.expiresOn} /> : null}
-          </>
-        )}
-      </Section>
+      {s.demo ? (
+        <Section title="Demo">
+          <p className={blocks.explain}>
+            Everything here is generated: a made-up runner with three years of runs, sleep and health data. Nothing syncs and nothing can be changed. To use
+            your own data, install the app and add your Garmin key; the source code link below explains how.
+          </p>
+        </Section>
+      ) : (
+        <Section title="Garmin key">
+          <KeyState garmin={s.garmin} />
+          {s.locked.garminKey ? (
+            <p className={blocks.explain}>The key is set on the server (GARMIN_PERSONAL_API_KEY). Change it there.</p>
+          ) : (
+            <>
+              <ReplaceKey hasKey={s.garmin.source !== null} />
+              {s.garmin.source === 'settings' ? <ExpiryDate expiresOn={s.garmin.expiresOn} /> : null}
+            </>
+          )}
+        </Section>
+      )}
 
       <Section title="Appearance">
         <div className={styles.appearance}>
@@ -40,13 +49,18 @@ export function Settings() {
         </div>
       </Section>
 
-      <Section title="Password">
-        {s.locked.password ? <p className={blocks.explain}>The password is set on the server (PASSWORD_HASH). Change it there.</p> : <ChangePassword />}
-      </Section>
+      {s.demo ? null : (
+        <Section title="Password">
+          {s.locked.password ? <p className={blocks.explain}>The password is set on the server (PASSWORD_HASH). Change it there.</p> : <ChangePassword />}
+        </Section>
+      )}
 
       <Section title="About">
         <p className={blocks.explain}>
-          Running Companion is free software under the AGPL. <a href={SOURCE_URL} target="_blank" rel="noreferrer">Source code</a>
+          Running Companion is free software under the AGPL.{' '}
+          <a href={SOURCE_URL} target="_blank" rel="noreferrer">
+            Source code
+          </a>
         </p>
       </Section>
     </div>
@@ -160,7 +174,15 @@ function ChangePassword() {
       </label>
       <label>
         <span>Repeat it</span>
-        <input type="password" value={repeat} onChange={(e) => setRepeat(e.target.value)} autoComplete="new-password" minLength={12} required aria-invalid={mismatch} />
+        <input
+          type="password"
+          value={repeat}
+          onChange={(e) => setRepeat(e.target.value)}
+          autoComplete="new-password"
+          minLength={12}
+          required
+          aria-invalid={mismatch}
+        />
       </label>
       {mismatch ? <p className={styles.error}>The two new passwords differ.</p> : null}
       <div className={styles.actions}>
@@ -174,7 +196,17 @@ function ChangePassword() {
 }
 
 function Outcome({ mutation, done }: { mutation: { isSuccess: boolean; isError: boolean; error: Error | null }; done: string }) {
-  if (mutation.isError) return <p className={styles.error} role="alert">{mutation.error?.message}</p>;
-  if (mutation.isSuccess) return <p className={styles.done} role="status">{done}</p>;
+  if (mutation.isError)
+    return (
+      <p className={styles.error} role="alert">
+        {mutation.error?.message}
+      </p>
+    );
+  if (mutation.isSuccess)
+    return (
+      <p className={styles.done} role="status">
+        {done}
+      </p>
+    );
   return null;
 }

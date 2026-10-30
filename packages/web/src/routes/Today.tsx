@@ -15,7 +15,7 @@ import { SyncButton } from '../components/SyncButton.tsx';
 import { WhenToRun } from '../components/WhenToRun.tsx';
 import { addDays, hoursMinutes, longDay } from '../lib/dates.ts';
 import { todayRequests } from '../lib/prompts.ts';
-import { describeAcwr, describeForm, NOTES, relativeToNormal, signed, STATUS_TEXT, type Status } from '../lib/insights.ts';
+import { describeAcwr, describeForm, greenDetail, NOTES, recentlyRecorded, relativeToNormal, signed, STATUS_TEXT, type Status } from '../lib/insights.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Today.module.css';
 
@@ -37,6 +37,18 @@ export function Today() {
   const sleepNeed = t.recovery.sleep_need_h;
   const fitnessAge = t.body.fitness_age;
   const lever = fitnessAge?.biggest_lever;
+  // What this watch records at all. A stream with nothing in the last month gets a sentence, not empty gauges.
+  const records = {
+    hrv: recentlyRecorded(t.data_freshness.hrv, t.date),
+    sleep: recentlyRecorded(t.data_freshness.sleep, t.date, 14),
+  };
+  const detail =
+    status === 'green'
+      ? greenDetail({ hrv: t.recovery.hrv_7d_ms !== null, restingHr: t.recovery.resting_hr_3d !== null, sleep: t.recovery.sleep_h !== null })
+      : status
+        ? STATUS_TEXT[status].detail
+        : null;
+  const hasBody = t.body.weight_trend_kg !== null || t.body.body_fat_trend_pct !== null || !!fitnessAge?.fitness_age;
 
   return (
     <div className={styles.page}>
@@ -61,7 +73,7 @@ export function Today() {
             ))}
           </ul>
         ) : (
-          <p className={styles.detail}>{status ? STATUS_TEXT[status].detail : 'Sync after a night with the watch on to get a status.'}</p>
+          <p className={styles.detail}>{detail ?? 'Sync after a night with the watch on to get a status.'}</p>
         )}
       </section>
 
@@ -73,19 +85,21 @@ export function Today() {
 
       <div className={styles.columns}>
         <Section title="Recovery">
-          <Lane
-            label="HRV, 7-day average"
-            valueText={t.recovery.hrv_7d_ms ? `${t.recovery.hrv_7d_ms} ms` : '–'}
-            description={relativeToNormal(t.recovery.hrv_7d_ms, t.recovery.hrv_normal_ms)}
-            value={t.recovery.hrv_7d_ms}
-            band={bands?.hrv_ms}
-            concernWhen="below"
-          >
-            <Note>{NOTES.hrv}</Note>
-          </Lane>
+          {records.hrv ? (
+            <Lane
+              label="HRV, 7-day average"
+              valueText={t.recovery.hrv_7d_ms ? `${t.recovery.hrv_7d_ms} ms` : '–'}
+              description={relativeToNormal(t.recovery.hrv_7d_ms, t.recovery.hrv_normal_ms)}
+              value={t.recovery.hrv_7d_ms}
+              band={bands?.hrv_ms}
+              concernWhen="below"
+            >
+              <Note>{NOTES.hrv}</Note>
+            </Lane>
+          ) : null}
           <Lane
             label="Resting heart rate"
-            valueText={t.recovery.resting_hr_3d ? `${t.recovery.resting_hr_3d} bpm` : '–'}
+            valueText={t.recovery.resting_hr_3d ? `${Math.round(t.recovery.resting_hr_3d)} bpm` : '–'}
             description={relativeToNormal(t.recovery.resting_hr_3d, t.recovery.resting_hr_normal, 'bpm')}
             value={t.recovery.resting_hr_3d}
             band={bands?.resting_hr}
@@ -97,9 +111,11 @@ export function Today() {
             label="Sleep last night"
             valueText={hoursMinutes(t.recovery.sleep_h)}
             description={
-              t.recovery.sleep_h === null
-                ? 'No sleep recorded for last night yet'
-                : `${relativeToNormal(t.recovery.sleep_h, bands?.sleep_h?.typical, 'h')}${sleepNeed ? `. Garmin estimates you needed ${hoursMinutes(sleepNeed)}` : ''}`
+              !records.sleep
+                ? 'No sleep recorded in the last two weeks. Wearing the watch at night adds sleep, HRV and overnight readings.'
+                : t.recovery.sleep_h === null
+                  ? 'No sleep recorded for last night yet'
+                  : `${relativeToNormal(t.recovery.sleep_h, bands?.sleep_h?.typical, 'h')}${sleepNeed ? `. Garmin estimates you needed ${hoursMinutes(sleepNeed)}` : ''}`
             }
             value={t.recovery.sleep_h}
             band={bands?.sleep_h}
@@ -143,7 +159,7 @@ export function Today() {
       <LastWeekLink date={t.date} />
 
       <div className={styles.columns}>
-        <LastNight sleep={t.day.sleep} bands={bands} />
+        {records.sleep ? <LastNight sleep={t.day.sleep} bands={bands} /> : null}
         <EnergyAndActivity day={t.day} bands={bands} />
       </div>
 
@@ -159,16 +175,21 @@ export function Today() {
         </Section>
       ) : null}
 
-      <Section title="Body">
+      {hasBody ? (
+        <Section title="Body">
           <dl className={blocks.facts}>
-            <div>
-              <dt>Weight trend</dt>
-              <dd>{t.body.weight_trend_kg ?? '–'} kg</dd>
-            </div>
-            <div>
-              <dt>Body fat trend</dt>
-              <dd>{t.body.body_fat_trend_pct ?? '–'}%</dd>
-            </div>
+            {t.body.weight_trend_kg !== null ? (
+              <div>
+                <dt>Weight trend</dt>
+                <dd>{t.body.weight_trend_kg} kg</dd>
+              </div>
+            ) : null}
+            {t.body.body_fat_trend_pct !== null ? (
+              <div>
+                <dt>Body fat trend</dt>
+                <dd>{t.body.body_fat_trend_pct}%</dd>
+              </div>
+            ) : null}
             {fitnessAge?.fitness_age ? (
               <div>
                 <dt>Fitness age</dt>
@@ -190,6 +211,7 @@ export function Today() {
             {NOTES.weight} {NOTES.fitnessAge}
           </Note>
         </Section>
+      ) : null}
     </div>
   );
 }
@@ -263,7 +285,8 @@ function LastNight({ sleep, bands }: { sleep: Day['sleep']; bands: Bands }) {
 /** How much energy the night gave back, how hard yesterday was on the nervous system, and everyday movement. */
 function EnergyAndActivity({ day, bands }: { day: Day; bands: Bands }) {
   const { energy, activity } = day;
-  const intensityLeft = activity.intensity_goal_week && activity.intensity_minutes_week !== null ? activity.intensity_goal_week - activity.intensity_minutes_week : null;
+  const intensityLeft =
+    activity.intensity_goal_week && activity.intensity_minutes_week !== null ? activity.intensity_goal_week - activity.intensity_minutes_week : null;
   return (
     <Section title="Energy and activity">
       <Lane

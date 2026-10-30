@@ -141,5 +141,7 @@ test('get_insights returns signals and patterns for the latest day', async () =>
   const insights = (await call('get_insights')).json();
   assert.equal(insights.date, '2026-10-28');
   assert.ok(Array.isArray(insights.signals));
-  assert.ok(insights.patterns.some((p: { id: string }) => p.id === 'bedtime'));
+  // This tiny history records no HRV, sleep score or Body Battery, so comparisons about them are left out, not padded.
+  assert.ok(Array.isArray(insights.patterns));
+  assert.ok(!insights.patterns.some((p: { results: unknown[] }) => p.results.length === 0));
 });

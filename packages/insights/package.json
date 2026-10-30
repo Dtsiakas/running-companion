@@ -10,5 +10,9 @@
   },
   "dependencies": {
     "@companion/queries": "*"
+  },
+  "devDependencies": {
+    "@companion/demo": "*",
+    "@companion/metrics": "*"
   }
 }

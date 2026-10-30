@@ -22,7 +22,8 @@ export const TOKEN_CACHE_FILE = process.env.COMPANION_DATA_DIR ? join(DATA_DIR, 
 export function loadEnv(): void {
   const file = join(ROOT, '.env');
   if (!existsSync(file)) return;
-  moveSecretsFromEnvFile(file, SETTINGS_FILE);
+  // Never in demo mode: its settings file is a throwaway in .demo/, and your real secrets must not end up there.
+  if (process.env.DEMO_MODE !== 'true') moveSecretsFromEnvFile(file, SETTINGS_FILE);
   process.loadEnvFile(file);
 }
 

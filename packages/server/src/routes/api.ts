@@ -8,6 +8,7 @@ import {
   getPlaces,
   getRoute,
   getToday,
+  getAvailableTrendMetrics,
   getTrend,
   getWeek,
   getWeeklySummary,
@@ -84,6 +85,8 @@ export function apiRoutes({ db, writeDb, sync, isSyncRunning, cartoKey = null }:
   router.get('/week', handle(z.object({ start: date }), ({ start }) => getWeek(db, start)));
 
   router.get('/best-efforts', handle(z.object({ since: date.optional() }), ({ since }) => getBestEfforts(db, since)));
+
+  router.get('/trend-metrics', (_req, res) => res.json(getAvailableTrendMetrics(db)));
 
   router.get(
     '/trend',

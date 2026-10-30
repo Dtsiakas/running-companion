@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { openDatabase, upsert } from '@companion/db';
+import { generateDemo } from '@companion/demo';
 import { getPatterns, getSignals } from '@companion/insights';
+import { computeMetrics } from '@companion/metrics';
 
 const START = Date.UTC(2026, 0, 1);
 const dateOf = (i: number) => new Date(START + i * 86_400_000).toISOString().slice(0, 10);
@@ -76,4 +78,13 @@ test('patterns find the planted late-bedtime effect, and report a missing one ho
   // Nothing in the app depends on typed-in data any more: no pattern is built on check-in tags.
   assert.equal(patterns.some((p) => p.id.startsWith('tag-')), false);
   assert.equal(patterns[0]!.status, 'effect', 'findings are listed first');
+});
+
+test('patterns leave out outcomes a watch never records', () => {
+  const db = openDatabase(':memory:');
+  generateDemo(db, { today: '2026-10-30', days: 120, missing: ['hrv', 'battery-events'], now: 0 });
+  computeMetrics(db, { today: '2026-10-30' });
+  const outcomes = getPatterns(db, '2026-10-30').flatMap((p) => p.results.map((r) => r.outcome));
+  assert.ok(outcomes.length > 0);
+  assert.ok(!outcomes.some((o) => /HRV|recharge/i.test(o)), outcomes.join(', '));
 });

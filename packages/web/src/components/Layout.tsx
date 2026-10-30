@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { logout } from '../api/client.ts';
+import { useSettings } from '../api/hooks.ts';
 import { SOURCE_URL } from '../lib/source.ts';
 import { useOnline } from '../lib/useOnline.ts';
 import { Appearance } from './Appearance.tsx';
@@ -38,7 +39,10 @@ export function Layout() {
   return (
     <div className={styles.shell}>
       <header className={styles.header}>
-        <span className={styles.brand}>Running Companion</span>
+        <span className={styles.brand}>
+          Running Companion
+          <DemoBadge />
+        </span>
         <HeaderMenu />
       </header>
 
@@ -60,6 +64,12 @@ export function Layout() {
       </main>
     </div>
   );
+}
+
+/** Says plainly that nothing here is a real person's data. */
+function DemoBadge() {
+  const { data } = useSettings();
+  return data?.demo ? <span className={styles.demo}>Demo</span> : null;
 }
 
 /** Closes on a click or tap outside, on Escape, and when the page changes. */

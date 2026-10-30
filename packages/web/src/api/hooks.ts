@@ -70,6 +70,11 @@ export function useActivityRecords(id: string | undefined) {
   return useQuery({ queryKey: ['activity-records', id], queryFn: () => api<ActivityRecordsResponse>(`/api/activities/${id}/records`), enabled: !!id });
 }
 
+/** Which trend metrics have any data (changes only when a new kind of data arrives). */
+export function useAvailableTrendMetrics() {
+  return useQuery({ queryKey: ['trend-metrics'], queryFn: () => api<TrendMetricName[]>('/api/trend-metrics'), staleTime: 60 * 60_000 });
+}
+
 export function useTrend(metric: TrendMetricName, period: 'week' | 'month', from: string | undefined) {
   const search = new URLSearchParams({ metric, period, ...(from ? { from } : {}) });
   return useQuery({
@@ -152,6 +157,8 @@ export function useMapConfig() {
 
 /** Mirrors the server's /api/settings answer (packages/server/src/routes/settings.ts). The key itself never comes back. */
 export interface SettingsResponse {
+  /** Generated data (npm run demo): nothing to sync, nothing to change. */
+  demo: boolean;
   garmin: {
     state: 'missing' | 'rejected' | 'expired' | 'expiring' | 'ok';
     source: 'settings' | 'environment' | 'file' | null;

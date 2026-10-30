@@ -61,6 +61,8 @@ export function createApp(deps: AppDependencies): App {
   const app = express();
   const sessions = new Sessions(() => settings.read().sessionSecret ?? '', config.publicUrl.protocol === 'https:');
   const setupCode = newSetupCode();
+  // Demo: everyone counts as logged in. The data is generated, and the point is to look around freely.
+  if (config.demo) sessions.isValid = () => true;
   const oauth = new CompanionOAuthProvider(deps.writeDb);
   const mcpUrl = new URL('/mcp', config.publicUrl);
 
@@ -79,6 +81,7 @@ export function createApp(deps: AppDependencies): App {
       sessions,
       setupCode,
       checkGarminKey: deps.checkGarminKey,
+      demo: config.demo,
       syncSoon: () => void deps.sync().catch((error: unknown) => console.error(`Sync failed: ${error instanceof Error ? error.message : String(error)}`)),
     }),
   );
@@ -125,7 +128,7 @@ export function createApp(deps: AppDependencies): App {
     if (!res.headersSent) res.status(500).json({ error: 'Internal error' });
   });
 
-  return { app, oauth, needsSetup: () => needsSetup(settings), setupCode };
+  return { app, oauth, needsSetup: () => !config.demo && needsSetup(settings), setupCode };
 }
 
 /**

@@ -72,7 +72,10 @@ export function getPatterns(db: DatabaseSync, today: string): Pattern[] {
     minimum = MIN_DAYS,
     caveat: string | null = null,
   ): Pattern => {
-    const results = outcomes.map((outcome) => {
+    // An outcome the watch never records (HRV on some models, Body Battery events) is left out, rather than shown
+    // as "needs at least 8 days" forever.
+    const recorded = outcomes.filter((outcome) => days.some((d) => outcome.value(d) !== null && outcome.value(d) !== undefined));
+    const results = recorded.map((outcome) => {
       const collect = (test: (d: Day) => boolean) =>
         days.filter(test).flatMap((d) => {
           const target = shifted(d, outcome.offset);
@@ -168,7 +171,7 @@ export function getPatterns(db: DatabaseSync, today: string): Pattern[] {
   patterns.push(...runPatterns(db, today, byDate));
 
   const order = { effect: 0, no_effect: 1, not_enough: 2 };
-  return patterns.sort((a, b) => order[a.status] - order[b.status]);
+  return patterns.filter((p) => p.results.length > 0).sort((a, b) => order[a.status] - order[b.status]);
 }
 
 type Evaluate = (id: string, title: string, comparison: string, groups: { a: { label: string; test: (d: Day) => boolean }; b: { label: string; test: (d: Day) => boolean } }, outcomes: Outcome[], minimum?: number, caveat?: string | null) => Pattern;
@@ -208,7 +211,9 @@ function runPatterns(db: DatabaseSync, today: string, byDate: Map<string, Day>):
   const efficiency: Omit<Outcome, 'offset' | 'value'> = { label: 'Efficiency on easy runs', kind: 'percent-of-mean', higherIsBetter: true };
   const make = (id: string, title: string, comparison: string, a: [string, (r: Row) => boolean], b: [string, (r: Row) => boolean]): Pattern => {
     const pick = (test: (r: Row) => boolean) => runs.filter(test).map((r) => Number(r.m_per_beat));
-    const results = [result({ ...efficiency, offset: 0, value: () => null }, a[0], pick(a[1]), b[0], pick(b[1]), MIN_DAYS)];
+    const [aRuns, bRuns] = [pick(a[1]), pick(b[1])];
+    // Neither group has a single run (no weather without GPS, no Body Battery on some watches): nothing to say.
+    const results = aRuns.length + bRuns.length ? [result({ ...efficiency, offset: 0, value: () => null }, a[0], aRuns, b[0], bRuns, MIN_DAYS)] : [];
     return { id, title, comparison, results, caveat: 'Easy outdoor runs only. Efficiency also improves as you get fitter, so groups from different seasons can differ for that reason too.', status: overall(results) };
   };
   const night = (r: Row) => byDate.get(String(r.calendar_date));

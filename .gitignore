@@ -9,6 +9,7 @@ dist/
 # Personal health data and token cache
 data/
 .cache/
+.demo/
 
 *.log
 .DS_Store

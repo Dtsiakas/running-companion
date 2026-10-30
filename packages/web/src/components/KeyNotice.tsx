@@ -17,7 +17,7 @@ const TITLES = {
 export function KeyNotice() {
   const { data } = useSettings();
   const state = data?.garmin.state;
-  if (!data || !state || state === 'ok') return null;
+  if (!data || data.demo || !state || state === 'ok') return null;
   const { garmin, locked } = data;
   return (
     <aside className={styles.notice} data-tone={garmin.state === 'expiring' ? 'warn' : 'bad'} aria-label="Garmin key">

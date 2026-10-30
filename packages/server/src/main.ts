@@ -21,14 +21,14 @@ const log = (message: string) => console.log(`${new Date().toISOString()} ${mess
 prepareDatabase(DB_FILE);
 const readDb = openReadOnly(DB_FILE);
 const writeDb = openDatabase(DB_FILE);
-const sync = () => syncNow(DB_FILE);
+const sync = config.demo ? () => Promise.reject(new Error('This is a demo with generated data: there is nothing to sync.')) : () => syncNow(DB_FILE);
 
 const { app, oauth, needsSetup, setupCode } = createApp({ config, settings, checkGarminKey, readDb, writeDb, sync, isSyncRunning, webRoot: join(ROOT, 'packages', 'web', 'dist') });
 
 const scheduler = startScheduler({
   hours: config.syncHours,
   run: async () => {
-    if (!needsSetup()) await sync();
+    if (!config.demo && !needsSetup()) await sync();
     oauth.pruneExpired();
   },
   log,
@@ -37,6 +37,10 @@ const scheduler = startScheduler({
 const server = app.listen(config.port, config.host, () => {
   log(`Running Companion listening on http://${config.host}:${config.port} (public URL ${config.publicUrl.href})`);
   log(`Next scheduled sync: ${scheduler.next().toLocaleString()}`);
+  if (config.demo) {
+    log('Demo mode: generated data, no login. Open the address above.');
+    return;
+  }
   if (needsSetup()) {
     log(`Not set up yet. Open this address to choose a password and add your Garmin key:`);
     log(`  ${new URL(`/setup?code=${setupCode}`, config.publicUrl).href}`);

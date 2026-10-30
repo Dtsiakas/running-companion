@@ -16,6 +16,8 @@ export interface SettingsRouteOptions {
   checkGarminKey: (key: string) => Promise<KeyCheck>;
   /** Starts a sync in the background (after setup or a new key). */
   syncSoon: () => void;
+  /** Demo mode: no setup, and settings can be looked at but not changed. */
+  demo?: boolean;
   /** The server's local date, YYYY-MM-DD. */
   today?: () => string;
 }
@@ -55,8 +57,10 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
 
   // Setup ------------------------------------------------------------------------------------------------------------
 
+  const setupPending = () => !options.demo && needsSetup(settings);
+
   router.use((req: Request, res: Response, next: NextFunction) => {
-    if (!needsSetup(settings) || req.path === '/setup' || req.path === '/healthz') return next();
+    if (!setupPending() || req.path === '/setup' || req.path === '/healthz') return next();
     if (req.path.startsWith('/api/') || req.path === '/mcp') return res.status(401).json({ error: 'Not set up yet', setup: true });
     if (req.path === '/login' || req.path.startsWith('/oauth/') || req.accepts(['html', 'json']) === 'html' && !/\.\w+$/.test(req.path)) {
       return res.redirect(`/setup${typeof req.query.code === 'string' ? `?code=${encodeURIComponent(req.query.code)}` : ''}`);
@@ -65,13 +69,13 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
   });
 
   router.get('/setup', (req, res) => {
-    if (!needsSetup(settings)) return res.redirect('/');
+    if (!setupPending()) return res.redirect('/');
     const code = typeof req.query.code === 'string' ? req.query.code : '';
     res.type('html').send(setupPage({ codeRequired: !sameCode(code, options.setupCode), code }));
   });
 
   router.post('/setup', attempts, form, async (req, res) => {
-    if (!needsSetup(settings)) return res.redirect(303, '/');
+    if (!setupPending()) return res.redirect(303, '/');
     const body = (req.body ?? {}) as Record<string, string | undefined>;
     const code = String(body.code ?? '');
     const expiresOn = String(body.expires ?? '').trim();
@@ -108,11 +112,13 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
 
   const api = Router();
   api.use(sessions.requireApi);
+  api.put(/.*/, (_req, res, next) => (options.demo ? res.status(403).json({ error: 'This is a demo with generated data: settings can’t be changed.' }) : next()));
 
   const describe = () => {
     const current = settings.read();
     const locked = settings.locked();
     return {
+      demo: options.demo ?? false,
       garmin: keyStatus(current, today(), { fromEnv: locked.has('garminKey') }),
       units: current.units ?? 'metric',
       locked: { password: locked.has('passwordHash'), garminKey: locked.has('garminKey'), units: locked.has('units') },

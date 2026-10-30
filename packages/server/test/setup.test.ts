@@ -29,7 +29,7 @@ before(async () => {
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   base = `http://localhost:${(server.address() as AddressInfo).port}`;
   built = createApp({
-    config: { publicUrl: new URL(base), port: 0, host: '127.0.0.1', trustProxy: false, syncHours: [6], cartoKey: null },
+    config: { publicUrl: new URL(base), port: 0, host: '127.0.0.1', trustProxy: false, syncHours: [6], cartoKey: null, demo: false },
     settings,
     checkGarminKey: async (key) => (key === 'good-key' || key === 'newer-key' ? 'ok' : 'rejected'),
     readDb,
@@ -143,4 +143,31 @@ test('secrets move from an old .env into the settings file, which only its owner
   assert.equal(saved.passwordHash, 'scrypt$1');
   if (process.platform !== 'win32') assert.equal(statSync(file).mode & 0o777, 0o600);
   assert.deepEqual(moveSecretsFromEnvFile(envFile, file), [], 'a second run changes nothing');
+});
+
+test('demo mode: no setup, no login, and settings are read-only', async () => {
+  const demoServer = createHttpServer();
+  await new Promise<void>((resolve) => demoServer.listen(0, '127.0.0.1', resolve));
+  const demoBase = `http://localhost:${(demoServer.address() as AddressInfo).port}`;
+  const demo = createApp({
+    config: { publicUrl: new URL(demoBase), port: 0, host: '127.0.0.1', trustProxy: false, syncHours: [6], cartoKey: null, demo: true },
+    settings: memorySettings({ sessionSecret: 'y'.repeat(40) }),
+    checkGarminKey: async () => 'ok',
+    readDb,
+    writeDb,
+    sync: () => Promise.reject(new Error('demo')),
+    isSyncRunning: () => false,
+  });
+  demoServer.on('request', demo.app);
+  try {
+    assert.equal(demo.needsSetup(), false);
+    assert.equal((await fetch(`${demoBase}/api/today`)).status, 200);
+    const read = await fetch(`${demoBase}/api/settings`);
+    assert.equal((await read.json()).demo, true);
+    const write = await fetch(`${demoBase}/api/settings/units`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: '{"units":"imperial"}' });
+    assert.equal(write.status, 403);
+    assert.equal((await fetch(`${demoBase}/api/sync`, { method: 'POST' })).status, 502);
+  } finally {
+    demoServer.close();
+  }
 });

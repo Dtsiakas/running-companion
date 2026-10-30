@@ -89,13 +89,15 @@ function SoFar({ p }: { p: ProgressData }) {
             <small className={styles.unit}> h</small>
           </dd>
         </div>
-        <div>
-          <dt>Climbed</dt>
-          <dd>
-            {number(p.totals.climb_m)}
-            <small className={styles.unit}> m</small>
-          </dd>
-        </div>
+        {p.totals.climb_m ? (
+          <div>
+            <dt>Climbed</dt>
+            <dd>
+              {number(p.totals.climb_m)}
+              <small className={styles.unit}> m</small>
+            </dd>
+          </div>
+        ) : null}
       </dl>
       <dl className={blocks.facts}>
         {r.longest_run ? (
@@ -247,6 +249,7 @@ function Year({ firstYear }: { firstYear: number }) {
   const thisYear = Number(todayLocal().slice(0, 4));
   const [year, setYear] = useState(thisYear);
   const review = useYearReview(year);
+  const form = useFormTrend();
   const years = Array.from({ length: thisYear - firstYear + 1 }, (_, i) => thisYear - i);
   return (
     <>
@@ -261,7 +264,7 @@ function Year({ firstYear }: { firstYear: number }) {
         {review.isPending ? <Loading /> : review.data ? <YearBody review={review.data} /> : <p className={blocks.empty}>No runs in {year}.</p>}
       </Section>
       <Section title="Ask Claude">
-        <AskClaude requests={progressRequests(year)} />
+        <AskClaude requests={progressRequests(year, !!form.data)} />
       </Section>
     </>
   );
@@ -314,6 +317,7 @@ function YearBody({ review: y }: { review: YearReview }) {
             {y.weeks_with_runs}
             <small className={styles.unit}> of {y.weeks}</small>
           </dd>
+          {y.since ? <dd className={blocks.change}>since {longDay(y.since)}</dd> : null}
         </div>
       </dl>
       <YearMonths review={y} />
@@ -334,7 +338,7 @@ function YearBody({ review: y }: { review: YearReview }) {
         <div>
           <dt>Time running</dt>
           <dd>
-            {y.hours} h<small className={styles.sub}>{number(y.climb_m)} m climbed</small>
+            {y.hours} h<small className={styles.sub}>{y.climb_m ? `${number(y.climb_m)} m climbed` : ''}</small>
           </dd>
         </div>
         {y.fitness.resting_hr.start !== null ? (

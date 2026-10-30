@@ -21,7 +21,8 @@ export function Body() {
   if (body.isPending) return <Loading />;
   if (body.isError) return <ErrorState error={body.error} retry={() => void body.refetch()} />;
   const { weight, composition, fitness_age: age, energy, nutrition, sweat } = body.data;
-  const extra = energy.rest && energy.big ? energy.big.kcal - energy.rest.kcal : energy.rest && energy.training ? energy.training.kcal - energy.rest.kcal : null;
+  const extra =
+    energy.rest && energy.big ? energy.big.kcal - energy.rest.kcal : energy.rest && energy.training ? energy.training.kcal - energy.rest.kcal : null;
 
   return (
     <div className={blocks.page}>
@@ -38,44 +39,69 @@ export function Body() {
               <div>
                 <dt>Goal</dt>
                 <dd>{weight.goal_kg} kg</dd>
-                {weight.to_goal_kg !== null && Math.abs(weight.to_goal_kg) >= 0.5 ? <dd className={blocks.change}>{Math.abs(weight.to_goal_kg)} kg to go</dd> : null}
+                {weight.to_goal_kg !== null && Math.abs(weight.to_goal_kg) >= 0.5 ? (
+                  <dd className={blocks.change}>{Math.abs(weight.to_goal_kg)} kg to go</dd>
+                ) : null}
               </div>
             ) : null}
             {weight.change_4w_kg !== null ? (
               <div>
                 <dt>Last 4 weeks</dt>
-                <dd>{weight.change_4w_kg > 0 ? '+' : weight.change_4w_kg < 0 ? '−' : ''}{Math.abs(weight.change_4w_kg)} kg</dd>
+                <dd>
+                  {weight.change_4w_kg > 0 ? '+' : weight.change_4w_kg < 0 ? '−' : ''}
+                  {Math.abs(weight.change_4w_kg)} kg
+                </dd>
               </div>
             ) : null}
           </dl>
           <p className={styles.assessment} data-tone={weight.tone}>
             {MARK[weight.tone] ? <span aria-hidden="true">{MARK[weight.tone]} </span> : null}
             {weight.assessment}
-            {weight.projected_goal_date ? ` At this pace you’d reach ${weight.goal_kg} kg around ${new Date(`${weight.projected_goal_date}T12:00:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}.` : ''}
+            {weight.projected_goal_date
+              ? ` At this pace you’d reach ${weight.goal_kg} kg around ${new Date(`${weight.projected_goal_date}T12:00:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}.`
+              : ''}
           </p>
           <WeightChart series={body.data.weight_series} weighIns={body.data.weigh_ins} goal={weight.goal_kg} />
-          <Note>{NOTES.weight} The goal is the one you set in Garmin Connect. For a runner, losing no more than about 0.5–1% of body weight a week keeps training, recovery and muscle intact; faster tends to cost all three.</Note>
+          <Note>
+            {NOTES.weight} The goal is the one you set in Garmin Connect. For a runner, losing no more than about 0.5–1% of body weight a week keeps training,
+            recovery and muscle intact; faster tends to cost all three.
+          </Note>
+        </Section>
+      ) : !composition ? (
+        <Section title="Weight">
+          <p className={blocks.explain}>
+            No weigh-ins yet. Weight, body composition, and the food and fuel amounts that depend on body weight come from a Garmin smart scale, or from weights
+            you enter in Garmin Connect.
+          </p>
         </Section>
       ) : null}
 
       <div className={blocks.columns}>
-        <Section title="Composition">
-          {composition ? (
+        {composition || age?.fitness_age ? (
+          <Section title={composition ? 'Composition' : 'Fitness age'}>
             <dl className={blocks.facts}>
-              <div>
-                <dt>Body fat</dt>
-                <dd>
-                  {composition.body_fat_pct}%
-                  {composition.body_fat_change_pts !== null ? <small className={styles.change}> {signedText(composition.body_fat_change_pts, ' pts')}</small> : null}
-                </dd>
-              </div>
-              <div>
-                <dt>Muscle mass</dt>
-                <dd>
-                  {composition.muscle_kg} kg
-                  {composition.muscle_change_kg !== null ? <small className={styles.change}> {signedText(composition.muscle_change_kg, ' kg')}</small> : null}
-                </dd>
-              </div>
+              {composition ? (
+                <>
+                  <div>
+                    <dt>Body fat</dt>
+                    <dd>
+                      {composition.body_fat_pct}%
+                      {composition.body_fat_change_pts !== null ? (
+                        <small className={styles.change}> {signedText(composition.body_fat_change_pts, ' pts')}</small>
+                      ) : null}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Muscle mass</dt>
+                    <dd>
+                      {composition.muscle_kg} kg
+                      {composition.muscle_change_kg !== null ? (
+                        <small className={styles.change}> {signedText(composition.muscle_change_kg, ' kg')}</small>
+                      ) : null}
+                    </dd>
+                  </div>
+                </>
+              ) : null}
               {age?.fitness_age ? (
                 <div>
                   <dt>Fitness age</dt>
@@ -86,21 +112,25 @@ export function Body() {
                 </div>
               ) : null}
             </dl>
-          ) : (
-            <p className={blocks.empty}>No weigh-ins in the last two weeks.</p>
-          )}
-          {composition?.muscle_loss_flag ? <p className={styles.assessment} data-tone="concern"><span aria-hidden="true">▲ </span>Muscle mass is down over the month. Enough protein (see below) and some strength work protect it, especially while losing weight.</p> : null}
-          {age?.biggest_lever ? (
-            <p className={blocks.explain}>
-              Garmin’s biggest lever for your fitness age: {age.biggest_lever.label.toLowerCase()}, {age.biggest_lever.value}
-              {age.biggest_lever.unit} now, {age.biggest_lever.target}
-              {age.biggest_lever.unit} as its target.
-            </p>
-          ) : null}
-          <Note>
-            {composition?.note ?? ''} {NOTES.fitnessAge}
-          </Note>
-        </Section>
+            {weight && !composition ? <p className={blocks.empty}>No body composition in the last two weeks.</p> : null}
+            {composition?.muscle_loss_flag ? (
+              <p className={styles.assessment} data-tone="concern">
+                <span aria-hidden="true">▲ </span>Muscle mass is down over the month. Enough protein (see below) and some strength work protect it, especially
+                while losing weight.
+              </p>
+            ) : null}
+            {age?.biggest_lever ? (
+              <p className={blocks.explain}>
+                Garmin’s biggest lever for your fitness age: {age.biggest_lever.label.toLowerCase()}, {age.biggest_lever.value}
+                {age.biggest_lever.unit} now, {age.biggest_lever.target}
+                {age.biggest_lever.unit} as its target.
+              </p>
+            ) : null}
+            <Note>
+              {composition?.note ?? ''} {NOTES.fitnessAge}
+            </Note>
+          </Section>
+        ) : null}
 
         <Section title="Energy">
           <dl className={blocks.facts}>
@@ -119,7 +149,11 @@ export function Body() {
               ) : null,
             )}
           </dl>
-          {extra ? <p className={blocks.explain}>Your bigger days burn about {kcal(extra)} more than a rest day: that difference is what to add on those days, mostly as carbohydrate.</p> : null}
+          {extra ? (
+            <p className={blocks.explain}>
+              Your bigger days burn about {kcal(extra)} more than a rest day: that difference is what to add on those days, mostly as carbohydrate.
+            </p>
+          ) : null}
           <Note>{energy.note} A big day has a training load of 100 or more (a long run or a hard session).</Note>
         </Section>
       </div>
@@ -175,9 +209,9 @@ export function Body() {
             </table>
           </div>
           <Note>
-            Ranges for your weight ({nutrition.weight_kg} kg) from the sports-nutrition position stands ({nutrition.source}). Protein keeps and builds muscle and is spread best over 3–5 meals;
-            carbohydrate fuels training and is what to adjust day to day. These are ranges for healthy adults in training, not a diet. A sports dietitian can tailor them, and if
-            you ever find eating or weight hard to think about, talking to someone helps.
+            Ranges for your weight ({nutrition.weight_kg} kg) from the sports-nutrition position stands ({nutrition.source}). Protein keeps and builds muscle
+            and is spread best over 3–5 meals; carbohydrate fuels training and is what to adjust day to day. These are ranges for healthy adults in training,
+            not a diet. A sports dietitian can tailor them, and if you ever find eating or weight hard to think about, talking to someone helps.
           </Note>
         </Section>
       ) : null}
@@ -186,8 +220,9 @@ export function Body() {
         <Section title="Fuel a run">
           <FuelPlanner weightKg={nutrition.weight_kg} sweat={{ typical: sweat.typical_ml_per_hour, warm: sweat.warm_ml_per_hour }} />
           <Note>
-            Fluid amounts use your own sweat rate: about {sweat.typical_ml_per_hour ?? '–'} ml an hour on your runs of the last six months{sweat.warm_ml_per_hour ? ` (${sweat.warm_ml_per_hour} ml on warm ones)` : ''}, from Garmin’s
-            estimates. Aim to lose less than 2% of body weight on a run, not to replace everything you sweat. Practise new foods and gels on training runs, never first on race day.
+            Fluid amounts use your own sweat rate: about {sweat.typical_ml_per_hour ?? '–'} ml an hour on your runs of the last six months
+            {sweat.warm_ml_per_hour ? ` (${sweat.warm_ml_per_hour} ml on warm ones)` : ''}, from Garmin’s estimates. Aim to lose less than 2% of body weight on
+            a run, not to replace everything you sweat. Practise new foods and gels on training runs, never first on race day.
           </Note>
         </Section>
       ) : null}

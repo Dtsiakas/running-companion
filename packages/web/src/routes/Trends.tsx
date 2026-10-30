@@ -1,6 +1,6 @@
 import type { TrendMetricName } from '@companion/queries';
 import { useSearchParams } from 'react-router';
-import { usePatterns, useTrend } from '../api/hooks.ts';
+import { useAvailableTrendMetrics, usePatterns, useTrend } from '../api/hooks.ts';
 import { Patterns } from '../components/Patterns.tsx';
 import { Section } from '../components/Section.tsx';
 import { TrendChart, type TrendPoint } from '../components/charts/TrendChart.tsx';
@@ -22,7 +22,9 @@ const isMetric = (value: string | null): value is TrendMetricName => value !== n
  */
 export function Trends() {
   const [params, setParams] = useSearchParams();
-  const metric = isMetric(params.get('metric')) ? (params.get('metric') as TrendMetricName) : DEFAULT_METRIC;
+  const available = useAvailableTrendMetrics().data;
+  const fallback = !available || available.includes(DEFAULT_METRIC) ? DEFAULT_METRIC : 'run_km';
+  const metric = isMetric(params.get('metric')) ? (params.get('metric') as TrendMetricName) : fallback;
   const range = RANGES.find((r) => r.key === params.get('range')) ?? RANGES[1];
   const view = TREND_VIEWS[metric];
   const from = range.months === null ? undefined : monthsAgo(range.months);
@@ -46,7 +48,7 @@ export function Trends() {
             {TREND_GROUPS.map((group) => (
               <optgroup key={group} label={group}>
                 {(Object.entries(TREND_VIEWS) as Array<[TrendMetricName, TrendView]>)
-                  .filter(([, v]) => v.group === group)
+                  .filter(([key, v]) => v.group === group && (!available || available.includes(key) || key === metric))
                   .map(([key, v]) => (
                     <option key={key} value={key}>
                       {v.label}

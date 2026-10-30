@@ -34,7 +34,8 @@ packages/
   server/          web server: login, OAuth for Claude, /api, /mcp over HTTP, scheduled sync
   web/             dashboard PWA (React); `npm run build` writes packages/web/dist, which the server serves
   config/          project paths, .env loading, the settings file
-  cli/             command line entry points: sync, metrics, discover, auth:check
+  demo/            generated demo runner, written into the same tables a sync fills
+  cli/             command line entry points: sync, metrics, discover, auth:check, demo
 data/              your data (gitignored)
   companion.db       the database
   settings.json      password hash, session secret, Garmin key (owner-only; written by the setup page and Settings)
@@ -59,12 +60,30 @@ create at <https://connect.garmin.com/app/settings/personalApiToken> (Garmin sho
 it shows too, and the app will remind you two weeks before). The first sync starts straight away. Everything set there
 can be changed later under Settings. No config file is needed; `.env.example` lists what the server optionally reads.
 
+## Demo
+
+`npm run build`, then `npm run demo`, then open http://localhost:8788. It's the whole app on a made-up runner with three
+years of runs (per-second records, laps, workouts), sleep, HRV, stress, Body Battery, weigh-ins and weather, generated
+the same way every time. Nothing syncs, nothing can be changed, and there's no login, so it's safe to show anyone.
+
+The same generator checks how the app copes with less data, as from other watches or setups:
+
+```sh
+npm run demo -- --missing hrv,power,dynamics   # an older watch
+npm run demo -- --missing scale,sleep           # no smart scale, watch off at night
+npm run demo -- --days 42                       # six weeks in
+```
+
+Streams that can be left out: `dynamics`, `power`, `hrv`, `scale`, `battery-events`, `sleep`, `gps`, `fitness-age`.
+Each variant lives in its own folder under `.demo/` (gitignored) and is made again when the day changes.
+
 ## Commands
 
 | Command | What it does |
 |---|---|
 | `npm run up` | Turns the app on, on this laptop: connects Tailscale, pulls and builds new commits, starts the server (with a sync), opens the public address. Ctrl+C or closing the window turns all of it off |
 | `npm run down` | Turns everything off from any terminal, including leftovers if the `up` window was killed |
+| `npm run demo` | Runs the app on generated data on http://localhost:8788: no Garmin key, no login, nothing of yours (see [Demo](#demo)) |
 | `npm start` | Starts the web server: dashboard, `/api`, remote `/mcp`, scheduled sync (default http://localhost:8787) |
 | `npm run build` | Builds the dashboard into `packages/web/dist` (run after every pull that changes `packages/web`) |
 | `npm run dev:web` | Dashboard with instant reload on http://localhost:5173, proxying `/api` to a running `npm start` |

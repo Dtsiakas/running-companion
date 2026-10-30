@@ -113,8 +113,9 @@ export function sleepRequests(): ClaudeRequest[] {
   ];
 }
 
-export function progressRequests(year: number): ClaudeRequest[] {
-  return [
+/** The form review only when there's running-form data to review (watches without running dynamics have none). */
+export function progressRequests(year: number, hasForm = true): ClaudeRequest[] {
+  const requests: ClaudeRequest[] = [
     {
       id: 'year-review',
       label: `Write my ${year} in review`,
@@ -128,4 +129,5 @@ export function progressRequests(year: number): ClaudeRequest[] {
       prompt: `${RULES}\n\nLook at my running form over the months with get_progress (form: true): cadence, step length, ground contact time, vertical ratio and oscillation on easy runs, all adjusted to the same pace. What has changed, what has stayed the same, and is any of it worth working on (for example with strides, drills or strength work)? Be careful with Garmin's power, which can jump with firmware updates, and remember these are watch estimates.`,
     },
   ];
+  return hasForm ? requests : requests.filter((r) => r.id !== 'form-review');
 }

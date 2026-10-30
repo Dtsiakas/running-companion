@@ -190,9 +190,14 @@ export function getYearReview(db: DatabaseSync, year: number, today: string) {
   const lastYear = all.filter((r) => r.date >= `${year - 1}-01-01` && r.date <= `${year - 1}-12-31`);
   if (!inYear.length) return null;
   const sumKm = (list: Run[]) => round(list.reduce((s, r) => s + r.km, 0));
-  const daysElapsed = Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000) + 1;
+  // The first year of someone's history starts with their first run, not on 1 January: "7 of 44 weeks" would
+  // count weeks before they had the watch.
+  const firstRun = all.reduce((first, r) => (r.date < first ? r.date : first), to);
+  const counted = firstRun > from ? firstRun : from;
   const weeks = new Set(inYear.map((r) => weekOf(r.date)));
-  const totalWeeks = Math.ceil(daysElapsed / 7);
+  // Calendar weeks (Monday to Sunday) touched by the period, counted the same way as the weeks that had a run;
+  // days ÷ 7 could say "7 of 6" when the period starts on a Sunday.
+  const totalWeeks = Math.round((Date.parse(`${weekOf(to)}T12:00:00Z`) - Date.parse(`${weekOf(counted)}T12:00:00Z`)) / (7 * 86_400_000)) + 1;
 
   const months = Array.from({ length: 12 }, (_, i) => {
     const month = `${year}-${String(i + 1).padStart(2, '0')}`;
@@ -244,6 +249,8 @@ export function getYearReview(db: DatabaseSync, year: number, today: string) {
     climb_m: Math.round(inYear.reduce((s, r) => s + r.climb, 0)),
     weeks_with_runs: weeks.size,
     weeks: totalWeeks,
+    /** Set when the history starts during this year: weeks and averages count from that date. */
+    since: counted > from ? counted : null,
     km_per_week: round(sumKm(inYear) / totalWeeks),
     previous: lastYear.length ? { km: sumKm(lastYear), runs: lastYear.length } : null,
     months,
