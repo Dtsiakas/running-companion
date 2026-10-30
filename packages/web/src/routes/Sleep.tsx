@@ -7,7 +7,7 @@ import { Patterns } from '../components/Patterns.tsx';
 import { Section } from '../components/Section.tsx';
 import { ErrorState, Loading } from '../components/States.tsx';
 import { todayLocal } from '../lib/dates.ts';
-import { NOTES } from '../lib/insights.ts';
+import { m } from '../lib/i18n.ts';
 import { sleepRequests } from '../lib/prompts.ts';
 import { hoursText, spanText } from '../lib/sleep.ts';
 import blocks from '../styles/blocks.module.css';
@@ -217,7 +217,7 @@ function Stages({ stages }: { stages: NonNullable<SleepReport['stages']> }) {
         </p>
       ) : null}
       <Note>
-        Averages over the last {stages.nights} nights. {NOTES.sleepScore}
+        Averages over the last {stages.nights} nights. {m.notes.sleepScore}
       </Note>
     </Section>
   );
@@ -259,7 +259,7 @@ function Battery({ stress }: { stress: StressReport }) {
         </>
       ) : null}
       <BatteryBalance days={stress.days} />
-      <Note>{NOTES.bodyBattery} Today isn’t in the averages because it’s still running.</Note>
+      <Note>{m.notes.bodyBattery} Today isn’t in the averages because it’s still running.</Note>
     </Section>
   );
 }
@@ -348,7 +348,7 @@ function StressTime({ stress }: { stress: StressReport }) {
         ) : null}
       </dl>
       <Note>
-        {NOTES.stress} The last two weeks here, against the ten weeks before; workdays and weekends over eight weeks. Time at rest and asleep isn’t counted as
+        {m.notes.stress} The last two weeks here, against the ten weeks before; workdays and weekends over eight weeks. Time at rest and asleep isn’t counted as
         stressed.
       </Note>
     </Section>

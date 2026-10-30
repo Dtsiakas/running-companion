@@ -1,3 +1,5 @@
+import { f } from './i18n.ts';
+
 /** Formatting for numbers the API sends raw (speeds, seconds), plus the names of things. */
 
 /** Speed in m/s as pace "5:22" (per km). Below 1.5 m/s (slower than 11:06/km) is walking or standing, not running pace. */
@@ -23,23 +25,5 @@ export function paceGap(speedMps: number, [low, high]: [number, number]): number
   return pace < fastEdge ? fastEdge - pace : pace > slowEdge ? pace - slowEdge : 0;
 }
 
-export const CATEGORY_LABEL: Record<string, string> = {
-  easy: 'Easy',
-  long: 'Long run',
-  recovery: 'Recovery',
-  tempo: 'Tempo',
-  threshold: 'Threshold',
-  intervals: 'Intervals',
-  sprint: 'Sprints',
-  test: 'Test',
-  other: 'Other',
-};
-
-export const STEP_LABEL: Record<string, string> = {
-  warmup: 'Warm-up',
-  active: 'Run',
-  interval: 'Interval',
-  recovery: 'Recovery',
-  rest: 'Rest',
-  cooldown: 'Cool-down',
-};
+/** A pace from the server ("5:22/km", "8:38/mi") without its unit, for a column or a stat with the unit beside it. */
+export const stripPace = (pace: string | null | undefined) => (pace ? pace.replace(f.paceUnit, '') : '–');

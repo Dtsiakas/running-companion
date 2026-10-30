@@ -25,17 +25,14 @@ export interface Settings {
   garminKeyExpiresOn?: string;
   /** Set by a sync when Garmin refuses the key (wrong, expired or deleted); cleared by a working sync or a new key. */
   garminKeyRejectedAt?: string;
-  units?: Units;
 }
 
-export type Units = 'metric' | 'imperial';
 
 /** Settings an environment variable can set, and which variable. */
 export const ENV_SETTINGS = {
   passwordHash: 'PASSWORD_HASH',
   sessionSecret: 'SESSION_SECRET',
   garminKey: 'GARMIN_PERSONAL_API_KEY',
-  units: 'UNITS',
 } as const satisfies Partial<Record<keyof Settings, string>>;
 
 type EnvSetting = keyof typeof ENV_SETTINGS;
@@ -57,9 +54,7 @@ function fromEnv(env: NodeJS.ProcessEnv): Settings {
   for (const [field, name] of Object.entries(ENV_SETTINGS) as Array<[EnvSetting, string]>) {
     const value = env[name]?.trim();
     if (!value) continue;
-    if (field === 'units') {
-      if (value === 'metric' || value === 'imperial') settings.units = value;
-    } else settings[field] = value;
+    settings[field] = value;
   }
   return settings;
 }

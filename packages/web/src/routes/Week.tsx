@@ -11,7 +11,7 @@ import { RunSummary } from '../components/RunSummary.tsx';
 import { Section } from '../components/Section.tsx';
 import { ErrorState, Loading } from '../components/States.tsx';
 import { addDays, hoursMinutes, todayLocal, weekday, weekRange, weekStartOf } from '../lib/dates.ts';
-import { NOTES } from '../lib/insights.ts';
+import { m } from '../lib/i18n.ts';
 import styles from '../styles/blocks.module.css';
 
 type Summary = NonNullable<WeekResponse['summary']>;
@@ -63,7 +63,7 @@ function WeekBody({ week }: { week: WeekResponse }) {
       <div className={styles.columns}>
         <Section title="Intensity">
           <IntensityBar intensity={summary.intensity_pct} />
-          <Note>{NOTES.intensity}</Note>
+          <Note>{m.notes.intensity}</Note>
         </Section>
 
         <Section title="Distance per week">

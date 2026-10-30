@@ -1,3 +1,5 @@
+import { locale } from '../lib/i18n.ts';
+
 /** Thrown for any non-2xx answer except 401 (which redirects to the login page instead). */
 export class ApiError extends Error {
   readonly status: number;
@@ -20,7 +22,13 @@ export function goToLogin(): never {
  * so there's no token handling here. A 401 means the session expired: go log in, then come back.
  */
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, { ...init, headers: { Accept: 'application/json', ...init?.headers } });
+  // Every request says which language and units to answer in: the server writes some sentences and paces itself.
+  const url = new URL(path, window.location.origin);
+  if (url.pathname.startsWith('/api/')) {
+    url.searchParams.set('lang', locale.lang);
+    url.searchParams.set('units', locale.units);
+  }
+  const response = await fetch(url.pathname + url.search, { ...init, headers: { Accept: 'application/json', ...init?.headers } });
   if (response.status === 401) goToLogin();
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { error?: string } | null;

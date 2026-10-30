@@ -15,7 +15,8 @@ import { SyncButton } from '../components/SyncButton.tsx';
 import { WhenToRun } from '../components/WhenToRun.tsx';
 import { addDays, hoursMinutes, longDay } from '../lib/dates.ts';
 import { todayRequests } from '../lib/prompts.ts';
-import { describeAcwr, describeForm, greenDetail, NOTES, recentlyRecorded, relativeToNormal, signed, STATUS_TEXT, type Status } from '../lib/insights.ts';
+import { describeAcwr, describeForm, greenDetail, recentlyRecorded, relativeToNormal, signed, statusText, type Status } from '../lib/insights.ts';
+import { f, m } from '../lib/i18n.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Today.module.css';
 
@@ -46,7 +47,7 @@ export function Today() {
     status === 'green'
       ? greenDetail({ hrv: t.recovery.hrv_7d_ms !== null, restingHr: t.recovery.resting_hr_3d !== null, sleep: t.recovery.sleep_h !== null })
       : status
-        ? STATUS_TEXT[status].detail
+        ? statusText(status).detail
         : null;
   const hasBody = t.body.weight_trend_kg !== null || t.body.body_fat_trend_pct !== null || !!fitnessAge?.fitness_age;
 
@@ -63,9 +64,9 @@ export function Today() {
       <section className={styles.verdict} data-status={status ?? 'none'} aria-live="polite">
         <p className={styles.badge}>
           <span className={styles.dot} aria-hidden="true" />
-          {status ? STATUS_TEXT[status].label : 'No status yet'}
+          {statusText(status).label}
         </p>
-        <h1 className={styles.headline}>{status ? STATUS_TEXT[status].title : 'Not enough recovery data yet.'}</h1>
+        <h1 className={styles.headline}>{statusText(status).title}</h1>
         {t.reasons.length ? (
           <ul className={styles.reasons}>
             {t.reasons.map((reason) => (
@@ -73,85 +74,85 @@ export function Today() {
             ))}
           </ul>
         ) : (
-          <p className={styles.detail}>{detail ?? 'Sync after a night with the watch on to get a status.'}</p>
+          <p className={styles.detail}>{detail ?? m.insight.status.none.detail}</p>
         )}
       </section>
 
       {signals.data?.length ? (
-        <Section title="Worth knowing">
+        <Section title={m.today.worthKnowing}>
           <Signals signals={signals.data} />
         </Section>
       ) : null}
 
       <div className={styles.columns}>
-        <Section title="Recovery">
+        <Section title={m.today.recovery}>
           {records.hrv ? (
             <Lane
-              label="HRV, 7-day average"
-              valueText={t.recovery.hrv_7d_ms ? `${t.recovery.hrv_7d_ms} ms` : '–'}
+              label={m.today.hrv7d}
+              valueText={t.recovery.hrv_7d_ms ? `${f.number(t.recovery.hrv_7d_ms)} ms` : '–'}
               description={relativeToNormal(t.recovery.hrv_7d_ms, t.recovery.hrv_normal_ms)}
               value={t.recovery.hrv_7d_ms}
               band={bands?.hrv_ms}
               concernWhen="below"
             >
-              <Note>{NOTES.hrv}</Note>
+              <Note>{m.notes.hrv}</Note>
             </Lane>
           ) : null}
           <Lane
-            label="Resting heart rate"
+            label={m.today.restingHr}
             valueText={t.recovery.resting_hr_3d ? `${Math.round(t.recovery.resting_hr_3d)} bpm` : '–'}
             description={relativeToNormal(t.recovery.resting_hr_3d, t.recovery.resting_hr_normal, 'bpm')}
             value={t.recovery.resting_hr_3d}
             band={bands?.resting_hr}
             concernWhen="above"
           >
-            <Note>{NOTES.restingHr}</Note>
+            <Note>{m.notes.restingHr}</Note>
           </Lane>
           <Lane
-            label="Sleep last night"
+            label={m.today.sleepLastNight}
             valueText={hoursMinutes(t.recovery.sleep_h)}
             description={
               !records.sleep
-                ? 'No sleep recorded in the last two weeks. Wearing the watch at night adds sleep, HRV and overnight readings.'
+                ? m.today.noSleepRecently
                 : t.recovery.sleep_h === null
-                  ? 'No sleep recorded for last night yet'
-                  : `${relativeToNormal(t.recovery.sleep_h, bands?.sleep_h?.typical, 'h')}${sleepNeed ? `. Garmin estimates you needed ${hoursMinutes(sleepNeed)}` : ''}`
+                  ? m.today.noSleepYet
+                  : `${relativeToNormal(t.recovery.sleep_h, bands?.sleep_h?.typical, 'h')}${sleepNeed ? `. ${m.today.garminNeed(hoursMinutes(sleepNeed))}` : ''}`
             }
             value={t.recovery.sleep_h}
             band={bands?.sleep_h}
             concernWhen="below"
-            target={sleepNeed ? { value: sleepNeed, label: 'Need' } : null}
+            target={sleepNeed ? { value: sleepNeed, label: m.today.need } : null}
           >
-            <Note>{NOTES.sleep}</Note>
+            <Note>{m.notes.sleep}</Note>
           </Lane>
         </Section>
 
-        <Section title="Training">
+        <Section title={m.today.training}>
           <div className={styles.formRow}>
             <p className={styles.bigNumber}>
               {signed(t.training.form)}
-              <small>form</small>
+              <small>{m.today.form}</small>
             </p>
             <p className={blocks.explain}>{describeForm(t.training.form)}</p>
           </div>
-          {daily.data ? <LoadChart days={daily.data} /> : <Loading label="Loading chart" />}
+          {daily.data ? <LoadChart days={daily.data} /> : <Loading label={m.today.loadingChart} />}
           <dl className={blocks.facts}>
             <div>
-              <dt>Last 7 days</dt>
-              <dd>{t.training.km_last_7d ?? 0} km</dd>
+              <dt>{m.today.last7}</dt>
+              <dd>{f.distance(t.training.km_last_7d ?? 0)}</dd>
             </div>
             <div>
-              <dt>Last 28 days</dt>
-              <dd>{t.training.km_last_28d ?? 0} km</dd>
+              <dt>{m.today.last28}</dt>
+              <dd>{f.distance(t.training.km_last_28d ?? 0)}</dd>
             </div>
             <div>
-              <dt>This week vs. usual</dt>
-              <dd>{t.training.acute_chronic_ratio ?? '–'}×</dd>
+              <dt>{m.today.vsUsual}</dt>
+              <dd>{f.number(t.training.acute_chronic_ratio, 2)}×</dd>
             </div>
           </dl>
           <p className={blocks.explain}>{describeAcwr(t.training.acute_chronic_ratio)}</p>
           <Note>
-            {NOTES.form} {NOTES.acwr}
+            {m.notes.form} {m.notes.acwr}
           </Note>
         </Section>
       </div>
@@ -165,50 +166,46 @@ export function Today() {
 
       <WhenToRun />
 
-      <Section title="Ask Claude">
+      <Section title={m.today.askClaude}>
         <AskClaude requests={todayRequests(t.date)} />
       </Section>
 
       {t.last_run ? (
-        <Section title="Last run">
+        <Section title={m.today.lastRun}>
           <RunSummary run={t.last_run} />
         </Section>
       ) : null}
 
       {hasBody ? (
-        <Section title="Body">
+        <Section title={m.today.body}>
           <dl className={blocks.facts}>
             {t.body.weight_trend_kg !== null ? (
               <div>
-                <dt>Weight trend</dt>
-                <dd>{t.body.weight_trend_kg} kg</dd>
+                <dt>{m.today.weightTrend}</dt>
+                <dd>{f.weight(t.body.weight_trend_kg)}</dd>
               </div>
             ) : null}
             {t.body.body_fat_trend_pct !== null ? (
               <div>
-                <dt>Body fat trend</dt>
-                <dd>{t.body.body_fat_trend_pct}%</dd>
+                <dt>{m.today.bodyFatTrend}</dt>
+                <dd>{f.percent(t.body.body_fat_trend_pct, 1)}</dd>
               </div>
             ) : null}
             {fitnessAge?.fitness_age ? (
               <div>
-                <dt>Fitness age</dt>
+                <dt>{m.today.fitnessAge}</dt>
                 <dd>
                   {fitnessAge.fitness_age}
-                  {fitnessAge.actual_age ? <small className={styles.unit}> (actual {fitnessAge.actual_age})</small> : null}
+                  {fitnessAge.actual_age ? <small className={styles.unit}> {m.today.actualAge(fitnessAge.actual_age)}</small> : null}
                 </dd>
               </div>
             ) : null}
           </dl>
           {lever ? (
-            <p className={blocks.explain}>
-              Garmin’s biggest lever for your fitness age: {lever.label.toLowerCase()}, {lever.value}
-              {lever.unit} now, {lever.target}
-              {lever.unit} as its target.
-            </p>
+            <p className={blocks.explain}>{m.today.lever(lever.label.toLowerCase(), `${f.number(lever.value, 1)}${lever.unit}`, `${f.number(lever.target, 1)}${lever.unit}`)}</p>
           ) : null}
           <Note>
-            {NOTES.weight} {NOTES.fitnessAge}
+            {m.notes.weight} {m.notes.fitnessAge}
           </Note>
         </Section>
       ) : null}
@@ -223,60 +220,60 @@ type Bands = BaselineBandsResponse | undefined;
 function LastNight({ sleep, bands }: { sleep: Day['sleep']; bands: Bands }) {
   if (!sleep) {
     return (
-      <Section title="Last night">
-        <p className={blocks.empty}>No sleep recorded for last night yet.</p>
+      <Section title={m.today.lastNight}>
+        <p className={blocks.empty}>{m.today.noSleepYet}.</p>
       </Section>
     );
   }
   return (
-    <Section title="Last night">
+    <Section title={m.today.lastNight}>
       <dl className={blocks.facts}>
         <div>
-          <dt>Sleep score</dt>
+          <dt>{m.today.sleepScore}</dt>
           <dd>
             {sleep.score ?? '–'}
-            {sleep.score_qualifier ? <small className={styles.unit}> {sleep.score_qualifier.toLowerCase()}</small> : null}
+            {sleep.score_qualifier ? <small className={styles.unit}> {m.today.qualifier[sleep.score_qualifier] ?? sleep.score_qualifier.toLowerCase()}</small> : null}
           </dd>
         </div>
         <div>
-          <dt>Asleep</dt>
+          <dt>{m.today.asleep}</dt>
           <dd>
             {sleep.bedtime ?? '–'}
-            <small className={styles.unit}> to </small>
+            <small className={styles.unit}> {m.today.to} </small>
             {sleep.wake_time ?? '–'}
           </dd>
         </div>
         <div>
-          <dt>Woke up</dt>
+          <dt>{m.today.wokeUp}</dt>
           <dd>
             {sleep.awake_count ?? '–'}
-            <small className={styles.unit}> {sleep.awake_count === 1 ? 'time' : 'times'}</small>
+            <small className={styles.unit}> {m.today.times(sleep.awake_count ?? 0)}</small>
           </dd>
         </div>
       </dl>
       <SleepStages stages={sleep.stages_h} />
-      <Note>{NOTES.sleepScore}</Note>
+      <Note>{m.notes.sleepScore}</Note>
       <Lane
-        label="Breathing rate"
-        valueText={sleep.breathing_rate ? `${sleep.breathing_rate} /min` : '–'}
-        description={relativeToNormal(sleep.breathing_rate, bands?.breathing_rate?.typical, 'breaths/min', 1)}
+        label={m.today.breathingRate}
+        valueText={sleep.breathing_rate ? `${f.number(sleep.breathing_rate, 1)} ${m.today.perMinute}` : '–'}
+        description={relativeToNormal(sleep.breathing_rate, bands?.breathing_rate?.typical, 'breaths', 1)}
         value={sleep.breathing_rate}
         band={bands?.breathing_rate}
         concernWhen="above"
         concernBeyond={bands?.breathing_rate ? bands.breathing_rate.typical + 1 : null}
       >
-        <Note>{NOTES.breathing}</Note>
+        <Note>{m.notes.breathing}</Note>
       </Lane>
       <Lane
-        label="Blood oxygen (SpO2)"
+        label={m.today.spo2}
         valueText={sleep.spo2_avg_pct ? `${sleep.spo2_avg_pct}%` : '–'}
-        description={`${relativeToNormal(sleep.spo2_avg_pct, bands?.spo2_pct?.typical, 'points', 1)}${sleep.spo2_lowest_pct ? `. Lowest ${sleep.spo2_lowest_pct}%` : ''}`}
+        description={`${relativeToNormal(sleep.spo2_avg_pct, bands?.spo2_pct?.typical, 'points', 1)}${sleep.spo2_lowest_pct ? `. ${m.today.lowest(f.percent(sleep.spo2_lowest_pct))}` : ''}`}
         value={sleep.spo2_avg_pct}
         band={bands?.spo2_pct}
         concernWhen="below"
         concernBeyond={bands?.spo2_pct ? bands.spo2_pct.typical - 2 : null}
       >
-        <Note>{NOTES.spo2}</Note>
+        <Note>{m.notes.spo2}</Note>
       </Lane>
     </Section>
   );
@@ -288,38 +285,38 @@ function EnergyAndActivity({ day, bands }: { day: Day; bands: Bands }) {
   const intensityLeft =
     activity.intensity_goal_week && activity.intensity_minutes_week !== null ? activity.intensity_goal_week - activity.intensity_minutes_week : null;
   return (
-    <Section title="Energy and activity">
+    <Section title={m.today.energy}>
       <Lane
-        label="Body Battery this morning"
+        label={m.today.bodyBattery}
         valueText={energy.body_battery_morning !== null ? String(energy.body_battery_morning) : '–'}
         description={relativeToNormal(energy.body_battery_morning, bands?.body_battery_morning?.typical, 'points', 3)}
         value={energy.body_battery_morning}
         band={bands?.body_battery_morning}
         concernWhen="below"
       >
-        <Note>{NOTES.bodyBattery}</Note>
+        <Note>{m.notes.bodyBattery}</Note>
       </Lane>
       <Lane
-        label="Stress yesterday"
+        label={m.today.stressYesterday}
         valueText={energy.stress_yesterday_avg !== null ? String(energy.stress_yesterday_avg) : '–'}
-        description={`${relativeToNormal(energy.stress_yesterday_avg, bands?.stress_avg?.typical, 'points', 2)}${energy.stress_yesterday_high_min ? `. ${energy.stress_yesterday_high_min} min of high stress` : ''}`}
+        description={`${relativeToNormal(energy.stress_yesterday_avg, bands?.stress_avg?.typical, 'points', 2)}${energy.stress_yesterday_high_min ? `. ${m.today.highStress(energy.stress_yesterday_high_min)}` : ''}`}
         value={energy.stress_yesterday_avg}
         band={bands?.stress_avg}
         concernWhen="above"
       >
-        <Note>{NOTES.stress}</Note>
+        <Note>{m.notes.stress}</Note>
       </Lane>
       <dl className={blocks.facts}>
         <div>
-          <dt>Steps today</dt>
-          <dd>{activity.steps_today?.toLocaleString('en-GB') ?? '–'}</dd>
+          <dt>{m.today.stepsToday}</dt>
+          <dd>{f.number(activity.steps_today)}</dd>
         </div>
         <div>
-          <dt>Steps yesterday</dt>
-          <dd>{activity.steps_yesterday?.toLocaleString('en-GB') ?? '–'}</dd>
+          <dt>{m.today.stepsYesterday}</dt>
+          <dd>{f.number(activity.steps_yesterday)}</dd>
         </div>
         <div>
-          <dt>Intensity minutes this week</dt>
+          <dt>{m.today.intensityWeek}</dt>
           <dd>
             {activity.intensity_minutes_week ?? '–'}
             {activity.intensity_goal_week ? <small className={styles.unit}> / {activity.intensity_goal_week}</small> : null}
@@ -327,10 +324,10 @@ function EnergyAndActivity({ day, bands }: { day: Day; bands: Bands }) {
         </div>
       </dl>
       <p className={blocks.explain}>
-        {intensityLeft === null ? '' : intensityLeft <= 0 ? 'Weekly movement target reached.' : `${intensityLeft} intensity minutes to this week’s target.`}
-        {activity.calories_yesterday ? ` Yesterday you burned about ${activity.calories_yesterday.toLocaleString('en-GB')} kcal.` : ''}
+        {intensityLeft === null ? '' : intensityLeft <= 0 ? m.today.targetReached : m.today.intensityLeft(intensityLeft)}
+        {activity.calories_yesterday ? ` ${m.today.burned(f.number(activity.calories_yesterday))}` : ''}
       </p>
-      <Note>{NOTES.intensityMinutes}</Note>
+      <Note>{m.notes.intensityMinutes}</Note>
     </Section>
   );
 }
@@ -342,7 +339,8 @@ function LastWeekLink({ date }: { date: string }) {
   const lastMonday = addDays(date, -(weekday === 1 ? 7 : 8));
   return (
     <p className={styles.lastWeek}>
-      <Link to={`/week?start=${lastMonday}`}>Last week’s report is ready</Link>: how training, recovery and sleep went, and a button to have Claude review it.
+      <Link to={`/week?start=${lastMonday}`}>{m.today.lastWeekLink}</Link>
+      {m.today.lastWeekRest}
     </p>
   );
 }

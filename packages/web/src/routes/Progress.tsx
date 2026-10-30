@@ -9,7 +9,7 @@ import { Section } from '../components/Section.tsx';
 import { ErrorState, Loading } from '../components/States.tsx';
 import { longDay, shortDay, todayLocal } from '../lib/dates.ts';
 import { clock } from '../lib/format.ts';
-import { NOTES } from '../lib/insights.ts';
+import { m } from '../lib/i18n.ts';
 import { progressRequests } from '../lib/prompts.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Progress.module.css';
@@ -217,7 +217,7 @@ function Form() {
         ))}
       </div>
       <Note>
-        {NOTES.runningForm} Improved means toward what coaches usually recommend: a slightly higher cadence and shorter contact are linked to lower impact on the legs, and less bounce wastes less
+        {m.notes.runningForm} Improved means toward what coaches usually recommend: a slightly higher cadence and shorter contact are linked to lower impact on the legs, and less bounce wastes less
         energy going up and down. At a fixed pace, cadence and step length always move opposite ways (pace is the two multiplied), so read them together. Power has no verdict: Garmin models it from the
         watch’s motion sensors and your weight, and the model has changed with firmware updates, which shows as a sudden step.
       </Note>

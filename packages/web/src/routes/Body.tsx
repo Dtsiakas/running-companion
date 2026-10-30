@@ -5,7 +5,7 @@ import { Note } from '../components/Note.tsx';
 import { Section } from '../components/Section.tsx';
 import { ErrorState, Loading } from '../components/States.tsx';
 import { todayLocal } from '../lib/dates.ts';
-import { NOTES } from '../lib/insights.ts';
+import { m } from '../lib/i18n.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Body.module.css';
 
@@ -63,7 +63,7 @@ export function Body() {
           </p>
           <WeightChart series={body.data.weight_series} weighIns={body.data.weigh_ins} goal={weight.goal_kg} />
           <Note>
-            {NOTES.weight} The goal is the one you set in Garmin Connect. For a runner, losing no more than about 0.5–1% of body weight a week keeps training,
+            {m.notes.weight} The goal is the one you set in Garmin Connect. For a runner, losing no more than about 0.5–1% of body weight a week keeps training,
             recovery and muscle intact; faster tends to cost all three.
           </Note>
         </Section>
@@ -127,7 +127,7 @@ export function Body() {
               </p>
             ) : null}
             <Note>
-              {composition?.note ?? ''} {NOTES.fitnessAge}
+              {composition?.note ?? ''} {m.notes.fitnessAge}
             </Note>
           </Section>
         ) : null}

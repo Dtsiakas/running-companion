@@ -167,8 +167,7 @@ export interface SettingsResponse {
     daysLeft: number | null;
     rejectedAt: string | null;
   };
-  units: 'metric' | 'imperial';
-  locked: { password: boolean; garminKey: boolean; units: boolean };
+  locked: { password: boolean; garminKey: boolean };
 }
 
 export function useSettings() {

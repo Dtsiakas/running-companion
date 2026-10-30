@@ -104,7 +104,6 @@ test('settings never send the key back, and a new key is checked before it repla
   assert.equal((await replaced.json()).garmin.state, 'ok');
   assert.equal(settings.read().garminKeyRejectedAt, undefined);
   assert.equal((await put('/garmin-key/expiry', { expiresOn: '2026-02-30' })).status, 422);
-  assert.equal((await put('/units', { units: 'metric' })).status, 200);
 });
 
 test('changing the password needs the current one and logs out other browsers', async () => {
@@ -127,8 +126,8 @@ test('key status: rejected beats dates, and the warning starts two weeks ahead',
 });
 
 test('environment variables win over the file and lock their fields', () => {
-  const store = memorySettings({ units: 'metric' }, { UNITS: 'imperial', GARMIN_PERSONAL_API_KEY: 'from-env' });
-  assert.equal(store.read().units, 'imperial');
+  const store = memorySettings({ garminKey: 'from-file' }, { GARMIN_PERSONAL_API_KEY: 'from-env' });
+  assert.equal(store.read().garminKey, 'from-env');
   assert.throws(() => store.update({ garminKey: 'x' }), /GARMIN_PERSONAL_API_KEY/);
 });
 
@@ -164,7 +163,7 @@ test('demo mode: no setup, no login, and settings are read-only', async () => {
     assert.equal((await fetch(`${demoBase}/api/today`)).status, 200);
     const read = await fetch(`${demoBase}/api/settings`);
     assert.equal((await read.json()).demo, true);
-    const write = await fetch(`${demoBase}/api/settings/units`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: '{"units":"imperial"}' });
+    const write = await fetch(`${demoBase}/api/settings/garmin-key/expiry`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: '{"expiresOn":null}' });
     assert.equal(write.status, 403);
     assert.equal((await fetch(`${demoBase}/api/sync`, { method: 'POST' })).status, 502);
   } finally {

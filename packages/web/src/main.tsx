@@ -13,6 +13,7 @@ import { createBrowserRouter } from 'react-router';
 import { RouterProvider } from 'react-router/dom';
 import { ApiError } from './api/client.ts';
 import { Layout } from './components/Layout.tsx';
+import { LocaleGate } from './components/LocaleGate.tsx';
 import { Body } from './routes/Body.tsx';
 import { NotFound } from './routes/NotFound.tsx';
 import { Settings } from './routes/Settings.tsx';
@@ -67,7 +68,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <LocaleGate>
+        <RouterProvider router={router} />
+      </LocaleGate>
     </QueryClientProvider>
   </StrictMode>,
 );

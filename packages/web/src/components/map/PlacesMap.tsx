@@ -1,3 +1,4 @@
+import { f, m } from '../../lib/i18n.ts';
 import type { PlacesResponse } from '@companion/queries';
 import L from 'leaflet';
 import { useEffect, useRef } from 'react';
@@ -20,7 +21,7 @@ export default function PlacesMap({ places, config }: { places: PlacesResponse; 
       // Area, not radius, proportional to the count, so a place with 300 runs doesn't swallow the map.
       const radius = 5 + 15 * Math.sqrt(place.runs / most);
       L.circleMarker([place.lat, place.lon], { radius, color: colors['--surface'], weight: 2, fillColor: colors['--series-1'], fillOpacity: 0.85 })
-        .bindTooltip(`${place.name ?? 'Run'}: ${place.runs} run${place.runs === 1 ? '' : 's'}, ${Math.round(place.km)} km`)
+        .bindTooltip(`${place.name ?? m.run.run}: ${m.run.list.runs(place.runs)}, ${f.distance(place.km, 0)}`)
         .on('click', () => navigate(`/runs/${place.last_activity_id}`))
         .addTo(map);
     }

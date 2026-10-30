@@ -1,3 +1,4 @@
+import { m } from '../lib/i18n.ts';
 import { useState } from 'react';
 import { askClaude, type ClaudeRequest } from '../lib/prompts.ts';
 import styles from './AskClaude.module.css';
@@ -11,7 +12,7 @@ export function AskClaude({ requests }: { requests: ClaudeRequest[] }) {
 
   const open = async (request: ClaudeRequest) => {
     const copied = await askClaude(request);
-    setMessage(copied === 'copied' ? `Opened Claude with “${request.label}”. If the message box is empty, paste: it’s on your clipboard.` : `Opened Claude with “${request.label}”.`);
+    setMessage(copied === 'copied' ? m.app.ask.openedPaste(request.label) : m.app.ask.opened(request.label));
   };
 
   return (

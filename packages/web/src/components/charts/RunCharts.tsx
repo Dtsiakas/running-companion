@@ -1,3 +1,4 @@
+import { f, m } from '../../lib/i18n.ts';
 import type { ActivityRecordsResponse } from '@companion/queries';
 import { useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -37,22 +38,22 @@ export function RunCharts({ records }: { records: ActivityRecordsResponse }) {
       ...p,
       x: byDistance ? (p.distance_km ?? 0) : p.t_s / 60,
       // Below 1.5 m/s is standing or walking: a gap in the line, not a 20-minute "pace".
-      pace_s: p.speed_mps && p.speed_mps >= 1.5 ? 1000 / p.speed_mps : null,
+      pace_s: p.speed_mps && p.speed_mps >= 1.5 ? f.paceSeconds(p.speed_mps) : null,
     }));
     return { rows, byDistance };
   }, [records]);
 
   const panels: Panel[] = [
-    { key: 'pace_s' as const, title: 'Pace', format: (v: number) => `${clock(v)}/km`, color: colors['--series-1'], reversed: true },
-    { key: 'hr' as const, title: 'Heart rate', format: (v: number) => `${Math.round(v)} bpm`, color: colors['--series-2'] },
-    { key: 'power_w' as const, title: 'Power', format: (v: number) => `${Math.round(v)} W`, color: colors['--series-1'] },
-    { key: 'altitude_m' as const, title: 'Elevation', format: (v: number) => `${Math.round(v)} m`, color: colors['--lane-band'], area: true },
+    { key: 'pace_s' as const, title: m.charts.run.pace, format: (v: number) => `${clock(v)}${f.paceUnit}`, color: colors['--series-1'], reversed: true },
+    { key: 'hr' as const, title: m.charts.run.heartRate, format: (v: number) => `${Math.round(v)} bpm`, color: colors['--series-2'] },
+    { key: 'power_w' as const, title: m.charts.run.power, format: (v: number) => `${Math.round(v)} W`, color: colors['--series-1'] },
+    { key: 'altitude_m' as const, title: m.charts.run.elevation, format: (v: number) => f.elevation(v), color: colors['--lane-band'], area: true },
   ].filter((panel) => rows.some((row) => row[panel.key] !== null));
 
-  if (rows.length < 2) return <p className={styles.muted}>No second-by-second data for this run.</p>;
+  if (rows.length < 2) return <p className={styles.muted}>{m.charts.run.noRecords}</p>;
 
   const point = active === null ? null : rows[active];
-  const xLabel = (x: number) => (byDistance ? `${x.toFixed(1)} km` : `${Math.round(x)} min`);
+  const xLabel = (x: number) => (byDistance ? f.distance(x, 1) : m.charts.run.minutes(Math.round(x)));
 
   return (
     <figure className={styles.figure}>
@@ -67,7 +68,7 @@ export function RunCharts({ records }: { records: ActivityRecordsResponse }) {
             ))}
           </>
         ) : (
-          <span className={styles.muted}>Touch or hover a chart to see the values at that point.</span>
+          <span className={styles.muted}>{m.charts.run.hint}</span>
         )}
       </p>
       {panels.map((panel, i) => {

@@ -1,3 +1,4 @@
+import { m } from '../lib/i18n.ts';
 import { useEffect, useState } from 'react';
 import { isRouteErrorResponse, useRouteError } from 'react-router';
 import styles from './RouteError.module.css';
@@ -39,13 +40,13 @@ export function RouteError() {
 
   return (
     <div className={styles.error} role="alert">
-      <h1>{reloading ? 'Updating the app…' : 'This screen couldn’t load'}</h1>
-      <p>Usually this means the app was just updated and this device still had the previous version. Reloading fetches the new one.</p>
+      <h1>{reloading ? m.app.routeError.updating : m.app.routeError.failed}</h1>
+      <p>{m.app.routeError.explain}</p>
       <button type="button" onClick={() => void reload()} disabled={reloading}>
-        Reload
+        {m.app.routeError.reload}
       </button>
       <details>
-        <summary>Details</summary>
+        <summary>{m.app.routeError.details}</summary>
         <pre>{message}</pre>
       </details>
     </div>

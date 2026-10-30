@@ -1,3 +1,4 @@
+import { f, m } from '../../lib/i18n.ts';
 import type { RouteResponse } from '@companion/queries';
 import L from 'leaflet';
 import { useEffect, useRef } from 'react';
@@ -40,8 +41,8 @@ export default function RouteMap({ route, config }: { route: NonNullable<RouteRe
     }
     const first = route.points[0]!;
     const last = route.points.at(-1)!;
-    L.circleMarker(last, { radius: 6, color: colors['--surface'], weight: 2, fillColor: colors['--ink'], fillOpacity: 1 }).bindTooltip('Finish').addTo(map);
-    L.circleMarker(first, { radius: 6, color: colors['--ink'], weight: 2, fillColor: colors['--surface'], fillOpacity: 1 }).bindTooltip('Start').addTo(map);
+    L.circleMarker(last, { radius: 6, color: colors['--surface'], weight: 2, fillColor: colors['--ink'], fillOpacity: 1 }).bindTooltip(m.charts.map.finish).addTo(map);
+    L.circleMarker(first, { radius: 6, color: colors['--ink'], weight: 2, fillColor: colors['--surface'], fillOpacity: 1 }).bindTooltip(m.charts.map.start).addTo(map);
     map.fitBounds(route.bounds, { padding: [16, 16] });
     return () => {
       map.remove();
@@ -53,9 +54,9 @@ export default function RouteMap({ route, config }: { route: NonNullable<RouteRe
       <div ref={element} className={styles.map} role="img" aria-label="Map of the route, coloured by pace" />
       {route.pace_range ? (
         <figcaption className={styles.scale}>
-          <span>{clock(fast)}</span>
+          <span>{f.paceFromSecondsPerKm(fast).replace(f.paceUnit, '')}</span>
           <i style={{ background: `linear-gradient(to right, ${colors['--intensity-high']}, ${colors['--intensity-low']})` }} />
-          <span>{clock(slow)} /km</span>
+          <span>{f.paceFromSecondsPerKm(slow)}</span>
         </figcaption>
       ) : null}
     </figure>

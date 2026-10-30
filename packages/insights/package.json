@@ -9,6 +9,7 @@
     "./fuel": "./src/fuel.ts"
   },
   "dependencies": {
+    "@companion/i18n": "*",
     "@companion/queries": "*"
   },
   "devDependencies": {

@@ -1,16 +1,16 @@
+import { f, m } from '../lib/i18n.ts';
 import type { ActivityListResponse, PlacesResponse } from '@companion/queries';
 import { lazy, Suspense, useState } from 'react';
 import { Link } from 'react-router';
 import { useMapConfig, usePlaces, useRunList } from '../api/hooks.ts';
 import { ErrorState, Loading } from '../components/States.tsx';
-import { CATEGORY_LABEL } from '../lib/format.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Runs.module.css';
 
 type Run = ActivityListResponse[number];
 
-const monthOf = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-const dayOf = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' });
+const monthOf = (date: string) => f.monthYear(date);
+const dayOf = (date: string) => `${f.weekday(date)} ${Number(date.slice(8))}`;
 
 /**
  * Every run, newest first, grouped by month. One line per run with what you'd scan for: kind, distance, pace, heart rate.
@@ -26,9 +26,9 @@ export function Runs() {
 
   return (
     <div className={blocks.page}>
-      <h1 className={blocks.title}>Runs</h1>
+      <h1 className={blocks.title}>{m.run.list.title}</h1>
       <Places />
-      {months.length === 0 ? <p className={blocks.empty}>No runs yet. They appear after the first sync.</p> : null}
+      {months.length === 0 ? <p className={blocks.empty}>{m.run.list.none}</p> : null}
       {months.map(([month, list]) => (
         <section key={month} className={styles.month}>
           <h2 className={styles.monthTitle}>{month}</h2>
@@ -43,7 +43,7 @@ export function Runs() {
       ))}
       {runs.hasNextPage ? (
         <button type="button" className={`${blocks.button} ${styles.more}`} onClick={() => void runs.fetchNextPage()} disabled={runs.isFetchingNextPage}>
-          {runs.isFetchingNextPage ? 'Loading…' : 'Show older runs'}
+          {runs.isFetchingNextPage ? m.run.list.loading : m.run.list.loadMore}
         </button>
       ) : null}
     </div>
@@ -51,20 +51,20 @@ export function Runs() {
 }
 
 function RunRow({ run }: { run: Run }) {
-  const kind = run.planned_workout ?? CATEGORY_LABEL[run.category ?? 'other'];
+  const kind = run.planned_workout ?? m.run.category[run.category ?? 'other'];
   // Garmin names runs after the workout ("Park Loop - Threshold"); repeating the kind adds nothing then.
   const kindIsInName = !!kind && !!run.name?.toLowerCase().includes(kind.toLowerCase());
-  const details = [kindIsInName ? null : kind, run.pace, run.avg_hr ? `${run.avg_hr} bpm` : null, run.treadmill ? 'treadmill' : null].filter(Boolean).join(', ');
+  const details = [kindIsInName ? null : kind, run.pace, run.avg_hr ? `${run.avg_hr} bpm` : null, run.treadmill ? m.run.treadmill : null].filter(Boolean).join(', ');
   return (
     <Link to={`/runs/${run.activity_id}`} className={styles.row}>
       <span className={styles.day}>{run.date ? dayOf(run.date) : ''}</span>
       <span className={styles.main}>
-        <span className={styles.name}>{run.name ?? 'Run'}</span>
+        <span className={styles.name}>{run.name ?? m.run.run}</span>
         <span className={styles.details}>{details}</span>
       </span>
       <span className={styles.km}>
-        {run.distance_km ?? '–'}
-        <small> km</small>
+        {f.number(f.distanceValue(run.distance_km), 2)}
+        <small> {f.distanceUnit}</small>
       </span>
     </Link>
   );
@@ -73,7 +73,7 @@ function RunRow({ run }: { run: Run }) {
 function groupByMonth(runs: Run[]): Array<[string, Run[]]> {
   const months = new Map<string, Run[]>();
   for (const run of runs) {
-    const month = run.date ? monthOf(run.date) : 'Undated';
+    const month = run.date ? monthOf(run.date) : m.run.list.undated;
     months.set(month, [...(months.get(month) ?? []), run]);
   }
   return [...months];
@@ -89,16 +89,19 @@ function Places() {
   const count = places.data?.length;
   return (
     <details className={styles.places} onToggle={(e) => setOpen(e.currentTarget.open)}>
-      <summary>Where you’ve run{count ? ` (${count} place${count === 1 ? '' : 's'})` : ''}</summary>
+      <summary>
+        {m.run.list.whereYouRan}
+        {count ? ` ${m.run.list.placeCount(count)}` : ''}
+      </summary>
       {open && places.data && map.data ? (
-        <Suspense fallback={<Loading label="Loading map" />}>
+        <Suspense fallback={<Loading label={m.run.loadingMap} />}>
           <PlacesMap places={places.data} config={map.data} />
           <ul className={styles.placeList}>
             {byName(places.data).slice(0, 8).map((p) => (
               <li key={p.name ?? `${p.lat},${p.lon}`}>
-                <Link to={`/runs/${p.last_activity_id}`}>{p.name ?? 'Unnamed place'}</Link>
+                <Link to={`/runs/${p.last_activity_id}`}>{p.name ?? m.run.list.unnamedPlace}</Link>
                 <span>
-                  {p.runs} run{p.runs === 1 ? '' : 's'}, {Math.round(p.km).toLocaleString('en-GB')} km
+                  {m.run.list.runs(p.runs)}, {f.distance(p.km, 0)}
                 </span>
               </li>
             ))}

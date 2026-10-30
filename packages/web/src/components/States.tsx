@@ -1,7 +1,8 @@
+import { m } from '../lib/i18n.ts';
 import { ApiError } from '../api/client.ts';
 import styles from './States.module.css';
 
-export function Loading({ label = 'Loading' }: { label?: string }) {
+export function Loading({ label = m.app.states.loading }: { label?: string }) {
   return (
     <p className={styles.loading} role="status">
       {label}…
@@ -13,16 +14,16 @@ export function Loading({ label = 'Loading' }: { label?: string }) {
 export function ErrorState({ error, retry }: { error: unknown; retry?: () => void }) {
   const offline = !navigator.onLine;
   const message = offline
-    ? 'You’re offline and this screen hasn’t been loaded on this device before.'
+    ? m.app.states.offlineNotLoaded
     : error instanceof ApiError
       ? error.message
-      : 'The server didn’t answer. It may be restarting.';
+      : m.app.states.serverNoAnswer;
   return (
     <div className={styles.error} role="alert">
       <p>{message}</p>
       {retry ? (
         <button type="button" onClick={retry}>
-          Try again
+          {m.app.states.tryAgain}
         </button>
       ) : null}
     </div>

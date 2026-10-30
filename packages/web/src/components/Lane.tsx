@@ -1,3 +1,4 @@
+import { f, m } from '../lib/i18n.ts';
 import styles from './Lane.module.css';
 
 export interface Band {
@@ -62,7 +63,7 @@ function Track({ value, band, target, concern }: { value: number; band: Band; ta
 
   // Plain positioned elements rather than SVG: everything sits on one axis, and a dot stays round at any width.
   return (
-    <div className={styles.track} role="img" aria-label={`Today ${value}; your normal range is ${band.low} to ${band.high}${target ? `; ${target.label} ${target.value}` : ''}`}>
+    <div className={styles.track} role="img" aria-label={`${m.today.laneLabel(f.number(value, 1), f.number(band.low, 1), f.number(band.high, 1))}${target ? `; ${target.label} ${f.number(target.value, 1)}` : ''}`}>
       <span className={styles.trackLine} />
       <span className={styles.band} style={{ left: at(band.low), width: `calc(${at(band.high)} - ${at(band.low)})` }} />
       <span className={styles.typical} style={{ left: at(band.typical) }} />

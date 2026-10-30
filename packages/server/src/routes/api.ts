@@ -17,6 +17,7 @@ import {
 } from '@companion/queries';
 import { getBodyReport, getFormTrend, getPatterns, getProgress, getSignals, getSleepReport, getStressReport, getWeeklyReport, getYearReview } from '@companion/insights';
 import { getRunForecast } from '@companion/weather';
+import { requestI18n } from '../locale.ts';
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 
@@ -102,7 +103,7 @@ export function apiRoutes({ db, writeDb, sync, isSyncRunning, cartoKey = null }:
   );
 
   // Insights: today's signals, and the patterns in your history -----------------------------------------------
-  router.get('/signals', handle(z.object({ date }), ({ date: day }) => getSignals(db, day)));
+  router.get('/signals', handle(z.object({ date }), ({ date: day }, req) => getSignals(db, day, requestI18n(req))));
   router.get('/report', handle(z.object({ start: date, today: date }), ({ start, today }) => getWeeklyReport(db, start, today)));
   router.get('/body', handle(z.object({ date }), ({ date: day }) => getBodyReport(db, day)));
   router.get('/sleep', handle(z.object({ date }), ({ date: day }) => ({ sleep: getSleepReport(db, day), stress: getStressReport(db, day) })));

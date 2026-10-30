@@ -11,6 +11,7 @@
     "@companion/config": "*",
     "@companion/db": "*",
     "@companion/garmin-client": "*",
+    "@companion/i18n": "*",
     "@companion/insights": "*",
     "@companion/jobs": "*",
     "@companion/mcp": "*",

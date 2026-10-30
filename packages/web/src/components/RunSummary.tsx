@@ -1,6 +1,7 @@
+import { f, m } from '../lib/i18n.ts';
 import type { ActivityListResponse } from '@companion/queries';
 import { shortDay } from '../lib/dates.ts';
-import { CATEGORY_LABEL } from '../lib/format.ts';
+import { stripPace } from '../lib/format.ts';
 import { IntensityBar } from './charts/IntensityBar.tsx';
 import styles from './RunSummary.module.css';
 
@@ -9,42 +10,42 @@ type Run = ActivityListResponse[number];
 
 /** One run: what was planned, what it was, and how it felt. */
 export function RunSummary({ run, compact = false }: { run: Run; compact?: boolean }) {
-  const planned = run.planned_workout ? `Planned: ${run.planned_workout}` : CATEGORY_LABEL[run.category ?? 'other'];
+  const planned = run.planned_workout ? m.run.planned(run.planned_workout) : m.run.category[run.category ?? 'other'];
   return (
     <article className={styles.run} data-compact={compact || undefined}>
       <div className={styles.top}>
         <div>
-          <h3 className={styles.name}>{run.name ?? 'Run'}</h3>
+          <h3 className={styles.name}>{run.name ?? m.run.run}</h3>
           <p className={styles.meta}>
             {shortDay(run.date!)}, {planned}
-            {run.treadmill ? ', treadmill' : ''}
+            {run.treadmill ? `, ${m.run.treadmill}` : ''}
           </p>
         </div>
         <p className={styles.distance}>
-          {run.distance_km ?? '–'}
-          <small> km</small>
+          {f.number(f.distanceValue(run.distance_km), 2)}
+          <small> {f.distanceUnit}</small>
         </p>
       </div>
       <dl className={styles.stats}>
         <div>
-          <dt>Time</dt>
+          <dt>{m.run.time}</dt>
           <dd>{run.duration ?? '–'}</dd>
         </div>
         <div>
-          <dt>Pace</dt>
-          <dd>{run.pace?.replace('/km', '') ?? '–'}</dd>
+          <dt>{m.run.pace}</dt>
+          <dd>{stripPace(run.pace)}</dd>
         </div>
         <div>
-          <dt>Heart rate</dt>
+          <dt>{m.run.heartRate}</dt>
           <dd>{run.avg_hr ?? '–'}</dd>
         </div>
         <div>
-          <dt>Load</dt>
+          <dt>{m.run.load}</dt>
           <dd>{run.load_trimp ?? '–'}</dd>
         </div>
         {!compact ? (
           <div>
-            <dt>Effort (RPE)</dt>
+            <dt>{m.run.rpe}</dt>
             <dd>{run.rpe ?? '–'}</dd>
           </div>
         ) : null}

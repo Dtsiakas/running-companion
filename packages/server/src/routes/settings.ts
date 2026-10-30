@@ -120,8 +120,7 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
     return {
       demo: options.demo ?? false,
       garmin: keyStatus(current, today(), { fromEnv: locked.has('garminKey') }),
-      units: current.units ?? 'metric',
-      locked: { password: locked.has('passwordHash'), garminKey: locked.has('garminKey'), units: locked.has('units') },
+      locked: { password: locked.has('passwordHash'), garminKey: locked.has('garminKey') },
     };
   };
 
@@ -156,14 +155,6 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
       const expiresOn = (req.body as { expiresOn?: unknown } | undefined)?.expiresOn;
       if (expiresOn !== null && (typeof expiresOn !== 'string' || !isCalendarDate(expiresOn))) throw new InputError('The expiry date isn’t a valid date.');
       settings.update({ garminKeyExpiresOn: expiresOn });
-    }),
-  );
-
-  api.put('/units', json, (req, res) =>
-    save(res, () => {
-      const units = (req.body as { units?: unknown } | undefined)?.units;
-      if (units !== 'metric' && units !== 'imperial') throw new InputError('Units are metric or imperial.');
-      settings.update({ units });
     }),
   );
 
