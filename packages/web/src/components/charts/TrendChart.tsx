@@ -1,3 +1,4 @@
+import { m } from '../../lib/i18n.ts';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipContentProps, type TooltipValueType } from 'recharts';
 import type { TrendView } from '../../lib/trends.ts';
 import { useThemeColors } from '../../lib/useThemeColors.ts';
@@ -114,10 +115,10 @@ function TrendTooltip({ active, payload, view }: TooltipContentProps<TooltipValu
     <div className={styles.tooltip}>
       <strong>{point.title}</strong>
       <span>
-        {point.value === null ? 'No data' : view.format(point.value)}
+        {point.value === null ? m.trends.chart.noData : view.format(point.value)}
         {point.partial ? ' so far' : ''}
       </span>
-      {point.smoothed !== undefined && point.smoothed !== null ? <span>Average {view.format(point.smoothed)}</span> : null}
+      {point.smoothed !== undefined && point.smoothed !== null ? <span>{m.trends.chart.average(view.format(point.smoothed))}</span> : null}
     </div>
   );
 }

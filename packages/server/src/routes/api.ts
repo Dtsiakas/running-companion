@@ -105,13 +105,13 @@ export function apiRoutes({ db, writeDb, sync, isSyncRunning, cartoKey = null }:
   // Insights: today's signals, and the patterns in your history -----------------------------------------------
   router.get('/signals', handle(z.object({ date }), ({ date: day }, req) => getSignals(db, day, requestI18n(req))));
   router.get('/report', handle(z.object({ start: date, today: date }), ({ start, today }) => getWeeklyReport(db, start, today)));
-  router.get('/body', handle(z.object({ date }), ({ date: day }) => getBodyReport(db, day)));
+  router.get('/body', handle(z.object({ date }), ({ date: day }, req) => getBodyReport(db, day, requestI18n(req))));
   router.get('/sleep', handle(z.object({ date }), ({ date: day }) => ({ sleep: getSleepReport(db, day), stress: getStressReport(db, day) })));
-  router.get('/patterns', handle(z.object({ date }), ({ date: day }) => getPatterns(db, day)));
+  router.get('/patterns', handle(z.object({ date }), ({ date: day }, req) => getPatterns(db, day, requestI18n(req))));
 
-  router.get('/progress', handle(z.object({ date }), ({ date: day }) => getProgress(db, day)));
-  router.get('/year', handle(z.object({ year: z.coerce.number().int().min(2000).max(2100), today: date }), ({ year, today }) => getYearReview(db, year, today)));
-  router.get('/form', handle(z.object({ date }), ({ date: day }) => getFormTrend(db, day)));
+  router.get('/progress', handle(z.object({ date }), ({ date: day }, req) => getProgress(db, day, requestI18n(req))));
+  router.get('/year', handle(z.object({ year: z.coerce.number().int().min(2000).max(2100), today: date }), ({ year, today }, req) => getYearReview(db, year, today, requestI18n(req))));
+  router.get('/form', handle(z.object({ date }), ({ date: day }, req) => getFormTrend(db, day, requestI18n(req))));
 
   router.get('/sync', (_req, res) => res.json({ running: isSyncRunning() }));
 

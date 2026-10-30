@@ -19,8 +19,16 @@ test('short runs need nothing special; long runs get carbohydrate and fluids per
   assert.deepEqual(long.fluid_ml_per_hour, [400, 700]);
   assert.equal(long.expected_loss_ml, 2000);
   // After the run, only the shortfall still missing is replaced: 2000 − 550 × 2 = 900 ml, times 1.25–1.5.
-  assert.match(long.after.at(-1)!, /about 900 ml more than you drink on the way\. Drink about 1150–1350 ml/);
+  assert.match(long.after.at(-1)!, /about 900 ml more than you drink on the way\. Drink about 1,150–1,350 ml/);
 
   const veryLong = fuelPlan({ weightKg: 70, minutes: 180, sweatMlPerHour: 1000 });
   assert.match(veryLong.during[0]!, /60–90 g of carbohydrate per hour/);
+});
+
+test('the fuel plan speaks the reader’s language and units', async () => {
+  const { createI18n } = await import('@companion/i18n');
+  const greek = fuelPlan({ weightKg: 70, minutes: 120, sweatMlPerHour: 1000 }, createI18n({ lang: 'el', units: 'metric' }));
+  assert.match(greek.during[0]!, /υδατανθράκων την ώρα/);
+  const imperial = fuelPlan({ weightKg: 70, minutes: 120, sweatMlPerHour: 1000 }, createI18n({ lang: 'en', units: 'imperial' }));
+  assert.match(imperial.during.join(' '), /fl oz per hour/);
 });

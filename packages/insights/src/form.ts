@@ -1,3 +1,4 @@
+import { ENGLISH, type I18n } from '@companion/i18n';
 import type { DatabaseSync } from 'node:sqlite';
 import { percentile } from './stats.ts';
 
@@ -33,7 +34,7 @@ function num(value: unknown): number | null {
  * changing between months doesn't bias it), then each month's average is moved along that slope to your typical
  * easy speed. Months with fewer than three such runs are left out.
  */
-export function getFormTrend(db: DatabaseSync, today: string) {
+export function getFormTrend(db: DatabaseSync, today: string, i18n: I18n = ENGLISH) {
   const runs = db
     .prepare(
       `SELECT a.calendar_date, a.avg_speed_mps, a.avg_cadence_spm, a.avg_step_length_mm, a.avg_gct_ms, a.avg_vertical_ratio_pct, a.avg_vertical_oscillation_mm, a.avg_power_w
@@ -86,7 +87,7 @@ export function getFormTrend(db: DatabaseSync, today: string) {
       return [
         key,
         {
-          label: spec.label,
+          label: i18n.m.progress.form.measure[key] ?? spec.label,
           unit: spec.unit,
           better: spec.better,
           points,

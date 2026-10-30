@@ -7,14 +7,15 @@ import { TrendChart, type TrendPoint } from '../components/charts/TrendChart.tsx
 import { Note } from '../components/Note.tsx';
 import { ErrorState, Loading } from '../components/States.tsx';
 import { todayLocal, weekStartOf } from '../lib/dates.ts';
-import { RANGES, TREND_GROUPS, TREND_VIEWS, type RangeKey, type TrendView } from '../lib/trends.ts';
+import { f, m } from '../lib/i18n.ts';
+import { RANGES, TREND_GROUPS, trendViews, type RangeKey, type TrendView } from '../lib/trends.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Trends.module.css';
 
 /** Weekly levels are noisy (one or two runs a week can swing pace by 30 s/km), so the line is a rolling average. */
 const SMOOTH_WEEKS = 4;
 const DEFAULT_METRIC: TrendMetricName = 'pace_at_ref_hr';
-const isMetric = (value: string | null): value is TrendMetricName => value !== null && value in TREND_VIEWS;
+const isMetric = (value: string | null): value is TrendMetricName => value !== null && value in trendViews();
 
 /**
  * Any metric over months or years. The choice lives in the address (?metric=hrv&range=2y), so the back button,
@@ -26,7 +27,8 @@ export function Trends() {
   const fallback = !available || available.includes(DEFAULT_METRIC) ? DEFAULT_METRIC : 'run_km';
   const metric = isMetric(params.get('metric')) ? (params.get('metric') as TrendMetricName) : fallback;
   const range = RANGES.find((r) => r.key === params.get('range')) ?? RANGES[1];
-  const view = TREND_VIEWS[metric];
+  const views = trendViews();
+  const view = views[metric];
   const from = range.months === null ? undefined : monthsAgo(range.months);
   const trend = useTrend(metric, range.period, from);
   const patterns = usePatterns(todayLocal());
@@ -39,15 +41,15 @@ export function Trends() {
 
   return (
     <div className={blocks.page}>
-      <h1 className={blocks.title}>Trends</h1>
+      <h1 className={blocks.title}>{m.trends.title}</h1>
 
       <div className={styles.controls}>
         <label className={styles.metric}>
-          <span>Metric</span>
+          <span>{m.trends.metric}</span>
           <select value={metric} onChange={(event) => choose({ metric: event.target.value as TrendMetricName })}>
             {TREND_GROUPS.map((group) => (
-              <optgroup key={group} label={group}>
-                {(Object.entries(TREND_VIEWS) as Array<[TrendMetricName, TrendView]>)
+              <optgroup key={group} label={m.trends.groups[group]}>
+                {(Object.entries(views) as Array<[TrendMetricName, TrendView]>)
                   .filter(([key, v]) => v.group === group && (!available || available.includes(key) || key === metric))
                   .map(([key, v]) => (
                     <option key={key} value={key}>
@@ -58,10 +60,10 @@ export function Trends() {
             ))}
           </select>
         </label>
-        <div className={styles.ranges} role="group" aria-label="Time range">
+        <div className={styles.ranges} role="group" aria-label={m.trends.timeRange}>
           {RANGES.map((r) => (
             <button key={r.key} type="button" aria-pressed={r.key === range.key} onClick={() => choose({ range: r.key })}>
-              {r.label}
+              {m.trends.ranges[r.key]}
             </button>
           ))}
         </div>
@@ -72,17 +74,17 @@ export function Trends() {
       ) : trend.isError ? (
         <ErrorState error={trend.error} retry={() => void trend.refetch()} />
       ) : points.every((p) => p.value === null) ? (
-        <p className={blocks.empty}>No data for {view.label.toLowerCase()} in this range.</p>
+        <p className={blocks.empty}>{m.trends.noData(view.label.toLowerCase())}</p>
       ) : (
         <section className={styles.result} data-stale={trend.isPlaceholderData || undefined}>
           <Headline points={points} view={view} period={range.period} />
-          <TrendChart points={points} view={view} smoothingLabel={`${SMOOTH_WEEKS}-week average`} />
+          <TrendChart points={points} view={view} smoothingLabel={m.trends.average(SMOOTH_WEEKS)} />
           <Note>{view.note}</Note>
         </section>
       )}
 
-      <Section title="What works for you">
-        {patterns.isPending ? <Loading label="Looking for patterns" /> : patterns.isError ? <ErrorState error={patterns.error} /> : <Patterns patterns={patterns.data} />}
+      <Section title={m.trends.patterns}>
+        {patterns.isPending ? <Loading label={m.trends.lookingForPatterns} /> : patterns.isError ? <ErrorState error={patterns.error} /> : <Patterns patterns={patterns.data} />}
       </Section>
     </div>
   );
@@ -91,7 +93,7 @@ export function Trends() {
 /** Totals: the average per finished period, and the current one so far. Levels: the latest value and the change across the range. */
 function Headline({ points, view, period }: { points: TrendPoint[]; view: TrendView; period: 'week' | 'month' }) {
   const withData = points.filter((p): p is TrendPoint & { value: number } => p.value !== null);
-  const unit = period === 'week' ? 'week' : 'month';
+  const unit = period;
 
   if (view.kind === 'total') {
     const finished = withData.filter((p) => !p.partial);
@@ -100,11 +102,11 @@ function Headline({ points, view, period }: { points: TrendPoint[]; view: TrendV
     return (
       <dl className={blocks.stats}>
         <div>
-          <dt>Average per {unit}</dt>
+          <dt>{m.trends.averagePer(unit)}</dt>
           <dd>{average === null ? '–' : view.format(average)}</dd>
         </div>
         <div>
-          <dt>This {unit} so far</dt>
+          <dt>{m.trends.soFar(unit)}</dt>
           <dd>{current?.value === null || current === undefined ? '–' : view.format(current.value)}</dd>
         </div>
       </dl>
@@ -123,7 +125,7 @@ function Headline({ points, view, period }: { points: TrendPoint[]; view: TrendV
     <dl className={blocks.stats}>
       <div>
         <dt>
-          {averaged ? `${SMOOTH_WEEKS}-week average, to the ${last?.title.replace(/^Week/, 'week')}` : `Latest, ${last?.title}`}
+          {averaged ? m.trends.averageTo(SMOOTH_WEEKS, last?.title ?? '') : m.trends.latest(last?.title ?? '')}
         </dt>
         <dd>{last ? view.format(last.value) : '–'}</dd>
         {first && last && first !== last ? <dd className={blocks.change}>{change(first, last, view)}</dd> : null}
@@ -135,13 +137,14 @@ function Headline({ points, view, period }: { points: TrendPoint[]; view: TrendV
 /** "−9 s/km since May 2025" for pace (faster is the useful word), "+4.1 ms since …" otherwise. */
 function change(first: TrendPoint & { value: number }, last: TrendPoint & { value: number }, view: TrendView): string {
   const diff = last.value - first.value;
-  const since = `since ${first.title.replace(/^Week of /, '')}`;
-  if (view.toChart) {
+  const since = m.trends.since(first.label);
+  if (view.pace) {
     const seconds = Math.round(Math.abs(diff));
-    return seconds === 0 ? `Unchanged ${since}` : `${seconds} s/km ${diff < 0 ? 'faster' : 'slower'} ${since}`;
+    const amount = `${seconds} s${f.paceUnit}`;
+    return seconds === 0 ? m.trends.unchanged(since) : diff < 0 ? m.trends.faster(amount, since) : m.trends.slower(amount, since);
   }
   const text = view.format(Math.abs(diff));
-  if (!/[1-9]/.test(text)) return `Unchanged ${since}`;
+  if (!/[1-9]/.test(text)) return m.trends.unchanged(since);
   return `${diff > 0 ? '+' : '−'}${text} ${since}`;
 }
 
@@ -154,8 +157,8 @@ function toPoints(raw: Array<{ period: string | null; raw: number | null }>, vie
       const date = new Date(`${period === 'week' ? p.period : `${p.period}-01`}T12:00:00`);
       return {
         period: p.period,
-        label: date.toLocaleDateString('en-GB', period === 'week' ? { day: 'numeric', month: 'short' } : { month: 'short', year: '2-digit' }),
-        title: period === 'week' ? `Week of ${date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }),
+        label: new Intl.DateTimeFormat(f.tag, period === 'week' ? { day: 'numeric', month: 'short' } : { month: 'short', year: '2-digit' }).format(date),
+        title: period === 'week' ? m.trends.weekOf(f.dayMonthYear(p.period)) : f.monthYear(`${p.period}-15`),
         value: p.raw === null ? null : view.toChart ? view.toChart(p.raw) : p.raw,
         partial: p.period === current,
       };

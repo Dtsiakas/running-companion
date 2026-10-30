@@ -1,3 +1,4 @@
+import { m } from '../lib/i18n.ts';
 import type { Pattern, PatternResult } from '@companion/insights';
 import styles from './Patterns.module.css';
 
@@ -11,14 +12,11 @@ export function Patterns({ patterns }: { patterns: Pattern[] }) {
   const waiting = patterns.filter((p) => p.status === 'not_enough');
   return (
     <div className={styles.patterns}>
-      <p className={styles.intro}>
-        Comparisons from the last two years of your own data. Each finding passed a statistical test, so it’s unlikely to be chance, but these are associations, not proof of
-        cause.
-      </p>
-      {findings.length ? findings.map((pattern) => <PatternCard key={pattern.id} pattern={pattern} />) : <p className={styles.intro}>No clear patterns yet.</p>}
+      <p className={styles.intro}>{m.patterns.intro}</p>
+      {findings.length ? findings.map((pattern) => <PatternCard key={pattern.id} pattern={pattern} />) : <p className={styles.intro}>{m.patterns.none}</p>}
       {none.length ? (
         <details className={styles.more}>
-          <summary>No clear effect ({none.length})</summary>
+          <summary>{m.patterns.noEffect(none.length)}</summary>
           {none.map((pattern) => (
             <PatternCard key={pattern.id} pattern={pattern} />
           ))}
@@ -26,8 +24,8 @@ export function Patterns({ patterns }: { patterns: Pattern[] }) {
       ) : null}
       {waiting.length ? (
         <details className={styles.more}>
-          <summary>Waiting for more data ({waiting.length})</summary>
-          <p className={styles.intro}>Each comparison needs at least 8 days on each side; these fill up as your history grows.</p>
+          <summary>{m.patterns.waiting(waiting.length)}</summary>
+          <p className={styles.intro}>{m.patterns.waitingIntro}</p>
           {waiting.map((pattern) => (
             <PatternCard key={pattern.id} pattern={pattern} />
           ))}
@@ -58,12 +56,10 @@ function ResultRow({ result }: { result: PatternResult }) {
       <span className={styles.outcome}>{result.outcome}</span>
       <span className={styles.difference}>
         {result.difference}
-        {result.strength ? <span className={styles.strength}> {result.strength === 'strong' ? 'strong evidence' : 'moderate evidence'}</span> : null}
+        {result.strength ? <span className={styles.strength}> {result.strength === 'strong' ? m.patterns.strong : m.patterns.moderate}</span> : null}
       </span>
       {result.status !== 'not_enough' ? (
-        <span className={styles.sample}>
-          {result.a.n} vs {result.b.n} days
-        </span>
+        <span className={styles.sample}>{m.patterns.days(result.a.n, result.b.n)}</span>
       ) : null}
     </li>
   );

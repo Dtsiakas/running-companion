@@ -1,3 +1,4 @@
+import { f, m } from '../../lib/i18n.ts';
 import type { FormSeries, YearReview } from '@companion/insights';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipContentProps, type TooltipValueType } from 'recharts';
 import { shortDay } from '../../lib/dates.ts';
@@ -6,7 +7,7 @@ import { useThemeColors } from '../../lib/useThemeColors.ts';
 import styles from './charts.module.css';
 
 type TooltipProps = TooltipContentProps<TooltipValueType, string | number>;
-const monthTick = (month: string) => `${new Date(`${month}-15T12:00:00`).toLocaleDateString('en-GB', { month: 'short' })} ’${month.slice(2, 4)}`;
+const monthTick = (month: string) => `${new Intl.DateTimeFormat(f.tag, { month: 'short' }).format(new Date(`${month}-15T12:00:00`))} ’${month.slice(2, 4)}`;
 
 /**
  * One running-form measure by month, at your reference pace. Small multiples share one layout so they read as a set;
@@ -51,13 +52,13 @@ function FormTooltip({ active, payload, unit, digits }: TooltipProps & { unit: s
 /** Kilometres per month of the year; months still to come stay empty rather than showing as zero runs. */
 export function YearMonths({ review }: { review: YearReview }) {
   const colors = useThemeColors();
-  const data = review.months.map((m) => ({ ...m, km: m.month > review.through.slice(0, 7) ? null : m.km }));
+  const data = review.months.map((month) => ({ ...month, km: month.month > review.through.slice(0, 7) ? null : f.distanceValue(month.km) }));
   return (
     <div className={styles.plot} role="img" aria-label={`Kilometres per month in ${review.year}`}>
       <ResponsiveContainer width="100%" height={160}>
         <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }} barCategoryGap={4}>
           <CartesianGrid vertical={false} stroke={colors['--rule']} />
-          <XAxis dataKey="month" tickFormatter={(m: string) => new Date(`${m}-15T12:00:00`).toLocaleDateString('en-GB', { month: 'narrow' })} interval={0} tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={{ stroke: colors['--rule'] }} />
+          <XAxis dataKey="month" tickFormatter={(month: string) => f.monthLetter(`${month}-15`)} interval={0} tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={{ stroke: colors['--rule'] }} />
           <YAxis tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={false} width={44} />
           <Tooltip content={(props: TooltipProps) => <MonthTooltip {...props} />} cursor={{ fill: colors['--rule'], opacity: 0.4 }} />
           <Bar dataKey="km" fill={colors['--series-1']} radius={[4, 4, 0, 0]} isAnimationActive={false} />
@@ -69,12 +70,12 @@ export function YearMonths({ review }: { review: YearReview }) {
 
 function MonthTooltip({ active, payload }: TooltipProps) {
   if (!active || !payload?.length) return null;
-  const m = payload[0]!.payload as YearReview['months'][number];
+  const point = payload[0]!.payload as YearReview['months'][number];
   return (
     <div className={styles.tooltip}>
-      <strong>{new Date(`${m.month}-15T12:00:00`).toLocaleDateString('en-GB', { month: 'long' })}</strong>
+      <strong>{f.monthName(`${point.month}-15`)}</strong>
       <span>
-        {m.km} km, {m.runs} run{m.runs === 1 ? '' : 's'}
+        {f.number(point.km, 1)} {f.distanceUnit}, {m.run.list.runs(point.runs)}
       </span>
     </div>
   );

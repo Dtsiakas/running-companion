@@ -1,10 +1,12 @@
 import type { DatabaseSync } from 'node:sqlite';
+import { ENGLISH, type I18n } from '@companion/i18n';
 import { addDays } from './days.ts';
 
 type Row = Record<string, unknown>;
 const round = (value: number, digits = 1) => Math.round(value * 10 ** digits) / 10 ** digits;
 
-const KM_MARKS = [100, 250, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 7500, 10_000, 12_500, 15_000, 20_000];
+/** Distance marks in the reader's unit (km or miles). */
+const DISTANCE_MARKS = [100, 250, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 7500, 10_000, 12_500, 15_000, 20_000];
 const RUN_MARKS = [10, 25, 50, 100, 150, 200, 250, 300, 400, 500, 750, 1000, 1500, 2000];
 /** "First time under" marks per distance (seconds), from slower to faster. */
 const TIME_MARKS: Record<number, number[]> = {
@@ -13,7 +15,8 @@ const TIME_MARKS: Record<number, number[]> = {
   21097.5: [8100, 7200, 6600, 6300, 6000, 5700, 5400],
   42195: [16200, 14400, 13500, 12600, 11700, 10800],
 };
-const DISTANCE_NAME: Record<number, string> = { 400: '400 m', 1000: '1 km', 1609.344: '1 mile', 3000: '3 km', 5000: '5 km', 10000: '10 km', 21097.5: 'Half marathon', 42195: 'Marathon' };
+/** A best-effort distance's name: "5 km", "Half marathon". */
+export const distanceName = (metres: number, { m, f }: I18n = ENGLISH) => m.progress.distanceName[String(metres)] ?? f.distance(metres / 1000, 2);
 
 interface Run {
   id: number;
@@ -41,6 +44,8 @@ export function weekOf(date: string): string {
 export interface Milestone {
   date: string;
   title: string;
+  /** Milestones in one group replace each other on the same day: only the best "5 km under" mark of a day is kept. */
+  group: string;
   kind: 'distance' | 'runs' | 'time' | 'record';
   activity_id: number | null;
 }
@@ -49,17 +54,21 @@ export interface Milestone {
  * Lifetime totals, the milestones you've passed (with the day each one fell), the next ones with a rough arrival
  * date at your recent pace, records (longest run, biggest week and month, streaks) and personal bests per distance.
  */
-export function getProgress(db: DatabaseSync, today: string) {
+export function getProgress(db: DatabaseSync, today: string, i18n: I18n = ENGLISH) {
+  const { m, f } = i18n;
+  // Distance marks count in the reader's unit: a mile runner passes 1,000 miles, not 1,609 km.
+  const unit = f.toKm(1);
+  const markTitle = (mark: number) => m.progress.inTotal(`${f.number(mark)} ${f.distanceUnit}`);
   const runs = loadRuns(db, today);
   const milestones: Milestone[] = [];
   let km = 0;
   runs.forEach((run, i) => {
     const before = km;
     km += run.km;
-    for (const mark of KM_MARKS) if (before < mark && km >= mark) milestones.push({ date: run.date, title: `${mark.toLocaleString('en-GB')} km in total`, kind: 'distance', activity_id: run.id });
-    if (RUN_MARKS.includes(i + 1)) milestones.push({ date: run.date, title: `${i + 1} runs`, kind: 'runs', activity_id: run.id });
+    for (const mark of DISTANCE_MARKS) if (before < mark * unit && km >= mark * unit) milestones.push({ date: run.date, title: markTitle(mark), group: `distance-${mark}`, kind: 'distance', activity_id: run.id });
+    if (RUN_MARKS.includes(i + 1)) milestones.push({ date: run.date, title: m.progress.runs(f.number(i + 1)), group: `runs-${i + 1}`, kind: 'runs', activity_id: run.id });
   });
-  milestones.push(...timeMilestones(db, today));
+  milestones.push(...timeMilestones(db, today, i18n));
   milestones.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
   // Recent pace: the last eight weeks, for "about when" on the next marks.
@@ -67,25 +76,26 @@ export function getProgress(db: DatabaseSync, today: string) {
   const kmPerDay = recent.reduce((s, r) => s + r.km, 0) / 56;
   const runsPerDay = recent.length / 56;
   const eta = (missing: number, perDay: number) => (perDay > 0 ? addDays(today, Math.ceil(missing / perDay)) : null);
-  const nextKm = KM_MARKS.find((m) => m > km);
-  const nextRuns = RUN_MARKS.find((m) => m > runs.length);
+  const done = km / unit;
+  const nextMark = DISTANCE_MARKS.find((mark) => mark > done);
+  const nextRuns = RUN_MARKS.find((mark) => mark > runs.length);
 
   return {
     totals: { km: Math.round(km), runs: runs.length, hours: Math.round(runs.reduce((s, r) => s + r.seconds, 0) / 3600), climb_m: Math.round(runs.reduce((s, r) => s + r.climb, 0)), since: runs[0]?.date ?? null },
     next: [
-      nextKm ? { title: `${nextKm.toLocaleString('en-GB')} km in total`, progress: round(km), target: nextKm, unit: 'km', eta: eta(nextKm - km, kmPerDay) } : null,
-      nextRuns ? { title: `${nextRuns} runs`, progress: runs.length, target: nextRuns, unit: 'runs', eta: eta(nextRuns - runs.length, runsPerDay) } : null,
+      nextMark ? { title: markTitle(nextMark), progress: round(done), target: nextMark, unit: f.distanceUnit, eta: eta((nextMark - done) * unit, kmPerDay) } : null,
+      nextRuns ? { title: m.progress.runs(f.number(nextRuns)), progress: runs.length, target: nextRuns, unit: 'runs', eta: eta(nextRuns - runs.length, runsPerDay) } : null,
     ].filter((x) => x !== null),
     milestones,
     records: records(runs, today),
-    bests: personalBests(db, today),
+    bests: personalBests(db, today, i18n),
   };
 }
 
 export type Progress = ReturnType<typeof getProgress>;
 
 /** The first time each distance went under a round time, from the fastest stretch inside any run. */
-function timeMilestones(db: DatabaseSync, today: string): Milestone[] {
+function timeMilestones(db: DatabaseSync, today: string, i18n: I18n): Milestone[] {
   const efforts = db
     .prepare(`SELECT e.distance_m, e.duration_s, a.calendar_date, a.activity_id FROM activity_best_efforts e JOIN activities a USING (activity_id) WHERE a.calendar_date <= ? ORDER BY a.start_time`)
     .all(today) as Row[];
@@ -96,14 +106,14 @@ function timeMilestones(db: DatabaseSync, today: string): Milestone[] {
       for (const mark of marks) {
         if (!passed.has(mark) && Number(e.duration_s) < mark) {
           passed.add(mark);
-          out.push({ date: String(e.calendar_date), title: `${DISTANCE_NAME[Number(distance)]} under ${clock(mark)}`, kind: 'time', activity_id: Number(e.activity_id) });
+          out.push({ date: String(e.calendar_date), title: i18n.m.progress.under(distanceName(Number(distance), i18n), clock(mark)), group: `time-${distance}`, kind: 'time', activity_id: Number(e.activity_id) });
         }
       }
     }
   }
   // Only the most impressive mark per day and distance: going under 25:00 also means under 27:30 and 30:00.
   const best = new Map<string, Milestone>();
-  for (const m of out) best.set(`${m.date}|${m.title.split(' under ')[0]}`, m);
+  for (const m of out) best.set(`${m.date}|${m.group}`, m);
   return [...best.values()];
 }
 
@@ -152,7 +162,7 @@ function records(runs: Run[], today: string) {
 }
 
 /** Fastest stretch for each distance, ever and this year (from inside any run, not only races). */
-function personalBests(db: DatabaseSync, today: string) {
+function personalBests(db: DatabaseSync, today: string, i18n: I18n) {
   const year = today.slice(0, 4);
   const rows = db
     .prepare(
@@ -166,7 +176,7 @@ function personalBests(db: DatabaseSync, today: string) {
     const best = list[0]!;
     const thisYear = list.find((r) => String(r.calendar_date).startsWith(year));
     return {
-      distance: DISTANCE_NAME[distance] ?? `${round(distance / 1000, 2)} km`,
+      distance: distanceName(distance, i18n),
       distance_m: distance,
       best_s: Math.round(Number(best.duration_s)),
       date: String(best.calendar_date),
@@ -181,7 +191,7 @@ function personalBests(db: DatabaseSync, today: string) {
  * One year of running, against the year before: volume, consistency, the biggest days, personal bests set, how your
  * fitness and resting body changed from the start of the year to the end, and when and where you ran.
  */
-export function getYearReview(db: DatabaseSync, year: number, today: string) {
+export function getYearReview(db: DatabaseSync, year: number, today: string, i18n: I18n = ENGLISH) {
   const from = `${year}-01-01`;
   const to = `${year}-12-31` < today ? `${year}-12-31` : today;
   if (from > today) return null;
@@ -224,7 +234,7 @@ export function getYearReview(db: DatabaseSync, year: number, today: string) {
     const previous = best.get(d);
     if (previous === undefined || Number(e.duration_s) < previous) {
       best.set(d, Number(e.duration_s));
-      if (String(e.calendar_date) >= from) setThisYear.set(d, { distance: DISTANCE_NAME[d] ?? `${d} m`, distance_m: d, seconds: Math.round(Number(e.duration_s)), date: String(e.calendar_date), activity_id: Number(e.activity_id) });
+      if (String(e.calendar_date) >= from) setThisYear.set(d, { distance: distanceName(d, i18n), distance_m: d, seconds: Math.round(Number(e.duration_s)), date: String(e.calendar_date), activity_id: Number(e.activity_id) });
     }
   }
 

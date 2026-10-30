@@ -1,4 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite';
+import { ENGLISH, type I18n } from '@companion/i18n';
 import { addDays, clockFromMinutes, loadDays, type Day } from './days.ts';
 import { compare, percentile } from './stats.ts';
 
@@ -40,8 +41,12 @@ export interface Pattern {
 const YEARS = 2;
 const MIN_DAYS = 8;
 
+type T = I18n['m']['patterns'];
+type OutcomeKey = keyof T['outcome'];
+
 interface Outcome {
-  label: string;
+  /** Which message names this outcome. */
+  label: OutcomeKey;
   /** Which day's row holds the outcome, relative to the exposure day: 0 = same row, 1 = the next. */
   offset: number;
   value: (day: Day) => number | null;
@@ -51,13 +56,14 @@ interface Outcome {
   higherIsBetter: boolean;
 }
 
-const HRV: Omit<Outcome, 'offset'> = { label: 'HRV', value: (d) => (d.hrv ? Math.log(d.hrv) : null), kind: 'percent', higherIsBetter: true };
-const SLEEP_SCORE: Omit<Outcome, 'offset'> = { label: 'Sleep score', value: (d) => d.sleep_score, kind: 'points', higherIsBetter: true };
-const BODY_BATTERY: Omit<Outcome, 'offset'> = { label: 'Body Battery in the morning', value: (d) => d.body_battery, kind: 'points', higherIsBetter: true };
-const RECHARGE: Omit<Outcome, 'offset'> = { label: 'Overnight recharge', value: (d) => d.recharge, kind: 'points', higherIsBetter: true };
-const RHR: Omit<Outcome, 'offset'> = { label: 'Resting heart rate', value: (d) => d.rhr, kind: 'bpm', higherIsBetter: false };
+const HRV: Omit<Outcome, 'offset'> = { label: 'hrv', value: (d) => (d.hrv ? Math.log(d.hrv) : null), kind: 'percent', higherIsBetter: true };
+const SLEEP_SCORE: Omit<Outcome, 'offset'> = { label: 'sleepScore', value: (d) => d.sleep_score, kind: 'points', higherIsBetter: true };
+const BODY_BATTERY: Omit<Outcome, 'offset'> = { label: 'bodyBattery', value: (d) => d.body_battery, kind: 'points', higherIsBetter: true };
+const RECHARGE: Omit<Outcome, 'offset'> = { label: 'recharge', value: (d) => d.recharge, kind: 'points', higherIsBetter: true };
+const RHR: Omit<Outcome, 'offset'> = { label: 'rhr', value: (d) => d.rhr, kind: 'bpm', higherIsBetter: false };
 
-export function getPatterns(db: DatabaseSync, today: string): Pattern[] {
+export function getPatterns(db: DatabaseSync, today: string, i18n: I18n = ENGLISH): Pattern[] {
+  const t = i18n.m.patterns;
   const days = loadDays(db, addDays(today, -365 * YEARS), today);
   const byDate = new Map(days.map((d) => [d.date, d]));
   const shifted = (day: Day, offset: number) => (offset === 0 ? day : byDate.get(addDays(day.date, offset)));
@@ -82,7 +88,7 @@ export function getPatterns(db: DatabaseSync, today: string): Pattern[] {
           const value = target ? outcome.value(target) : null;
           return value === null || value === undefined ? [] : [value];
         });
-      return result(outcome, groups.a.label, collect(groups.a.test), groups.b.label, collect(groups.b.test), minimum);
+      return result(outcome, groups.a.label, collect(groups.a.test), groups.b.label, collect(groups.b.test), minimum, i18n);
     });
     return { id, title, comparison, results, caveat, status: overall(results) };
   };
@@ -97,9 +103,9 @@ export function getPatterns(db: DatabaseSync, today: string): Pattern[] {
   patterns.push(
     evaluate(
       'bedtime',
-      'Late bedtimes',
-      `Your latest third of bedtimes (after ${clockFromMinutes(lateFrom)}), compared with your earliest third (before ${clockFromMinutes(earlyUntil)})`,
-      { a: { label: `after ${clockFromMinutes(lateFrom)}`, test: (d) => d.bedtime_min !== null && d.bedtime_min >= lateFrom }, b: { label: `before ${clockFromMinutes(earlyUntil)}`, test: (d) => d.bedtime_min !== null && d.bedtime_min <= earlyUntil } },
+      t.bedtime.title,
+      t.bedtime.comparison(clockFromMinutes(lateFrom), clockFromMinutes(earlyUntil)),
+      { a: { label: t.bedtime.after(clockFromMinutes(lateFrom)), test: (d) => d.bedtime_min !== null && d.bedtime_min >= lateFrom }, b: { label: t.bedtime.before(clockFromMinutes(earlyUntil)), test: (d) => d.bedtime_min !== null && d.bedtime_min <= earlyUntil } },
       [
         { ...HRV, offset: 0 },
         { ...SLEEP_SCORE, offset: 0 },
@@ -107,7 +113,7 @@ export function getPatterns(db: DatabaseSync, today: string): Pattern[] {
         { ...BODY_BATTERY, offset: 0 },
       ],
       MIN_DAYS,
-      'A late night often comes with a late wake-up, so it isn’t always a short night.',
+      t.bedtime.caveat,
     ),
   );
 
@@ -115,9 +121,9 @@ export function getPatterns(db: DatabaseSync, today: string): Pattern[] {
   patterns.push(
     evaluate(
       'sleep-length',
-      'Short nights',
-      'Nights under 6h30 of sleep, compared with nights of 7h30 or more',
-      { a: { label: 'under 6h30', test: (d) => d.sleep_h !== null && d.sleep_h < 6.5 }, b: { label: '7h30 or more', test: (d) => d.sleep_h !== null && d.sleep_h >= 7.5 } },
+      t.shortNights.title,
+      t.shortNights.comparison,
+      { a: { label: t.shortNights.short, test: (d) => d.sleep_h !== null && d.sleep_h < 6.5 }, b: { label: t.shortNights.long, test: (d) => d.sleep_h !== null && d.sleep_h >= 7.5 } },
       [
         { ...HRV, offset: 0 },
         { ...RECHARGE, offset: 0 },
@@ -131,20 +137,20 @@ export function getPatterns(db: DatabaseSync, today: string): Pattern[] {
   // Your top quarter of training days, but never below a load of 100: in an easy period the top quarter isn't hard.
   const topQuarter = percentile(loads, 0.75);
   const hard = Math.max(100, topQuarter);
-  const hardLabel = hard === topQuarter ? `load above ${Math.round(hard)}, your top quarter` : `load of ${hard} or more`;
+  const hardLabel = hard === topQuarter ? t.hard.topQuarter(Math.round(hard)) : t.hard.fixed(hard);
   patterns.push(
     evaluate(
       'hard-session',
-      'Hard sessions',
-      `Days with a hard session (${hardLabel}), compared with rest days`,
-      { a: { label: 'hard session', test: (d) => (d.load ?? 0) >= hard }, b: { label: 'rest day', test: (d) => d.load === 0 } },
+      t.hard.title,
+      t.hard.comparison(hardLabel),
+      { a: { label: t.hard.hardDay, test: (d) => (d.load ?? 0) >= hard }, b: { label: t.hard.restDay, test: (d) => d.load === 0 } },
       [
-        { ...HRV, label: 'HRV the night after', offset: 1 },
-        { ...HRV, label: 'HRV two nights after', offset: 2 },
-        { ...RHR, label: 'Resting heart rate the day after', offset: 1 },
+        { ...HRV, label: 'hrvNightAfter', offset: 1 },
+        { ...HRV, label: 'hrvTwoNightsAfter', offset: 2 },
+        { ...RHR, label: 'rhrDayAfter', offset: 1 },
       ],
       MIN_DAYS,
-      'Rest days aren’t random: some follow hard days or come when you feel run down, which can make the comparison look better or worse than it is.',
+      t.hard.caveat,
     ),
   );
 
@@ -155,20 +161,20 @@ export function getPatterns(db: DatabaseSync, today: string): Pattern[] {
   patterns.push(
     evaluate(
       'stress',
-      'Stressful days',
-      `Days with high all-day stress (${Math.round(high)} or more, your top quarter), compared with calm days (${Math.round(low)} or less)`,
-      { a: { label: 'stressful day', test: (d) => d.stress !== null && d.stress >= high && (d.load ?? 0) < hard }, b: { label: 'calm day', test: (d) => d.stress !== null && d.stress <= low && (d.load ?? 0) < hard } },
+      t.stress.title,
+      t.stress.comparison(Math.round(high), Math.round(low)),
+      { a: { label: t.stress.stressful, test: (d) => d.stress !== null && d.stress >= high && (d.load ?? 0) < hard }, b: { label: t.stress.calm, test: (d) => d.stress !== null && d.stress <= low && (d.load ?? 0) < hard } },
       [
-        { ...HRV, label: 'HRV the night after', offset: 1 },
-        { ...SLEEP_SCORE, label: 'Sleep score the night after', offset: 1 },
+        { ...HRV, label: 'hrvNightAfter', offset: 1 },
+        { ...SLEEP_SCORE, label: 'sleepScoreNightAfter', offset: 1 },
       ],
       MIN_DAYS,
-      'Garmin calculates stress from heart rate variability, so part of this link is the same signal measured twice. Hard training days are left out, so it’s about life stress.',
+      t.stress.caveat,
     ),
   );
 
-  patterns.push(eveningRuns(db, today, byDate, evaluate));
-  patterns.push(...runPatterns(db, today, byDate));
+  patterns.push(eveningRuns(db, today, byDate, evaluate, t));
+  patterns.push(...runPatterns(db, today, byDate, i18n));
 
   const order = { effect: 0, no_effect: 1, not_enough: 2 };
   return patterns.filter((p) => p.results.length > 0).sort((a, b) => order[a.status] - order[b.status]);
@@ -180,41 +186,42 @@ type Evaluate = (id: string, title: string, comparison: string, groups: { a: { l
  * Does running late in the day cost sleep? Run days are grouped by when the run started (the latest run that day);
  * the outcome is the night that follows, which sits in the next day's row.
  */
-function eveningRuns(db: DatabaseSync, today: string, byDate: Map<string, Day>, evaluate: Evaluate): Pattern {
+function eveningRuns(db: DatabaseSync, today: string, byDate: Map<string, Day>, evaluate: Evaluate, t: T): Pattern {
   const starts = new Map(
     (db.prepare(`SELECT calendar_date, MAX(substr(start_time_local, 12, 5)) AS start FROM activities WHERE calendar_date >= ? AND type_key LIKE '%running%' GROUP BY calendar_date`).all(addDays(today, -365 * YEARS)) as Row[]).map((r) => [String(r.calendar_date), String(r.start)]),
   );
   const startOf = (d: Day) => starts.get(d.date);
   return evaluate(
     'evening-runs',
-    'Evening runs',
-    'Days you ran from 19:00 on, compared with days you ran before 17:00. The outcome is the night after.',
-    { a: { label: 'ran from 19:00', test: (d) => (startOf(d) ?? '') >= '19:00' }, b: { label: 'ran before 17:00', test: (d) => { const s = startOf(d); return s !== undefined && s < '17:00'; } } },
+    t.evening.title,
+    t.evening.comparison,
+    { a: { label: t.evening.late, test: (d) => (startOf(d) ?? '') >= '19:00' }, b: { label: t.evening.early, test: (d) => { const s = startOf(d); return s !== undefined && s < '17:00'; } } },
     [
-      { ...SLEEP_SCORE, label: 'Sleep score that night', offset: 1 },
-      { ...RECHARGE, label: 'Overnight recharge', offset: 1 },
-      { ...HRV, label: 'HRV that night', offset: 1 },
+      { ...SLEEP_SCORE, label: 'sleepScoreThatNight', offset: 1 },
+      { ...RECHARGE, label: 'recharge', offset: 1 },
+      { ...HRV, label: 'hrvThatNight', offset: 1 },
     ],
     MIN_DAYS,
-    'Evening runs are often the harder or longer sessions fitted in after work, so part of any difference can be the session, not the hour.',
+    t.evening.caveat,
   );
 }
 
 /** How the run itself responds: efficiency (metres per heartbeat) on easy outdoor runs, the measure least affected by pace choice. */
-function runPatterns(db: DatabaseSync, today: string, byDate: Map<string, Day>): Pattern[] {
+function runPatterns(db: DatabaseSync, today: string, byDate: Map<string, Day>, i18n: I18n): Pattern[] {
+  const t = i18n.m.patterns;
   const runs = db
     .prepare(
       `SELECT a.calendar_date, m.m_per_beat, w.temp_c, w.dew_point_c FROM activities a JOIN activity_metrics m USING (activity_id) LEFT JOIN activity_weather w USING (activity_id)
        WHERE m.category IN ('easy', 'long', 'recovery') AND m.is_treadmill = 0 AND m.m_per_beat IS NOT NULL AND a.calendar_date >= ?`,
     )
     .all(addDays(today, -365 * YEARS)) as Row[];
-  const efficiency: Omit<Outcome, 'offset' | 'value'> = { label: 'Efficiency on easy runs', kind: 'percent-of-mean', higherIsBetter: true };
+  const efficiency: Omit<Outcome, 'offset' | 'value'> = { label: 'efficiency', kind: 'percent-of-mean', higherIsBetter: true };
   const make = (id: string, title: string, comparison: string, a: [string, (r: Row) => boolean], b: [string, (r: Row) => boolean]): Pattern => {
     const pick = (test: (r: Row) => boolean) => runs.filter(test).map((r) => Number(r.m_per_beat));
     const [aRuns, bRuns] = [pick(a[1]), pick(b[1])];
     // Neither group has a single run (no weather without GPS, no Body Battery on some watches): nothing to say.
-    const results = aRuns.length + bRuns.length ? [result({ ...efficiency, offset: 0, value: () => null }, a[0], aRuns, b[0], bRuns, MIN_DAYS)] : [];
-    return { id, title, comparison, results, caveat: 'Easy outdoor runs only. Efficiency also improves as you get fitter, so groups from different seasons can differ for that reason too.', status: overall(results) };
+    const results = aRuns.length + bRuns.length ? [result({ ...efficiency, offset: 0, value: () => null }, a[0], aRuns, b[0], bRuns, MIN_DAYS, i18n)] : [];
+    return { id, title, comparison, results, caveat: t.runs.caveat, status: overall(results) };
   };
   const night = (r: Row) => byDate.get(String(r.calendar_date));
   // Heat as temperature plus dew point (°F), the measure behind the pace-cost rule, from Open-Meteo at the time and
@@ -226,50 +233,51 @@ function runPatterns(db: DatabaseSync, today: string, byDate: Map<string, Day>):
   return [
     make(
       'run-after-short-night',
-      'Running after a short night',
-      'Easy runs after under 6h30 of sleep, compared with after 7h30 or more',
-      ['after a short night', (r) => (night(r)?.sleep_h ?? 99) < 6.5],
-      ['after a full night', (r) => (night(r)?.sleep_h ?? 0) >= 7.5],
+      t.runs.shortNightTitle,
+      t.runs.shortNightComparison,
+      [t.runs.afterShort, (r) => (night(r)?.sleep_h ?? 99) < 6.5],
+      [t.runs.afterFull, (r) => (night(r)?.sleep_h ?? 0) >= 7.5],
     ),
     make(
       'run-body-battery',
-      'Running on a low battery',
-      'Easy runs on mornings with Body Battery under 60, compared with 80 or more',
-      ['Body Battery under 60', (r) => (night(r)?.body_battery ?? 100) < 60],
-      ['Body Battery 80+', (r) => (night(r)?.body_battery ?? 0) >= 80],
+      t.runs.batteryTitle,
+      t.runs.batteryComparison,
+      [t.runs.batteryLow, (r) => (night(r)?.body_battery ?? 100) < 60],
+      [t.runs.batteryHigh, (r) => (night(r)?.body_battery ?? 0) >= 80],
     ),
     make(
       'run-heat',
-      'Running in the heat',
-      'Easy runs in your warmest, most humid third of conditions, compared with your coolest third. Heat is air temperature plus dew point, from Open-Meteo at the time and place of each run, not the watch sensor.',
-      ['warm', (r) => (heatOf(r) ?? -Infinity) >= warm],
-      ['cool', (r) => (heatOf(r) ?? Infinity) <= cool],
+      t.runs.heatTitle,
+      t.runs.heatComparison,
+      [t.runs.warm, (r) => (heatOf(r) ?? -Infinity) >= warm],
+      [t.runs.cool, (r) => (heatOf(r) ?? Infinity) <= cool],
     ),
   ];
 }
 
-function result(outcome: Outcome, aLabel: string, a: number[], bLabel: string, b: number[], minimum: number): PatternResult {
+function result(outcome: Outcome, aLabel: string, a: number[], bLabel: string, b: number[], minimum: number, { m, f }: I18n): PatternResult {
+  const t = m.patterns;
   const mean = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
   const display = (m: number | null) => (m === null ? null : outcome.kind === 'percent' ? Math.round(Math.exp(m)) : Math.round(m * 1000) / 1000);
-  const base = { outcome: outcome.label, a: { label: aLabel, n: a.length, mean: display(mean(a)) }, b: { label: bLabel, n: b.length, mean: display(mean(b)) } };
+  const base = { outcome: t.outcome[outcome.label], a: { label: aLabel, n: a.length, mean: display(mean(a)) }, b: { label: bLabel, n: b.length, mean: display(mean(b)) } };
   if (a.length < minimum || b.length < minimum) {
-    return { ...base, status: 'not_enough', difference: `needs at least ${minimum} days of each (now ${a.length} and ${b.length})`, strength: null, p: null };
+    return { ...base, status: 'not_enough', difference: t.needs(minimum, a.length, b.length), strength: null, p: null };
   }
   const c = compare(a, b)!;
-  const direction = c.difference > 0 ? 'higher' : 'lower';
   const amount =
     outcome.kind === 'percent'
       ? `${Math.round(Math.abs(Math.exp(c.difference) - 1) * 100)}%`
       : outcome.kind === 'percent-of-mean'
         ? `${Math.round(Math.abs(c.difference / c.b.mean) * 100)}%`
         : outcome.kind === 'bpm'
-          ? `${Math.round(Math.abs(c.difference) * 10) / 10} bpm`
-          : `${Math.round(Math.abs(c.difference))} points`;
+          ? `${f.number(Math.abs(c.difference), 1)} bpm`
+          : t.points(Math.round(Math.abs(c.difference)));
+  const stated = c.difference > 0 ? t.higher(amount) : t.lower(amount);
   if (c.p < 0.05 && Math.abs(c.d) >= 0.25) {
-    return { ...base, status: 'effect', difference: `${amount} ${direction}`, strength: c.p < 0.01 && Math.abs(c.d) >= 0.4 ? 'strong' : 'moderate', p: c.p };
+    return { ...base, status: 'effect', difference: stated, strength: c.p < 0.01 && Math.abs(c.d) >= 0.4 ? 'strong' : 'moderate', p: c.p };
   }
   // Real but tiny (many days make even small differences detectable) is different from no difference at all.
-  const difference = c.p < 0.05 ? `only ${amount} ${direction}: real, but too small to matter` : 'no clear difference';
+  const difference = c.p < 0.05 ? t.tiny(stated) : t.noDifference;
   return { ...base, status: 'no_effect', difference, strength: null, p: c.p };
 }
 
