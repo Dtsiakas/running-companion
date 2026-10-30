@@ -1,3 +1,4 @@
+import { ENGLISH, type I18n } from '@companion/i18n';
 import type { DatabaseSync } from 'node:sqlite';
 import { round } from './format.ts';
 
@@ -100,7 +101,7 @@ const FITNESS_AGE_COMPONENTS: Record<string, { label: string; unit: string }> = 
  * Garmin's fitness age and what drives it, from the latest stored response. Each component says where you are and,
  * when Garmin suggests one, the target and the age you could reach. Garmin's own priority marks the biggest lever.
  */
-export function getFitnessAge(db: DatabaseSync) {
+export function getFitnessAge(db: DatabaseSync, i18n: I18n = ENGLISH) {
   const raw = db.prepare(`SELECT body FROM raw_responses WHERE endpoint = 'fitness-age' ORDER BY fetched_at DESC LIMIT 1`).get() as Row | undefined;
   const goal = db.prepare('SELECT weight_goal_kg FROM profile_snapshots ORDER BY calendar_date DESC LIMIT 1').get() as Row | undefined;
   if (!raw) return null;
@@ -114,7 +115,7 @@ export function getFitnessAge(db: DatabaseSync) {
     .filter(([key]) => key in FITNESS_AGE_COMPONENTS)
     .map(([key, c]) => ({
       key,
-      label: FITNESS_AGE_COMPONENTS[key]!.label,
+      label: i18n.m.body.fitnessComponents[key] ?? FITNESS_AGE_COMPONENTS[key]!.label,
       unit: FITNESS_AGE_COMPONENTS[key]!.unit,
       value: round(c.value, 1),
       target: round(c.targetValue, 1),

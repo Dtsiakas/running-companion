@@ -1,3 +1,4 @@
+import { f, m } from '../../lib/i18n.ts';
 import type { BatteryDay, Night } from '@companion/insights';
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipContentProps, type TooltipValueType } from 'recharts';
 import { shortDay } from '../../lib/dates.ts';
@@ -6,7 +7,7 @@ import { useThemeColors } from '../../lib/useThemeColors.ts';
 import styles from './charts.module.css';
 
 type TooltipProps = TooltipContentProps<TooltipValueType, string | number>;
-const dayTick = (d: string) => shortDay(d).replace(/^\w+ /, '');
+const dayTick = (d: string) => f.dayMonth(d);
 const clockTick = (m: number) => {
   const v = ((m % 1440) + 1440) % 1440;
   return `${String(Math.floor(v / 60)).padStart(2, '0')}:00`;
@@ -28,18 +29,18 @@ export function SleepDiary({ nights, target }: { nights: Night[]; target: string
     <figure className={styles.figure}>
       <div className={styles.legend}>
         <span>
-          <i style={{ background: colors['--series-1'] }} /> Weeknight
+          <i style={{ background: colors['--series-1'] }} /> {m.sleep.charts.weeknight}
         </span>
         <span>
-          <i style={{ background: colors['--series-2'] }} /> Weekend night
+          <i style={{ background: colors['--series-2'] }} /> {m.sleep.charts.weekend}
         </span>
         {target ? (
           <span>
-            <i style={{ background: 'none', borderTop: `2px dashed ${colors['--ink-2']}`, height: 0 }} /> Asleep by {target} for Garmin’s need
+            <i style={{ background: 'none', borderTop: `2px dashed ${colors['--ink-2']}`, height: 0 }} /> {m.sleep.charts.target(target)}
           </span>
         ) : null}
       </div>
-      <div className={styles.plot} role="img" aria-label={`Sleep times for the last ${nights.length} nights`}>
+      <div className={styles.plot} role="img" aria-label={m.sleep.charts.timesLabel(nights.length)}>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }} barCategoryGap={2}>
             <CartesianGrid vertical={false} stroke={colors['--rule']} />
@@ -64,14 +65,14 @@ function NightTooltip({ active, payload }: TooltipProps) {
   const night = payload[0]!.payload as Night;
   return (
     <div className={styles.tooltip}>
-      <strong>Night to {shortDay(night.date)}</strong>
+      <strong>{m.sleep.charts.nightTo(shortDay(night.date))}</strong>
       <span>
-        {night.bed} to {night.wake}
+        {night.bed}–{night.wake}
       </span>
       <span>
-        {hoursText(night.hours)} asleep{night.need_h ? `, needed ${hoursText(night.need_h)}` : ''}
+        {m.sleep.charts.asleepNeeded(hoursText(night.hours), night.need_h ? hoursText(night.need_h) : null)}
       </span>
-      {night.score !== null ? <span>Score {night.score}</span> : null}
+      {night.score !== null ? <span>{m.sleep.charts.score(night.score)}</span> : null}
     </div>
   );
 }
@@ -83,13 +84,13 @@ export function SleepVsNeed({ nights }: { nights: Night[] }) {
     <figure className={styles.figure}>
       <div className={styles.legend}>
         <span>
-          <i style={{ background: colors['--series-1'] }} /> Asleep
+          <i style={{ background: colors['--series-1'] }} /> {m.sleep.charts.asleep}
         </span>
         <span>
-          <i style={{ background: colors['--ink-2'], height: 2 }} /> Garmin’s need
+          <i style={{ background: colors['--ink-2'], height: 2 }} /> {m.sleep.charts.need}
         </span>
       </div>
-      <div className={styles.plot} role="img" aria-label={`Hours asleep against sleep need, last ${nights.length} nights`}>
+      <div className={styles.plot} role="img" aria-label={m.sleep.charts.needLabel(nights.length)}>
         <ResponsiveContainer width="100%" height={180}>
           <ComposedChart data={nights} margin={{ top: 8, right: 8, bottom: 0, left: -16 }} barCategoryGap={3}>
             <CartesianGrid vertical={false} stroke={colors['--rule']} />
@@ -113,13 +114,13 @@ export function BatteryBalance({ days }: { days: BatteryDay[] }) {
     <figure className={styles.figure}>
       <div className={styles.legend}>
         <span>
-          <i style={{ background: colors['--series-1'] }} /> Charged
+          <i style={{ background: colors['--series-1'] }} /> {m.sleep.charts.charged}
         </span>
         <span>
-          <i style={{ background: colors['--series-2'] }} /> Drained
+          <i style={{ background: colors['--series-2'] }} /> {m.sleep.charts.drained}
         </span>
       </div>
-      <div className={styles.plot} role="img" aria-label={`Body Battery charged and drained per day, last ${days.length} days`}>
+      <div className={styles.plot} role="img" aria-label={m.sleep.charts.batteryLabel(days.length)}>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }} stackOffset="sign" barCategoryGap={2}>
             <CartesianGrid vertical={false} stroke={colors['--rule']} />
@@ -143,9 +144,9 @@ function BatteryTooltip({ active, payload }: TooltipProps) {
   return (
     <div className={styles.tooltip}>
       <strong>{shortDay(day.date)}</strong>
-      <span>Charged {day.charged ?? '–'}, drained {day.drained ?? '–'}</span>
-      {net !== null ? <span>Net {net > 0 ? '+' : net < 0 ? '−' : ''}{Math.abs(net)}</span> : null}
-      {day.morning !== null ? <span>Morning level {day.morning}</span> : null}
+      <span>{m.sleep.charts.chargedDrained(String(day.charged ?? '–'), String(day.drained ?? '–'))}</span>
+      {net !== null ? <span>{m.sleep.charts.net(f.signed(net))}</span> : null}
+      {day.morning !== null ? <span>{m.sleep.charts.morningLevel(day.morning)}</span> : null}
     </div>
   );
 }

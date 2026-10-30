@@ -1,8 +1,7 @@
+import { f } from './i18n.ts';
+
 /** "6h 36m" from decimal hours. */
-export function hoursText(hours: number): string {
-  const total = Math.round(hours * 60);
-  return `${Math.floor(total / 60)}h ${String(total % 60).padStart(2, '0')}m`;
-}
+export const hoursText = (hours: number) => f.hours(hours);
 
 /** "23:38" → −22, "02:15" → 135: the same continuous scale as the sleep report's bedtimes. */
 export function minutesFromClock(clock: string): number {
@@ -12,7 +11,4 @@ export function minutesFromClock(clock: string): number {
 }
 
 /** "3h 07m" or "45 min" for a span of minutes. */
-export function spanText(minutes: number): string {
-  const m = Math.abs(Math.round(minutes));
-  return m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
-}
+export const spanText = (minutes: number) => f.span(minutes);

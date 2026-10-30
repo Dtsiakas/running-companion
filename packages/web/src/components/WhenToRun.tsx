@@ -1,3 +1,4 @@
+import { f, m } from '../lib/i18n.ts';
 import type { ForecastDay, RunForecast } from '@companion/weather';
 import { useForecast } from '../api/hooks.ts';
 import { Note } from './Note.tsx';
@@ -15,15 +16,14 @@ export function WhenToRun() {
   const days = forecast.data.days.filter((d) => d.hours.length);
   if (!days.length) return null;
   return (
-    <Section title="When to run">
+    <Section title={m.weather.whenToRun}>
       <div className={styles.days}>
         {days.map((day, i) => (
-          <DayPlan key={day.date} day={day} label={i === 0 && day.date === forecast.data!.days[0]!.date ? 'Today' : 'Tomorrow'} />
+          <DayPlan key={day.date} day={day} label={i === 0 && day.date === forecast.data!.days[0]!.date ? m.weather.today : m.weather.tomorrow} />
         ))}
       </div>
       <Note>
-        <Source forecast={forecast.data} /> The heat cost is how much slower the same effort runs at that hour (temperature plus dew point). The best window is the coolest stretch of up to three hours
-        with under a 50% chance of rain, between 06:00 and 22:00. Garmin’s workout for the day stays the plan; this is only when to fit it in.
+        <Source forecast={forecast.data} /> {m.weather.note}
       </Note>
     </Section>
   );
@@ -40,30 +40,24 @@ function DayPlan({ day, label }: { day: ForecastDay; label: string }) {
             {day.best.from}–{day.best.to}
           </strong>
           <span>
-            {day.best.temp_c}°C, {day.best.heat.pct > 0 ? `heat cost about ${day.best.heat.pct}%` : 'no heat cost'}
+            {f.temperature(day.best.temp_c)}, {day.best.heat.pct > 0 ? m.weather.heatCostAbout(day.best.heat.pct) : m.weather.noHeatCost}
           </span>
         </p>
       ) : (
-        <p className={blocks.explain}>Rain likely all day.</p>
+        <p className={blocks.explain}>{m.weather.rainAllDay}</p>
       )}
       {day.avoid ? (
         <p className={styles.avoid}>
           <span aria-hidden="true">▲ </span>
-          Avoid around {day.avoid.from}: {day.avoid.temp_c}°C, about {day.avoid.heat.pct}% slower. {day.avoid.heat.label}.
+          {m.weather.avoid(day.avoid.from, f.temperature(day.avoid.temp_c), day.avoid.heat.pct, m.weather.heat[day.avoid.heat.level])}
         </p>
       ) : Number.isFinite(hottest) ? (
-        <p className={styles.fine}>Up to {Math.round(hottest)}°C: no hour costs much.</p>
+        <p className={styles.fine}>{m.weather.fine(f.temperature(hottest))}</p>
       ) : null}
     </article>
   );
 }
 
 function Source({ forecast }: { forecast: RunForecast }) {
-  const time = new Date(forecast.fetched_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  return (
-    <>
-      Forecast for {forecast.place.name ?? 'where you usually run'} from Open-Meteo, updated {time}
-      {forecast.stale ? ' (couldn’t refresh: the forecast service is unreachable)' : ''}.
-    </>
-  );
+  return <>{m.weather.source(forecast.place.name ?? m.weather.usualPlace, f.time(new Date(forecast.fetched_at)), !!forecast.stale)}</>;
 }

@@ -90,3 +90,6 @@ const subscribe = (listener: () => void) => {
 
 /** A number that changes whenever the locale does: the key that re-renders the app. */
 export const useLocaleVersion = () => useSyncExternalStore(subscribe, () => version);
+
+/** The current locale as one object, for shared code that takes one (the fuel planner). */
+export const current = () => ({ locale, m, f });

@@ -45,6 +45,11 @@ export function createFormat(locale: Locale) {
     return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
   };
 
+  // Hour and minute marks: "7h 26m" in English, "7ώ 26λ" in Greek.
+  const H = locale.lang === 'el' ? 'ώ' : 'h';
+  const M = locale.lang === 'el' ? 'λ' : 'm';
+  const MIN = locale.lang === 'el' ? 'λεπτά' : 'min';
+
   const format = {
     locale,
     tag,
@@ -108,8 +113,22 @@ export function createFormat(locale: Locale) {
     hoursMinutes: (hours: number | null | undefined): string => {
       if (missing(hours)) return NONE;
       const total = Math.round(hours * 60);
-      return `${Math.floor(total / 60)}h ${String(total % 60).padStart(2, '0')}`;
+      return `${Math.floor(total / 60)}${H} ${String(total % 60).padStart(2, '0')}`;
     },
+    /** 6.6 → "6h 36m" */
+    hours: (hours: number | null | undefined): string => {
+      if (missing(hours)) return NONE;
+      const total = Math.round(hours * 60);
+      return `${Math.floor(total / 60)}${H} ${String(total % 60).padStart(2, '0')}${M}`;
+    },
+    /** A span of minutes: "45 min" or "3h 07m". */
+    span: (minutes: number | null | undefined): string => {
+      if (missing(minutes)) return NONE;
+      const m = Math.abs(Math.round(minutes));
+      return m < 60 ? `${m} ${MIN}` : `${Math.floor(m / 60)}${H} ${String(m % 60).padStart(2, '0')}${M}`;
+    },
+    /** "45 min" */
+    minutes: (minutes: number | null | undefined): string => (missing(minutes) ? NONE : `${nf(0).format(Math.round(minutes))} ${MIN}`),
     /** Minutes after midnight → "23:15" */
     clockTime: (minutes: number | null | undefined): string => {
       if (missing(minutes)) return NONE;

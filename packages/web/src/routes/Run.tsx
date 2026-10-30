@@ -13,7 +13,7 @@ import { Section } from '../components/Section.tsx';
 import { ErrorState, Loading } from '../components/States.tsx';
 import { longDay, todayLocal } from '../lib/dates.ts';
 import { paceGap, stripPace } from '../lib/format.ts';
-import { f, m } from '../lib/i18n.ts';
+import { current, f, m } from '../lib/i18n.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Run.module.css';
 
@@ -201,7 +201,7 @@ function Conditions({ run, weather }: { run: Activity; weather: NonNullable<Acti
           <dt>{m.run.conditions.heatCost}</dt>
           <dd>
             {weather.heat.pct > 0 ? m.run.conditions.about(weather.heat.pct) : m.run.conditions.none}
-            <small className={styles.below}>{weather.heat.label}</small>
+            <small className={styles.below}>{m.weather.heat[weather.heat.level]}</small>
           </dd>
         </div>
         {weather.cool_pace ? (
@@ -246,7 +246,7 @@ function RunFuel({ run }: { run: Activity }) {
   const water = run.water_estimated_ml;
   const lossPct = water ? (water / 1000 / weightKg) * 100 : null;
   const sweatRate = water && hours > 0.25 ? Math.round(water / hours / 10) * 10 : null;
-  const plan = fuelPlan({ weightKg, minutes: run.duration_min, hard: HARD.has(run.category ?? '') || (run.load_trimp ?? 0) >= 100, sweatMlPerHour: sweatRate ?? body.data?.sweat.typical_ml_per_hour ?? null });
+  const plan = fuelPlan({ weightKg, minutes: run.duration_min, hard: HARD.has(run.category ?? '') || (run.load_trimp ?? 0) >= 100, sweatMlPerHour: sweatRate ?? body.data?.sweat.typical_ml_per_hour ?? null }, current());
 
   return (
     <Section title={m.run.fuel.title}>

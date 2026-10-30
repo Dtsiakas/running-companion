@@ -1,3 +1,4 @@
+import { m } from '../lib/i18n.ts';
 import type { ReportLine, WeeklyReport } from '@companion/insights';
 import { Link } from 'react-router';
 import { shortDay } from '../lib/dates.ts';
@@ -11,10 +12,10 @@ const TONE = { good: '✓', concern: '▲', neutral: '' } as const;
  */
 export function WeekReport({ report }: { report: WeeklyReport }) {
   const groups: Array<[string, ReportLine[]]> = [
-    ['Training', report.training],
-    ['Recovery and sleep', report.recovery],
-    ['Life', report.life],
-    ['Body', report.body],
+    [m.week.groups.training, report.training],
+    [m.week.groups.recovery, report.recovery],
+    [m.week.groups.life, report.life],
+    [m.week.groups.body, report.body],
   ];
   return (
     <div className={styles.report}>
@@ -25,7 +26,7 @@ export function WeekReport({ report }: { report: WeeklyReport }) {
           {report.bests.map((best) => (
             <li key={best.distance}>
               <Link to={`/runs/${best.activity_id}`}>
-                {best.scope === 'all-time' ? 'New all-time best' : 'Best in a year'}: {best.distance} in {best.time}
+                {best.scope === 'all-time' ? m.week.allTimeBest : m.week.yearBest}: {m.week.bestIn(best.distance, best.time)}
               </Link>
               <span className={styles.when}> ({shortDay(best.date)})</span>
             </li>
@@ -42,14 +43,14 @@ export function WeekReport({ report }: { report: WeeklyReport }) {
               <ul>
                 {lines.map((line) => (
                   <li key={line.text} data-tone={line.tone}>
-                    <span className={styles.mark} aria-label={line.tone === 'neutral' ? undefined : line.tone === 'good' ? 'Good' : 'Worth attention'}>
+                    <span className={styles.mark} aria-label={line.tone === 'neutral' ? undefined : line.tone === 'good' ? m.week.good : m.week.attention}>
                       {TONE[line.tone]}
                     </span>
                     {line.text}
                   </li>
                 ))}
               </ul>
-              {title === 'Training' && report.key_sessions.length ? (
+              {title === m.week.groups.training && report.key_sessions.length ? (
                 <ul className={styles.sessions}>
                   {report.key_sessions.map((session) => (
                     <li key={session.activity_id}>
@@ -64,7 +65,7 @@ export function WeekReport({ report }: { report: WeeklyReport }) {
 
       {report.signals.length ? (
         <p className={styles.signals}>
-          Raised this week: {report.signals.map((s) => `${s.title.toLowerCase()} (${s.days} ${s.days === 1 ? 'day' : 'days'})`).join(', ')}.
+          {m.week.raised(report.signals.map((s) => m.week.raisedItem(s.title.toLowerCase(), s.days)).join(', '))}
         </p>
       ) : null}
     </div>

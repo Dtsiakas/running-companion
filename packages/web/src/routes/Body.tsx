@@ -5,12 +5,12 @@ import { Note } from '../components/Note.tsx';
 import { Section } from '../components/Section.tsx';
 import { ErrorState, Loading } from '../components/States.tsx';
 import { todayLocal } from '../lib/dates.ts';
-import { m } from '../lib/i18n.ts';
+import { f, m } from '../lib/i18n.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Body.module.css';
 
 const MARK = { good: '✓', concern: '▲', neutral: '' } as const;
-const kcal = (value: number) => `${value.toLocaleString('en-GB')} kcal`;
+const kcal = (value: number) => `${f.number(value)} kcal`;
 
 /**
  * Weight, body composition, energy and food. Ranges and plans follow the published sports-nutrition position stands,
@@ -26,30 +26,29 @@ export function Body() {
 
   return (
     <div className={blocks.page}>
-      <h1 className={blocks.title}>Body</h1>
+      <h1 className={blocks.title}>{m.body.title}</h1>
 
       {weight ? (
-        <Section title="Weight">
+        <Section title={m.body.weight}>
           <dl className={blocks.stats}>
             <div>
-              <dt>Trend</dt>
-              <dd>{weight.trend_kg} kg</dd>
+              <dt>{m.body.trend}</dt>
+              <dd>{f.weight(weight.trend_kg)}</dd>
             </div>
             {weight.goal_kg !== null ? (
               <div>
-                <dt>Goal</dt>
-                <dd>{weight.goal_kg} kg</dd>
+                <dt>{m.body.goal}</dt>
+                <dd>{f.weight(weight.goal_kg)}</dd>
                 {weight.to_goal_kg !== null && Math.abs(weight.to_goal_kg) >= 0.5 ? (
-                  <dd className={blocks.change}>{Math.abs(weight.to_goal_kg)} kg to go</dd>
+                  <dd className={blocks.change}>{m.body.toGo(f.weight(Math.abs(weight.to_goal_kg)))}</dd>
                 ) : null}
               </div>
             ) : null}
             {weight.change_4w_kg !== null ? (
               <div>
-                <dt>Last 4 weeks</dt>
+                <dt>{m.body.last4}</dt>
                 <dd>
-                  {weight.change_4w_kg > 0 ? '+' : weight.change_4w_kg < 0 ? '−' : ''}
-                  {Math.abs(weight.change_4w_kg)} kg
+                  {f.signed(f.weightValue(weight.change_4w_kg), 1)} {f.weightUnit}
                 </dd>
               </div>
             ) : null}
@@ -57,46 +56,40 @@ export function Body() {
           <p className={styles.assessment} data-tone={weight.tone}>
             {MARK[weight.tone] ? <span aria-hidden="true">{MARK[weight.tone]} </span> : null}
             {weight.assessment}
-            {weight.projected_goal_date
-              ? ` At this pace you’d reach ${weight.goal_kg} kg around ${new Date(`${weight.projected_goal_date}T12:00:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}.`
-              : ''}
+            {weight.projected_goal_date && weight.goal_kg !== null ? m.body.projected(f.weight(weight.goal_kg), f.dayMonthYear(weight.projected_goal_date)) : ''}
           </p>
           <WeightChart series={body.data.weight_series} weighIns={body.data.weigh_ins} goal={weight.goal_kg} />
           <Note>
-            {m.notes.weight} The goal is the one you set in Garmin Connect. For a runner, losing no more than about 0.5–1% of body weight a week keeps training,
-            recovery and muscle intact; faster tends to cost all three.
+            {m.notes.weight} {m.body.weightNote}
           </Note>
         </Section>
       ) : !composition ? (
-        <Section title="Weight">
-          <p className={blocks.explain}>
-            No weigh-ins yet. Weight, body composition, and the food and fuel amounts that depend on body weight come from a Garmin smart scale, or from weights
-            you enter in Garmin Connect.
-          </p>
+        <Section title={m.body.weight}>
+          <p className={blocks.explain}>{m.body.noWeighIns}</p>
         </Section>
       ) : null}
 
       <div className={blocks.columns}>
         {composition || age?.fitness_age ? (
-          <Section title={composition ? 'Composition' : 'Fitness age'}>
+          <Section title={composition ? m.body.composition : m.body.fitnessAge}>
             <dl className={blocks.facts}>
               {composition ? (
                 <>
                   <div>
-                    <dt>Body fat</dt>
+                    <dt>{m.body.bodyFat}</dt>
                     <dd>
-                      {composition.body_fat_pct}%
+                      {f.percent(composition.body_fat_pct, 1)}
                       {composition.body_fat_change_pts !== null ? (
-                        <small className={styles.change}> {signedText(composition.body_fat_change_pts, ' pts')}</small>
+                        <small className={styles.change}> {signedText(composition.body_fat_change_pts, ` ${m.body.pts}`)}</small>
                       ) : null}
                     </dd>
                   </div>
                   <div>
-                    <dt>Muscle mass</dt>
+                    <dt>{m.body.muscle}</dt>
                     <dd>
-                      {composition.muscle_kg} kg
+                      {f.weight(composition.muscle_kg)}
                       {composition.muscle_change_kg !== null ? (
-                        <small className={styles.change}> {signedText(composition.muscle_change_kg, ' kg')}</small>
+                        <small className={styles.change}> {signedText(f.weightValue(composition.muscle_change_kg)!, ` ${f.weightUnit}`)}</small>
                       ) : null}
                     </dd>
                   </div>
@@ -104,26 +97,28 @@ export function Body() {
               ) : null}
               {age?.fitness_age ? (
                 <div>
-                  <dt>Fitness age</dt>
+                  <dt>{m.body.fitnessAge}</dt>
                   <dd>
                     {age.fitness_age}
-                    {age.actual_age ? <small className={styles.change}> actual {age.actual_age}</small> : null}
+                    {age.actual_age ? <small className={styles.change}> {m.body.actual(age.actual_age)}</small> : null}
                   </dd>
                 </div>
               ) : null}
             </dl>
-            {weight && !composition ? <p className={blocks.empty}>No body composition in the last two weeks.</p> : null}
+            {weight && !composition ? <p className={blocks.empty}>{m.body.noComposition}</p> : null}
             {composition?.muscle_loss_flag ? (
               <p className={styles.assessment} data-tone="concern">
-                <span aria-hidden="true">▲ </span>Muscle mass is down over the month. Enough protein (see below) and some strength work protect it, especially
-                while losing weight.
+                <span aria-hidden="true">▲ </span>
+                {m.body.muscleLoss}
               </p>
             ) : null}
             {age?.biggest_lever ? (
               <p className={blocks.explain}>
-                Garmin’s biggest lever for your fitness age: {age.biggest_lever.label.toLowerCase()}, {age.biggest_lever.value}
-                {age.biggest_lever.unit} now, {age.biggest_lever.target}
-                {age.biggest_lever.unit} as its target.
+                {m.body.lever(
+                  age.biggest_lever.label.toLowerCase(),
+                  `${f.number(age.biggest_lever.value, 1)}${age.biggest_lever.unit}`,
+                  `${f.number(age.biggest_lever.target, 1)}${age.biggest_lever.unit}`,
+                )}
               </p>
             ) : null}
             <Note>
@@ -132,13 +127,13 @@ export function Body() {
           </Section>
         ) : null}
 
-        <Section title="Energy">
+        <Section title={m.body.energy}>
           <dl className={blocks.facts}>
             {(
               [
-                ['Rest day', energy.rest],
-                ['Training day', energy.training],
-                ['Big day', energy.big],
+                [m.body.restDay, energy.rest],
+                [m.body.trainingDay, energy.training],
+                [m.body.bigDay, energy.big],
               ] as const
             ).map(([label, value]) =>
               value ? (
@@ -150,25 +145,25 @@ export function Body() {
             )}
           </dl>
           {extra ? (
-            <p className={blocks.explain}>
-              Your bigger days burn about {kcal(extra)} more than a rest day: that difference is what to add on those days, mostly as carbohydrate.
-            </p>
+            <p className={blocks.explain}>{m.body.extra(kcal(extra))}</p>
           ) : null}
-          <Note>{energy.note} A big day has a training load of 100 or more (a long run or a hard session).</Note>
+          <Note>
+            {energy.note} {m.body.bigDayNote}
+          </Note>
         </Section>
       </div>
 
       {nutrition ? (
-        <Section title="What to eat">
+        <Section title={m.body.whatToEat}>
           <dl className={blocks.facts}>
             <div>
-              <dt>Protein per day</dt>
+              <dt>{m.body.proteinDay}</dt>
               <dd>
                 {nutrition.protein_g[0]}–{nutrition.protein_g[1]} g
               </dd>
             </div>
             <div>
-              <dt>Protein per meal</dt>
+              <dt>{m.body.proteinMeal}</dt>
               <dd>
                 {nutrition.protein_per_meal_g[0]}–{nutrition.protein_per_meal_g[1]} g
               </dd>
@@ -178,51 +173,47 @@ export function Body() {
             <table className={blocks.table}>
               <thead>
                 <tr>
-                  <th scope="col">Day</th>
-                  <th scope="col">Carbohydrate</th>
-                  <th scope="col">For example</th>
+                  <th scope="col">{m.body.day}</th>
+                  <th scope="col">{m.body.carbs}</th>
+                  <th scope="col">{m.body.example}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <th scope="row">Rest or easy</th>
+                  <th scope="row">{m.body.restOrEasy}</th>
                   <td>
                     {nutrition.carbs_g.rest[0]}–{nutrition.carbs_g.rest[1]} g
                   </td>
-                  <td className={styles.wrap}>Normal meals, some carbohydrate at each</td>
+                  <td className={styles.wrap}>{m.body.restExample}</td>
                 </tr>
                 <tr>
-                  <th scope="row">About an hour</th>
+                  <th scope="row">{m.body.hour}</th>
                   <td>
                     {nutrition.carbs_g.moderate[0]}–{nutrition.carbs_g.moderate[1]} g
                   </td>
-                  <td className={styles.wrap}>A bigger portion of rice, pasta, bread or potatoes</td>
+                  <td className={styles.wrap}>{m.body.hourExample}</td>
                 </tr>
                 <tr>
-                  <th scope="row">Hard or long</th>
+                  <th scope="row">{m.body.hard}</th>
                   <td>
                     {nutrition.carbs_g.hard[0]}–{nutrition.carbs_g.hard[1]} g
                   </td>
-                  <td className={styles.wrap}>Carbohydrate at every meal plus snacks, and fuel during long runs</td>
+                  <td className={styles.wrap}>{m.body.hardExample}</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <Note>
-            Ranges for your weight ({nutrition.weight_kg} kg) from the sports-nutrition position stands ({nutrition.source}). Protein keeps and builds muscle
-            and is spread best over 3–5 meals; carbohydrate fuels training and is what to adjust day to day. These are ranges for healthy adults in training,
-            not a diet. A sports dietitian can tailor them, and if you ever find eating or weight hard to think about, talking to someone helps.
+            {m.body.eatNote(f.weight(nutrition.weight_kg), nutrition.source)}
           </Note>
         </Section>
       ) : null}
 
       {nutrition ? (
-        <Section title="Fuel a run">
+        <Section title={m.body.fuelRun}>
           <FuelPlanner weightKg={nutrition.weight_kg} sweat={{ typical: sweat.typical_ml_per_hour, warm: sweat.warm_ml_per_hour }} />
           <Note>
-            Fluid amounts use your own sweat rate: about {sweat.typical_ml_per_hour ?? '–'} ml an hour on your runs of the last six months
-            {sweat.warm_ml_per_hour ? ` (${sweat.warm_ml_per_hour} ml on warm ones)` : ''}, from Garmin’s estimates. Aim to lose less than 2% of body weight on
-            a run, not to replace everything you sweat. Practise new foods and gels on training runs, never first on race day.
+            {m.body.fuelNote(f.volume(sweat.typical_ml_per_hour), sweat.warm_ml_per_hour ? f.volume(sweat.warm_ml_per_hour) : null)}
           </Note>
         </Section>
       ) : null}
@@ -231,6 +222,6 @@ export function Body() {
 }
 
 function signedText(value: number, unit: string): string {
-  if (value === 0) return 'no change in a month';
-  return `${value > 0 ? '+' : '−'}${Math.abs(value)}${unit} in a month`;
+  if (Math.round(value * 10) === 0) return m.body.noChange;
+  return m.body.inAMonth(`${f.signed(value, 1)}${unit}`);
 }

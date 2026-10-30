@@ -8,6 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@companion/i18n": "*",
     "@companion/weather": "*"
   }
 }

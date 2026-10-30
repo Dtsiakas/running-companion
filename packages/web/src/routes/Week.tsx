@@ -11,7 +11,7 @@ import { RunSummary } from '../components/RunSummary.tsx';
 import { Section } from '../components/Section.tsx';
 import { ErrorState, Loading } from '../components/States.tsx';
 import { addDays, hoursMinutes, todayLocal, weekday, weekRange, weekStartOf } from '../lib/dates.ts';
-import { m } from '../lib/i18n.ts';
+import { f, m } from '../lib/i18n.ts';
 import styles from '../styles/blocks.module.css';
 
 type Summary = NonNullable<WeekResponse['summary']>;
@@ -26,14 +26,14 @@ export function Week() {
     <div className={styles.page}>
       <header className={styles.pageTop}>
         <h1 className={styles.title}>{weekRange(start, addDays(start, 6))}</h1>
-        <nav className={styles.pager} aria-label="Other weeks">
-          {week.data?.has_previous_week !== false ? <Link to={`/week?start=${addDays(start, -7)}`}>Previous week</Link> : <span />}
-          {week.data?.has_next_week ? <Link to={`/week?start=${addDays(start, 7)}`}>Next week</Link> : null}
+        <nav className={styles.pager} aria-label={m.week.otherWeeks}>
+          {week.data?.has_previous_week !== false ? <Link to={`/week?start=${addDays(start, -7)}`}>{m.week.previous}</Link> : <span />}
+          {week.data?.has_next_week ? <Link to={`/week?start=${addDays(start, 7)}`}>{m.week.next}</Link> : null}
         </nav>
       </header>
 
       {report.data ? (
-        <Section title="The week in short">
+        <Section title={m.week.inShort}>
           <WeekReport report={report.data} />
         </Section>
       ) : null}
@@ -47,41 +47,41 @@ export function Week() {
 
 function WeekBody({ week }: { week: WeekResponse }) {
   const summary = week.summary;
-  if (!summary) return <p className={styles.empty}>No data for this week.</p>;
+  if (!summary) return <p className={styles.empty}>{m.week.noData}</p>;
   const previous = week.previous;
 
   return (
     <>
       <dl className={styles.stats}>
-        <Stat label="Distance" value={`${summary.km ?? 0} km`} change={change(summary.km, previous?.km, 'km')} />
-        <Stat label="Runs" value={String(summary.runs ?? 0)} change={change(summary.runs, previous?.runs, '')} />
-        <Stat label="Time" value={hoursMinutes(summary.hours)} />
-        <Stat label="Load" value={String(summary.load ?? 0)} change={change(summary.load, previous?.load, '')} />
-        <Stat label="Longest run" value={summary.longest_km ? `${summary.longest_km} km` : '–'} />
+        <Stat label={m.week.distance} value={f.distance(summary.km ?? 0)} change={change(f.distanceValue(summary.km), f.distanceValue(previous?.km), f.distanceUnit)} />
+        <Stat label={m.week.runs} value={String(summary.runs ?? 0)} change={change(summary.runs, previous?.runs, '')} />
+        <Stat label={m.week.time} value={hoursMinutes(summary.hours)} />
+        <Stat label={m.week.load} value={f.number(summary.load ?? 0)} change={change(summary.load, previous?.load, '')} />
+        <Stat label={m.week.longest} value={summary.longest_km ? f.distance(summary.longest_km, 2) : '–'} />
       </dl>
 
       <div className={styles.columns}>
-        <Section title="Intensity">
+        <Section title={m.week.intensity}>
           <IntensityBar intensity={summary.intensity_pct} />
           <Note>{m.notes.intensity}</Note>
         </Section>
 
-        <Section title="Distance per week">
+        <Section title={m.week.perWeek}>
           <WeeklyBars weeks={week.recent} selected={week.week_start} />
         </Section>
       </div>
 
-      <Section title="Day by day">
+      <Section title={m.week.dayByDay}>
         <DayTable week={week} />
       </Section>
 
       <div className={styles.columns}>
-        <Section title="Recovery and body">
+        <Section title={m.week.recoveryAndBody}>
           <Comparison summary={summary} previous={previous} />
         </Section>
 
-        <Section title={week.runs.length === 1 ? 'The run' : `The ${week.runs.length} runs`}>
-          {week.runs.length ? week.runs.map((run) => <RunSummary key={run.activity_id} run={run} compact />) : <p className={styles.empty}>No runs this week.</p>}
+        <Section title={m.week.theRuns(week.runs.length)}>
+          {week.runs.length ? week.runs.map((run) => <RunSummary key={run.activity_id} run={run} compact />) : <p className={styles.empty}>{m.week.noRuns}</p>}
         </Section>
       </div>
     </>
@@ -102,11 +102,10 @@ function Stat({ label, value, change: delta }: { label: string; value: string; c
 function change(current: number | null | undefined, previous: number | null | undefined, unit: string): string | null {
   if (current === null || current === undefined || previous === null || previous === undefined) return null;
   const diff = Math.round((current - previous) * 10) / 10;
-  if (diff === 0) return 'Same as last week';
-  return `${diff > 0 ? '+' : '−'}${Math.abs(diff)}${unit ? ` ${unit}` : ''} vs last week`;
+  if (diff === 0) return m.week.same;
+  return m.week.vsLast(`${f.signed(diff, 1)}${unit ? ` ${unit}` : ''}`);
 }
 
-const STATUS_LABEL = { green: 'Recovered', amber: 'One signal off', red: 'Two signals off' } as const;
 
 function DayTable({ week }: { week: WeekResponse }) {
   const kmByDay = new Map<string, number>();
@@ -117,12 +116,12 @@ function DayTable({ week }: { week: WeekResponse }) {
       <table className={styles.table}>
         <thead>
           <tr>
-            <th scope="col">Day</th>
-            <th scope="col">Status</th>
-            <th scope="col">Run</th>
-            <th scope="col">Sleep</th>
-            <th scope="col">HRV</th>
-            <th scope="col">Resting HR</th>
+            <th scope="col">{m.week.day}</th>
+            <th scope="col">{m.week.status}</th>
+            <th scope="col">{m.week.run}</th>
+            <th scope="col">{m.week.sleep}</th>
+            <th scope="col">{m.week.hrv}</th>
+            <th scope="col">{m.week.restingHr}</th>
           </tr>
         </thead>
         <tbody>
@@ -136,15 +135,15 @@ function DayTable({ week }: { week: WeekResponse }) {
                   {day?.status ? (
                     <span className={styles.status} data-status={day.status}>
                       <i aria-hidden="true" />
-                      {STATUS_LABEL[day.status]}
+                      {m.insight.status[day.status].label}
                     </span>
                   ) : (
                     '–'
                   )}
                 </td>
-                <td>{km ? `${Math.round(km * 10) / 10} km` : '–'}</td>
+                <td>{km ? f.distance(km) : '–'}</td>
                 <td>{day?.sleep_h ? hoursMinutes(day.sleep_h) : '–'}</td>
-                <td>{day?.hrv_ms ? `${day.hrv_ms} ms` : '–'}</td>
+                <td>{day?.hrv_ms ? `${f.number(day.hrv_ms)} ms` : '–'}</td>
                 <td>{day?.resting_hr ?? '–'}</td>
               </tr>
             );
@@ -157,19 +156,19 @@ function DayTable({ week }: { week: WeekResponse }) {
 
 function Comparison({ summary, previous }: { summary: Summary; previous: WeekResponse['previous'] }) {
   const rows: Array<[string, number | null | undefined, number | null | undefined, (v: number) => string]> = [
-    ['Average sleep', summary.avg_sleep_h, previous?.avg_sleep_h, hoursMinutes],
-    ['Average HRV', summary.avg_hrv_ms, previous?.avg_hrv_ms, (v) => `${v} ms`],
-    ['Average resting HR', summary.avg_resting_hr, previous?.avg_resting_hr, (v) => `${v} bpm`],
-    ['Weight trend', summary.weight_trend_kg, previous?.weight_trend_kg, (v) => `${v} kg`],
-    ['Fitness', summary.fitness_end, previous?.fitness_end, String],
+    [m.week.avgSleep, summary.avg_sleep_h, previous?.avg_sleep_h, hoursMinutes],
+    [m.week.avgHrv, summary.avg_hrv_ms, previous?.avg_hrv_ms, (v) => `${f.number(v)} ms`],
+    [m.week.avgRhr, summary.avg_resting_hr, previous?.avg_resting_hr, (v) => `${f.number(v, 1)} bpm`],
+    [m.week.weightTrend, summary.weight_trend_kg, previous?.weight_trend_kg, (v) => f.weight(v)],
+    [m.week.fitness, summary.fitness_end, previous?.fitness_end, (v) => f.number(v, 1)],
   ];
   return (
     <table className={styles.table}>
       <thead>
         <tr>
           <th scope="col" />
-          <th scope="col">This week</th>
-          <th scope="col">Last week</th>
+          <th scope="col">{m.week.thisWeek}</th>
+          <th scope="col">{m.week.lastWeek}</th>
         </tr>
       </thead>
       <tbody>
@@ -188,7 +187,7 @@ function Comparison({ summary, previous }: { summary: Summary; previous: WeekRes
 /** Claude writes the review from the week's data, in the chat. */
 function WeeklyReview({ start }: { start: string }) {
   return (
-    <Section title="Ask Claude">
+    <Section title={m.week.askClaude}>
       <AskClaude requests={[weekReviewRequest(start, addDays(start, 6))]} />
     </Section>
   );

@@ -1,3 +1,4 @@
+import { f, m } from '../../lib/i18n.ts';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipContentProps, type TooltipValueType } from 'recharts';
 import { shortDay } from '../../lib/dates.ts';
 import { useThemeColors } from '../../lib/useThemeColors.ts';
@@ -18,9 +19,9 @@ export function WeeklyBars({ weeks, selected }: { weeks: WeekPoint[]; selected: 
   return (
     <div className={styles.plot} role="img" aria-label={`Kilometres per week, ${weeks.length} weeks`}>
       <ResponsiveContainer width="100%" height={160}>
-        <BarChart data={weeks} margin={{ top: 8, right: 8, bottom: 0, left: -16 }} barCategoryGap={4}>
+        <BarChart data={weeks.map((w) => ({ ...w, km: f.distanceValue(w.km) }))} margin={{ top: 8, right: 8, bottom: 0, left: -16 }} barCategoryGap={4}>
           <CartesianGrid vertical={false} stroke={colors['--rule']} />
-          <XAxis dataKey="week_start" tickFormatter={(d: string) => shortDay(d).replace(/^\w+ /, '')} interval="preserveStartEnd" minTickGap={30} tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={{ stroke: colors['--rule'] }} />
+          <XAxis dataKey="week_start" tickFormatter={(d: string) => f.dayMonth(d)} interval="preserveStartEnd" minTickGap={30} tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={{ stroke: colors['--rule'] }} />
           <YAxis tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={false} width={44} />
           <Tooltip content={(props: TooltipContentProps<TooltipValueType, string | number>) => <WeekTooltip {...props} />} cursor={{ fill: colors['--rule'], opacity: 0.4 }} />
           <Bar dataKey="km" radius={[4, 4, 0, 0]} isAnimationActive={false}>
@@ -39,9 +40,13 @@ function WeekTooltip({ active, payload }: TooltipContentProps<TooltipValueType, 
   const week = payload[0]!.payload as WeekPoint;
   return (
     <div className={styles.tooltip}>
-      <strong>Week of {shortDay(week.week_start!)}</strong>
-      <span>{week.km ?? 0} km</span>
-      <span>Load {week.load ?? 0}</span>
+      <strong>{m.week.weekOf(f.dayMonth(week.week_start!))}</strong>
+      <span>
+        {f.number(week.km ?? 0, 1)} {f.distanceUnit}
+      </span>
+      <span>
+        {m.week.load} {f.number(week.load ?? 0)}
+      </span>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { current, m } from '../lib/i18n.ts';
 import { fuelPlan, type FuelPlan } from '@companion/insights/fuel';
 import { useState } from 'react';
 import styles from './FuelPlanner.module.css';
@@ -9,26 +10,26 @@ export function FuelPlanner({ weightKg, sweat }: { weightKg: number; sweat: { ty
   const [minutes, setMinutes] = useState(90);
   const [hard, setHard] = useState(false);
   const [warm, setWarm] = useState(false);
-  const plan = fuelPlan({ weightKg, minutes, hard, sweatMlPerHour: (warm ? sweat.warm : null) ?? sweat.typical });
+  const plan = fuelPlan({ weightKg, minutes, hard, sweatMlPerHour: (warm ? sweat.warm : null) ?? sweat.typical }, current());
 
   return (
     <div className={styles.planner}>
       <div className={styles.controls}>
         <label className={styles.duration}>
-          <span>Run length</span>
+          <span>{m.fuel.runLength}</span>
           <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}>
-            {DURATIONS.map((m) => (
-              <option key={m} value={m}>
-                {m < 60 ? `${m} min` : `${Math.floor(m / 60)}h${m % 60 ? ` ${m % 60}` : ''}`}
+            {DURATIONS.map((d) => (
+              <option key={d} value={d}>
+                {m.fuel.duration(d)}
               </option>
             ))}
           </select>
         </label>
         <label className={styles.check}>
-          <input type="checkbox" checked={hard} onChange={(e) => setHard(e.target.checked)} /> Hard session
+          <input type="checkbox" checked={hard} onChange={(e) => setHard(e.target.checked)} /> {m.fuel.hardSession}
         </label>
         <label className={styles.check}>
-          <input type="checkbox" checked={warm} onChange={(e) => setWarm(e.target.checked)} /> Warm day
+          <input type="checkbox" checked={warm} onChange={(e) => setWarm(e.target.checked)} /> {m.fuel.warmDay}
         </label>
       </div>
       <PlanView plan={plan} />
@@ -41,9 +42,9 @@ export function PlanView({ plan }: { plan: FuelPlan }) {
     <div className={styles.plan}>
       {(
         [
-          ['Before', plan.before],
-          ['During', plan.during],
-          ['After', plan.after],
+          [m.fuel.before, plan.before],
+          [m.fuel.during, plan.during],
+          [m.fuel.after, plan.after],
         ] as const
       ).map(([title, lines]) => (
         <section key={title}>

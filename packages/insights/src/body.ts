@@ -1,4 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite';
+import { ENGLISH, type I18n } from '@companion/i18n';
 import { getFitnessAge } from '@companion/queries';
 import { addDays } from './days.ts';
 import { dailyRanges, GUIDANCE_SOURCE } from './fuel.ts';
@@ -14,7 +15,7 @@ export type BodyReport = ReturnType<typeof getBodyReport>;
  * Weight, body composition, energy and fuelling, in one place. Weight is always the smoothed trend: a single weigh-in
  * moves with water and food by a kilo or more, which says nothing about fat or muscle.
  */
-export function getBodyReport(db: DatabaseSync, date: string) {
+export function getBodyReport(db: DatabaseSync, date: string, i18n: I18n = ENGLISH) {
   const series = (db.prepare('SELECT calendar_date, weight_trend_kg, body_fat_trend_pct FROM daily_metrics WHERE calendar_date BETWEEN ? AND ? ORDER BY calendar_date').all(addDays(date, -180), date) as Row[]).map((r) => ({
     date: String(r.calendar_date),
     trend_kg: n(r.weight_trend_kg),
@@ -28,16 +29,16 @@ export function getBodyReport(db: DatabaseSync, date: string) {
   const trendAt = (day: string) => n((db.prepare('SELECT weight_trend_kg AS w FROM daily_metrics WHERE calendar_date <= ? AND weight_trend_kg IS NOT NULL ORDER BY calendar_date DESC LIMIT 1').get(day) as Row | undefined)?.w);
   const current = trendAt(date);
   const monthAgo = trendAt(addDays(date, -28));
-  const weight = current === null ? null : weightStatus(current, monthAgo, goal, date);
+  const weight = current === null ? null : weightStatus(current, monthAgo, goal, date, i18n);
 
   return {
     date,
     weight,
     weight_series: series.map((p) => ({ ...p, trend_kg: p.trend_kg === null ? null : round(p.trend_kg) })),
     weigh_ins: weighIns,
-    composition: composition(db, date),
-    fitness_age: getFitnessAge(db),
-    energy: energyByDayType(db, date),
+    composition: composition(db, date, i18n),
+    fitness_age: getFitnessAge(db, i18n),
+    energy: energyByDayType(db, date, i18n),
     sweat: sweatRates(db, date),
     nutrition: current === null ? null : { weight_kg: round(current), ...dailyRanges(current), source: GUIDANCE_SOURCE },
   };
@@ -47,7 +48,8 @@ export function getBodyReport(db: DatabaseSync, date: string) {
  * Where the trend is heading against the goal, and whether the pace is a healthy one for someone training:
  * losing up to about 0.5–1% of body weight a week protects muscle, recovery and performance; faster costs them.
  */
-function weightStatus(current: number, monthAgo: number | null, goal: number | null, date: string) {
+function weightStatus(current: number, monthAgo: number | null, goal: number | null, date: string, { m, f }: I18n) {
+  const t = m.body.assessment;
   const perWeekKg = monthAgo === null ? null : (current - monthAgo) / 4;
   const perWeekPct = perWeekKg === null ? null : (perWeekKg / current) * 100;
   let tone: 'good' | 'neutral' | 'concern' = 'neutral';
@@ -55,23 +57,23 @@ function weightStatus(current: number, monthAgo: number | null, goal: number | n
   let projected: string | null = null;
 
   if (perWeekPct === null) {
-    assessment = 'Not enough weigh-ins in the last month to see a direction.';
+    assessment = t.notEnough;
   } else if (goal !== null && Math.abs(current - goal) < 0.5) {
-    assessment = 'You’re at your goal weight.';
+    assessment = t.atGoal;
     tone = 'good';
   } else if (perWeekPct <= -1) {
-    assessment = `Losing ${round(Math.abs(perWeekKg!), 2)} kg a week (${round(Math.abs(perWeekPct))}% of body weight): faster than the 0.5–1% a week that protects muscle, recovery and training quality.`;
+    assessment = t.tooFast(f.weight(Math.abs(perWeekKg!), 2), f.percent(Math.abs(perWeekPct), 1));
     tone = 'concern';
   } else if (Math.abs(perWeekPct) < 0.15) {
-    assessment = 'Holding steady over the last four weeks.';
+    assessment = t.steady;
   } else if (goal !== null && (current - goal) * perWeekKg! < 0) {
     // Moving toward the goal at a safe pace.
-    assessment = `${perWeekKg! < 0 ? 'Losing' : 'Gaining'} ${round(Math.abs(perWeekKg!), 2)} kg a week (${round(Math.abs(perWeekPct))}% of body weight): a sustainable pace while training.`;
+    assessment = t.towardGoal(perWeekKg! < 0, f.weight(Math.abs(perWeekKg!), 2), f.percent(Math.abs(perWeekPct), 1));
     tone = 'good';
     const weeks = Math.abs(current - goal) / Math.abs(perWeekKg!);
     if (weeks <= 52) projected = addDays(date, Math.round(weeks * 7));
   } else {
-    assessment = `${perWeekKg! < 0 ? 'Losing' : 'Gaining'} ${round(Math.abs(perWeekKg!), 2)} kg a week${goal !== null ? ', away from your goal' : ''}.`;
+    assessment = t.other(perWeekKg! < 0, f.weight(Math.abs(perWeekKg!), 2), goal !== null);
   }
 
   return {
@@ -88,7 +90,7 @@ function weightStatus(current: number, monthAgo: number | null, goal: number | n
 }
 
 /** Body fat and muscle over the last month, from the scale. Losing muscle along with weight is the thing to avoid. */
-function composition(db: DatabaseSync, date: string) {
+function composition(db: DatabaseSync, date: string, { m }: I18n) {
   const window = (from: string, to: string) =>
     db.prepare('SELECT AVG(body_fat_pct) AS fat, AVG(muscle_mass_kg) AS muscle, COUNT(*) AS n FROM weigh_ins WHERE calendar_date BETWEEN ? AND ?').get(from, to) as Row;
   const now = window(addDays(date, -13), date);
@@ -102,13 +104,13 @@ function composition(db: DatabaseSync, date: string) {
     muscle_kg: n(now.muscle) === null ? null : round(Number(now.muscle)),
     muscle_change_kg: muscleChange === null ? null : round(muscleChange),
     /** Averages of two weeks of weigh-ins, now and a month earlier: single readings of a bioimpedance scale are noisy. */
-    note: 'Two-week averages of your scale’s readings, now and a month earlier. Home scales estimate fat and muscle from electrical resistance, which shifts with hydration, so only changes over weeks mean much.',
+    note: m.body.compositionNote,
     muscle_loss_flag: muscleChange !== null && muscleChange <= -0.4,
   };
 }
 
 /** What a rest day, a training day and a big day cost you, from Garmin's calorie estimates over the last 8 weeks. */
-function energyByDayType(db: DatabaseSync, date: string) {
+function energyByDayType(db: DatabaseSync, date: string, { m }: I18n) {
   const rows = db
     .prepare(
       `SELECT w.calories_total AS kcal, d.load FROM daily_wellness w JOIN daily_metrics d USING (calendar_date)
@@ -123,7 +125,7 @@ function energyByDayType(db: DatabaseSync, date: string) {
     rest: group((load) => load === 0),
     training: group((load) => load > 0 && load < 100),
     big: group((load) => load >= 100),
-    note: 'Garmin’s estimates of everything you burned on each kind of day (resting plus activity). They can be 10–20% off in absolute terms, but the gaps between kinds of day are reliable: that’s how much more to eat on the bigger days.',
+    note: m.body.energyNote,
   };
 }
 

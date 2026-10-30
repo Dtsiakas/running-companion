@@ -1,3 +1,4 @@
+import { f, m } from '../../lib/i18n.ts';
 import type { DailySeriesResponse } from '@companion/queries';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, type TooltipContentProps, type TooltipValueType } from 'recharts';
 import { shortDay } from '../../lib/dates.ts';
@@ -18,19 +19,19 @@ export function LoadChart({ days }: { days: DailySeriesResponse }) {
     <figure className={styles.figure}>
       <div className={styles.legend}>
         <span>
-          <i style={{ background: colors['--series-1'] }} /> Fitness {last?.fitness ?? '–'}
+          <i style={{ background: colors['--series-1'] }} /> {m.charts.load.fitness} {f.number(last?.fitness, 1)}
         </span>
         <span>
-          <i style={{ background: colors['--series-2'] }} /> Fatigue {last?.fatigue ?? '–'}
+          <i style={{ background: colors['--series-2'] }} /> {m.charts.load.fatigue} {f.number(last?.fatigue, 1)}
         </span>
       </div>
-      <div className={styles.plot} role="img" aria-label={`Fitness ${last?.fitness} and fatigue ${last?.fatigue} over the last ${days.length} days`}>
+      <div className={styles.plot} role="img" aria-label={m.charts.load.label(f.number(last?.fitness, 1), f.number(last?.fatigue, 1), days.length)}>
         <ResponsiveContainer width="100%" height={180}>
           <LineChart data={days} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
             <CartesianGrid vertical={false} stroke={colors['--rule']} />
             <XAxis
               dataKey="date"
-              tickFormatter={(date: string) => shortDay(date).replace(/^\w+ /, '')}
+              tickFormatter={(date: string) => f.dayMonth(date)}
               interval="preserveStartEnd"
               minTickGap={40}
               tick={{ fill: colors['--ink-3'], fontSize: 12 }}
@@ -39,8 +40,8 @@ export function LoadChart({ days }: { days: DailySeriesResponse }) {
             />
             <YAxis tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={false} width={44} />
             <Tooltip content={(props: TooltipContentProps<TooltipValueType, string | number>) => <LoadTooltip {...props} />} cursor={{ stroke: colors['--ink-3'], strokeWidth: 1 }} />
-            <Line type="monotone" dataKey="fitness" name="Fitness" stroke={colors['--series-1']} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: colors['--surface'] }} isAnimationActive={false} />
-            <Line type="monotone" dataKey="fatigue" name="Fatigue" stroke={colors['--series-2']} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: colors['--surface'] }} isAnimationActive={false} />
+            <Line type="monotone" dataKey="fitness" name={m.charts.load.fitness} stroke={colors['--series-1']} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: colors['--surface'] }} isAnimationActive={false} />
+            <Line type="monotone" dataKey="fatigue" name={m.charts.load.fatigue} stroke={colors['--series-2']} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: colors['--surface'] }} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -54,10 +55,16 @@ function LoadTooltip({ active, payload, label }: TooltipContentProps<TooltipValu
   return (
     <div className={styles.tooltip}>
       <strong>{shortDay(String(label))}</strong>
-      <span>Fitness {day.fitness}</span>
-      <span>Fatigue {day.fatigue}</span>
-      <span>Form {signed(day.form)}</span>
-      {day.load ? <span>Load that day {day.load}</span> : <span>Rest day</span>}
+      <span>
+        {m.charts.load.fitness} {f.number(day.fitness, 1)}
+      </span>
+      <span>
+        {m.charts.load.fatigue} {f.number(day.fatigue, 1)}
+      </span>
+      <span>
+        {m.charts.load.form} {signed(day.form)}
+      </span>
+      {day.load ? <span>{m.charts.load.loadThatDay(f.number(day.load))}</span> : <span>{m.charts.load.restDay}</span>}
     </div>
   );
 }
