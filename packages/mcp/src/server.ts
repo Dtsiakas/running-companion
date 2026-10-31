@@ -7,7 +7,7 @@
  */
 import { DB_FILE, loadEnv } from '@companion/config';
 import { openDatabase } from '@companion/db';
-import { openReadOnly, prepareDatabase, syncNow } from '@companion/jobs';
+import { openReadOnly, prepareDatabase, runQueryIsolated, syncNow } from '@companion/jobs';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createMcpServer } from './tools.ts';
 
@@ -16,7 +16,7 @@ prepareDatabase(DB_FILE);
 const db = openReadOnly(DB_FILE);
 // Only the forecast cache writes; everything else reads.
 const writeDb = openDatabase(DB_FILE);
-const server = createMcpServer({ db, writeDb, sync: () => syncNow(DB_FILE) });
+const server = createMcpServer({ db, writeDb, sync: () => syncNow(DB_FILE), query: (sql) => runQueryIsolated(DB_FILE, sql) });
 
 // Release the database file when Claude Desktop disconnects (Windows can't delete or replace an open file).
 server.server.onclose = () => {

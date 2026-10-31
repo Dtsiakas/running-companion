@@ -1,4 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite';
+import { APP_VERSION } from '@companion/config';
 import { thresholdsFromProfile } from '@companion/metrics';
 import { describeSchema, getActivity, getBestEfforts, getToday, getTrend, getWeeklySummary, listActivities, runQuery, TREND_METRICS } from '@companion/queries';
 import { getRunForecast } from '@companion/weather';
@@ -21,15 +22,20 @@ export interface ToolsOptions {
   writeDb: DatabaseSync;
   /** Runs a Garmin sync. Injected so tests don't call Garmin. */
   sync: () => Promise<unknown>;
+  /**
+   * Runs the `query` tool's SQL. The servers pass runQueryIsolated (its own thread, with a time limit); without it the
+   * query runs on `db` directly, which is what tests want.
+   */
+  query?: (sql: string) => Promise<unknown>;
 }
 
 /**
  * An MCP server with all tools registered. Transport-agnostic: Claude Desktop uses it over stdin/stdout
  * (server.ts), the web server over HTTP (packages/server). The caller owns the database connection.
  */
-export function createMcpServer({ db, writeDb, sync }: ToolsOptions): McpServer {
+export function createMcpServer({ db, writeDb, sync, query = async (sql) => runQuery(db, sql) }: ToolsOptions): McpServer {
   const json = (value: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(value) }] });
-  const server = new McpServer({ name: 'running-companion', version: '0.1.0' }, { instructions: SERVER_INSTRUCTIONS });
+  const server = new McpServer({ name: 'running-companion', version: APP_VERSION }, { instructions: SERVER_INSTRUCTIONS });
 
   server.registerTool(
     'get_today',
@@ -137,7 +143,7 @@ export function createMcpServer({ db, writeDb, sync }: ToolsOptions): McpServer 
     },
     async ({ sql }) => {
       try {
-        return json(runQuery(db, sql));
+        return json(await query(sql));
       } catch (error) {
         return { isError: true, content: [{ type: 'text' as const, text: `SQL error: ${error instanceof Error ? error.message : String(error)}` }] };
       }
@@ -185,7 +191,7 @@ export function createMcpServer({ db, writeDb, sync }: ToolsOptions): McpServer 
       annotations: READ_ONLY,
     },
     async ({ week_start }) => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Date().toLocaleDateString('en-CA'); // local, like every other "today"
       return json(getWeeklyReport(db, week_start ?? previousDay(mondayOf(today), 7), today) ?? { error: 'No data for that week.' });
     },
   );

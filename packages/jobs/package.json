@@ -12,6 +12,7 @@
     "@companion/db": "*",
     "@companion/garmin-client": "*",
     "@companion/metrics": "*",
+    "@companion/queries": "*",
     "@companion/sync": "*",
     "@companion/weather": "*"
   }

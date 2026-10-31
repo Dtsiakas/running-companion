@@ -8,6 +8,8 @@ export interface McpRouteOptions {
   /** Used only to cache the weather forecast. */
   writeDb: DatabaseSync;
   sync: () => Promise<unknown>;
+  /** Runs the query tool's SQL off the server's thread (see runQueryIsolated). */
+  query?: (sql: string) => Promise<unknown>;
   /** Rejects requests without a valid OAuth access token. */
   requireToken: RequestHandler;
 }
@@ -19,11 +21,11 @@ export interface McpRouteOptions {
  * Our tools don't need conversation state, so there are no sessions to store, expire or lose on restart.
  * Building the server per request is cheap: it only registers the tool definitions; the database connection is shared.
  */
-export function mcpRoutes({ db, writeDb, sync, requireToken }: McpRouteOptions): Router {
+export function mcpRoutes({ db, writeDb, sync, query, requireToken }: McpRouteOptions): Router {
   const router = Router();
 
   router.post('/mcp', requireToken, express.json({ limit: '1mb' }), async (req, res) => {
-    const server = createMcpServer({ db, writeDb, sync });
+    const server = createMcpServer({ db, writeDb, sync, query });
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
     res.on('close', () => {
       void transport.close();

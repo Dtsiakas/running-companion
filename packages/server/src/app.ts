@@ -29,6 +29,8 @@ export interface AppDependencies {
   writeDb: DatabaseSync;
   sync: () => Promise<unknown>;
   isSyncRunning: () => boolean;
+  /** Runs the MCP query tool's SQL; see runQueryIsolated. */
+  query?: (sql: string) => Promise<unknown>;
   /** Built dashboard (packages/web/dist). Served when it exists. */
   webRoot?: string;
 }
@@ -104,6 +106,7 @@ export function createApp(deps: AppDependencies): App {
       db: deps.readDb,
       writeDb: deps.writeDb,
       sync: deps.sync,
+      query: deps.query,
       requireToken: requireBearerAuth({ verifier: oauth, resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(mcpUrl) }),
     }),
   );
