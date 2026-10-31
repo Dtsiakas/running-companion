@@ -35,6 +35,7 @@ jobs:
         if: failure()
         shell: bash
         run: |
+          set +e +o pipefail
           node --test --test-reporter=tap "packages/*/test/*.test.ts" > test.tap 2>&1 || true
           { grep -E -A14 '^\s*not ok' test.tap || true; } | grep -vE '^\s*(---|\.\.\.)$' | tr '\n' ' ' | sed 's/ -- /\n/g' | head -20 | while read -r line; do echo "::error::${line:0:900}"; done
           echo "::notice::$(grep -E '^# (tests|pass|fail|cancelled)' test.tap | tr '\n' ' ')"
