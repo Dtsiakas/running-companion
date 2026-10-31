@@ -182,7 +182,12 @@ Thresholds come from the latest Garmin profile and are applied to all history so
 | `sync_garmin` | Pulls new data from Garmin and recomputes metrics |
 
 Every tool reads through a read-only database connection (the weather forecast cache is the one write), so no tool
-can change your data, and `query` stays SELECT-only. Claude's answers stay in the Claude chat; the app doesn't store them.
+can change your data, and `query` stays SELECT-only. A `query` runs in its own process and is stopped after 15 seconds,
+so a heavy one can't hold up the dashboard. Claude's answers stay in the Claude chat; the app doesn't store them.
+
+**Claude on the web and phone** connects to the server instead: add a custom connector with the address shown in
+Settings → Claude (`<PUBLIC_URL>/mcp`), and approve it with your password. The same place shows whether Claude is
+connected and has a button that signs it out everywhere.
 
 ## Web server
 
@@ -190,9 +195,9 @@ can change your data, and `query` stays SELECT-only. Claude's answers stay in th
 
 | Path | Access | Purpose |
 |---|---|---|
-| `/healthz` | public | Up or not, last sync time |
+| `/healthz` | public | Up or not, version, last sync time |
 | `/setup` | setup code | First start only: password and Garmin key; every other page waits for it |
-| `/api/settings` | session | Garmin key status and replacement, key expiry date, password change (the key is never sent back) |
+| `/api/settings` | session | Garmin key status and replacement, key expiry date, password change (the key is never sent back), Claude's connection and signing it out, backups |
 | `/login`, `/logout` | public | Dashboard login (password, 10 attempts per 15 min) |
 | `/.well-known/*`, `/authorize`, `/token`, `/register`, `/revoke` | public | OAuth 2.1 for Claude's connector (MCP SDK) |
 | `/oauth/consent` | password | Login + "Allow" step of the OAuth flow |
