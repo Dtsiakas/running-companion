@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import type { SettingsStore } from '@companion/config';
@@ -15,6 +15,9 @@ import { apiRoutes } from './routes/api.ts';
 import { authRoutes } from './routes/auth.ts';
 import { mcpRoutes } from './routes/mcp.ts';
 import { needsSetup, newSetupCode, settingsRoutes } from './routes/settings.ts';
+
+/** The release this server is (root package.json): in /healthz, so a deploy can check what's running. */
+const VERSION = (JSON.parse(readFileSync(new URL('../../../package.json', import.meta.url), 'utf8')) as { version: string }).version;
 
 export interface AppDependencies {
   config: ServerConfig;
@@ -72,7 +75,7 @@ export function createApp(deps: AppDependencies): App {
   app.use(securityHeaders);
 
   app.get('/healthz', (_req, res) => {
-    res.json({ ok: true, lastSync: getFreshness(deps.readDb).last_sync, syncRunning: deps.isSyncRunning() });
+    res.json({ ok: true, version: VERSION, lastSync: getFreshness(deps.readDb).last_sync, syncRunning: deps.isSyncRunning() });
   });
 
   app.use(

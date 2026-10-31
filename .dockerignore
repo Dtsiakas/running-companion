@@ -1,0 +1,15 @@
+# Never in an image: your data, secrets, local builds and history.
+.git
+.github
+node_modules
+**/node_modules
+**/dist
+data
+.demo
+.cache
+.env
+.env.*
+!.env.example
+*.log
+Dockerfile
+deploy/docker

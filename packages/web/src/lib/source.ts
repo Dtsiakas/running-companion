@@ -3,3 +3,6 @@
  * that changes the app sets VITE_SOURCE_URL to its own repository when building.
  */
 export const SOURCE_URL: string = import.meta.env.VITE_SOURCE_URL || 'https://github.com/Dtsiakas/running-companion';
+
+/** The release this build belongs to. */
+export const VERSION: string = __APP_VERSION__;

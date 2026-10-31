@@ -1,0 +1,23 @@
+# Running Companion on this machine only: http://localhost:8787.
+# For a public HTTPS address use compose.tailscale.yaml or compose.caddy.yaml instead (see README.md).
+#
+#   docker compose up -d
+#   docker compose logs app     ← the setup link, on first start
+
+services:
+  app:
+    image: ghcr.io/dtsiakas/running-companion:${COMPANION_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    env_file: { path: .env, required: false }
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8787}
+      TZ: ${TZ:-UTC}
+    ports:
+      # 127.0.0.1: reachable from this computer only. Nothing else on the network sees it.
+      - 127.0.0.1:8787:8787
+    volumes:
+      - data:/data
+
+volumes:
+  data:

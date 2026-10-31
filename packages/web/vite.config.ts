@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -6,7 +7,11 @@ import { VitePWA } from 'vite-plugin-pwa';
 const SERVER_PATHS = [/^\/api\//, /^\/login/, /^\/logout/, /^\/oauth\//, /^\/authorize/, /^\/token/, /^\/register/, /^\/revoke/, /^\/mcp/, /^\/\.well-known\//, /^\/healthz/];
 const SERVER = 'http://localhost:8787';
 
+/** The release this build belongs to (root package.json), shown in Settings. */
+const VERSION = (JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as { version: string }).version;
+
 export default defineConfig({
+  define: { __APP_VERSION__: JSON.stringify(VERSION) },
   plugins: [
     react(),
     VitePWA({

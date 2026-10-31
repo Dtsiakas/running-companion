@@ -8,7 +8,7 @@ import { Section } from '../components/Section.tsx';
 import { ErrorState, Loading } from '../components/States.tsx';
 import { keySentence } from '../lib/garminKey.ts';
 import { f, languageChoice, m, unitsChoice, type LangChoice, type UnitsChoice } from '../lib/i18n.ts';
-import { SOURCE_URL } from '../lib/source.ts';
+import { SOURCE_URL, VERSION } from '../lib/source.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Settings.module.css';
 
@@ -60,7 +60,7 @@ export function Settings() {
 
       <Section title={t.aboutTitle}>
         <p className={blocks.explain}>
-          {t.about}{' '}
+          {t.version(VERSION)} {t.about}{' '}
           <a href={SOURCE_URL} target="_blank" rel="noreferrer">
             {t.sourceCode}
           </a>

@@ -248,9 +248,54 @@ Data requests go to the network first and fall back to the last answer only when
 Types run end to end: the dashboard imports the response types of `packages/queries` (type-only, erased at build), so a change
 in what the server returns fails `npm run typecheck` instead of breaking a screen.
 
+## Docker
+
+Every release is published as an image for amd64 and arm64 (a Raspberry Pi 4 or 5 works):
+`ghcr.io/dtsiakas/running-companion`. `latest` is the newest release, `0.1.0` (or `0.1`) pins one, and `edge` follows
+`main`. Everything the app keeps (database, settings, Garmin token, FIT files) is in `/data`, so mount a volume there and
+updating is just pulling a newer image.
+
+```sh
+docker run -d --name companion --init -p 127.0.0.1:8787:8787 -v companion-data:/data \
+  -e TZ=Europe/Athens ghcr.io/dtsiakas/running-companion
+docker logs companion        # the setup link
+```
+
+Set `TZ` to your time zone: the scheduled syncs and "today" follow it. The container runs as an unprivileged user,
+reports its health to Docker (`/healthz`), and stops cleanly on `docker stop`. The demo is in the same image:
+
+```sh
+docker run --rm -p 127.0.0.1:8788:8788 ghcr.io/dtsiakas/running-companion \
+  node --disable-warning=ExperimentalWarning packages/cli/src/demo.ts --port 8788
+```
+
+### With HTTPS
+
+Claude's connector and the installable app both need HTTPS. `deploy/docker/` has three Compose files; copy that folder
+to the server, copy `.env.example` to `.env`, fill in what the file you pick needs, and start it. The setup link is in
+`docker compose -f <file> logs app`.
+
+| File | Address | You need |
+|---|---|---|
+| `compose.yaml` | `http://localhost:8787`, this computer only | nothing |
+| `compose.tailscale.yaml` | `https://<name>.<tailnet>.ts.net` through Tailscale Funnel | a Tailscale account; no domain, no open ports |
+| `compose.caddy.yaml` | `https://<your domain>`, certificate from Let's Encrypt | a domain pointed at the server, ports 80 and 443 open |
+
+**Tailscale:** in the admin console, create an auth key (Settings → Keys; reusable is easiest, so the container can
+sign in again after its state is lost) and allow Funnel in the access controls (`"nodeAttrs": [{"target":
+["autogroup:member"], "attr": ["funnel"]}]`, which the console offers to add the first time). Put the key in
+`TS_AUTHKEY`, pick `TS_HOSTNAME`, and set `PUBLIC_URL` to the address the machine gets: it's shown in the admin
+console as `<TS_HOSTNAME>.<tailnet>.ts.net`. The app shares the Tailscale container's network and listens on
+127.0.0.1 only, so Funnel is the one way in.
+
+**Caddy:** set `DOMAIN`. Caddy gets the certificate on first start and renews it on its own.
+
+To update: `docker compose -f <file> pull && docker compose -f <file> up -d`. To pin a release instead of following
+`latest`, set `COMPANION_TAG` in `.env`.
+
 ## Deploying to a server
 
-`deploy/` puts the app on a fresh Ubuntu 24.04 server (an OVHcloud VPS-1 here), reachable at a free
+Docker (above) is the simplest way. The alternative: `deploy/` puts the app on a fresh Ubuntu 24.04 server (an OVHcloud VPS-1 here), reachable at a free
 `https://<name>.<tailnet>.ts.net` address through Tailscale Funnel. From the project folder on the laptop:
 
 ```sh
@@ -307,6 +352,23 @@ Only what a question needs is sent, never the whole database.
 - The token cache stores a SHA-256 hash of the key, never the key itself.
 - Revoke the key in Garmin Connect at any time to cut off access.
 - Garmin's terms: the key is personal and must not be shared.
+
+## Releases
+
+`main` is checked on every push and pull request: typecheck, tests, the dashboard build, and the Docker image, which is
+started and checked (fresh install lands on setup, the API is closed, the health check passes, demo mode serves data).
+Each push to `main` also publishes the `edge` image.
+
+To release: move the `Unreleased` notes in `CHANGELOG.md` under a new version heading, set the same version in
+`package.json`, commit, then tag and push:
+
+```sh
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+The tag publishes the image (`0.2.0`, `0.2`, `latest`) and creates the GitHub release with that version's changelog
+section as its notes. The release fails if the tag and `package.json` disagree or the changelog has no section for it.
+The version shows in Settings → About and in `/healthz`.
 
 ## License
 

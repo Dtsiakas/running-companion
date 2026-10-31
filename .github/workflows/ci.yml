@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  image:
+    name: Docker image starts and answers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: running-companion:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Fresh install shows the setup page
+        run: |
+          docker run -d --name app -p 8787:8787 running-companion:test
+          for i in $(seq 1 30); do curl -fsS http://localhost:8787/healthz && break; sleep 1; done
+          curl -fsS http://localhost:8787/healthz | grep -q '"ok":true'
+          # Everything leads to setup until a password exists, and the API is closed.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8787/api/today)" = 401
+          curl -fsS http://localhost:8787/setup | grep -qi '<form'
+          # The setup link is in the log, and the app runs as a non-root user.
+          docker logs app 2>&1 | grep -q '/setup?code='
+          test "$(docker exec app id -u)" != 0
+          # The settings file was created in the volume, readable by its owner only.
+          test "$(docker exec app stat -c %a /data/settings.json)" = 600
+      - name: Healthcheck reports healthy
+        run: |
+          for i in $(seq 1 40); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' app)
+            [ "$status" = healthy ] && exit 0
+            sleep 2
+          done
+          echo "Health status: $status"; exit 1
+      - name: Stops cleanly
+        run: |
+          docker stop -t 15 app
+          test "$(docker inspect -f '{{.State.ExitCode}}' app)" = 0
+      - name: Demo mode serves generated data
+        run: |
+          docker run -d --name demo -p 8788:8788 running-companion:test \
+            node --disable-warning=ExperimentalWarning packages/cli/src/demo.ts --port 8788
+          for i in $(seq 1 120); do curl -fsS http://localhost:8788/healthz >/dev/null 2>&1 && break; sleep 1; done
+          curl -fsS http://localhost:8788/api/today | grep -q '"date"'
+          curl -fsS 'http://localhost:8788/api/activities?lang=el' >/dev/null
+      - name: Logs
+        if: always()
+        run: |
+          docker logs app 2>&1 | tail -50 || true
+          docker logs demo 2>&1 | tail -50 || true

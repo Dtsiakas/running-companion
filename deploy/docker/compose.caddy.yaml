@@ -1,0 +1,42 @@
+# Running Companion behind Caddy, on your own domain, with a certificate from Let's Encrypt.
+#
+# Before starting: point the domain's DNS (an A or AAAA record) at this server, open ports 80 and 443, and set DOMAIN
+# in .env (see .env.example). Then:
+#
+#   docker compose -f compose.caddy.yaml up -d
+#   docker compose -f compose.caddy.yaml logs app     ← the setup link, on first start
+
+services:
+  app:
+    image: ghcr.io/dtsiakas/running-companion:${COMPANION_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    env_file: { path: .env, required: false }
+    environment:
+      PUBLIC_URL: https://${DOMAIN:?Set DOMAIN in .env}
+      # Caddy sits in front: trust its X-Forwarded-* headers for client addresses and HTTPS.
+      TRUST_PROXY: 'true'
+      TZ: ${TZ:-UTC}
+    # No ports: only Caddy can reach the app.
+    volumes:
+      - data:/data
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+    ports:
+      - 80:80
+      - 443:443
+      - 443:443/udp
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [app]
+
+volumes:
+  data:
+  caddy-data:
+  caddy-config:
