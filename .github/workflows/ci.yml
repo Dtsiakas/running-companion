@@ -36,7 +36,9 @@ jobs:
         shell: bash
         run: |
           node --test --test-reporter=tap "packages/*/test/*.test.ts" > test.tap 2>&1 || true
-          grep -E -A14 '^\s*not ok' test.tap | grep -vE '^\s*(---|\.\.\.)$' | tr '\n' ' ' | sed 's/ -- /\n/g' | head -20 | while read -r line; do echo "::error::${line:0:900}"; done
+          { grep -E -A14 '^\s*not ok' test.tap || true; } | grep -vE '^\s*(---|\.\.\.)$' | tr '\n' ' ' | sed 's/ -- /\n/g' | head -20 | while read -r line; do echo "::error::${line:0:900}"; done
+          echo "::notice::$(grep -E '^# (tests|pass|fail|cancelled)' test.tap | tr '\n' ' ')"
+          echo "::notice::$(tail -c 800 test.tap | tr '\n' ' ')"
       - run: npm run build
 
   image:
