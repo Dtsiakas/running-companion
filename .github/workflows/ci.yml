@@ -42,6 +42,27 @@ jobs:
           echo "::notice::$(tail -c 800 test.tap | tr '\n' ' ')"
       - run: npm run build
 
+  a11y:
+    name: Accessibility audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Every screen, both themes, both languages, desktop and phone
+        run: |
+          npm run demo -- --port 8788 > demo.log 2>&1 &
+          for i in $(seq 1 180); do curl -fsS http://localhost:8788/healthz > /dev/null 2>&1 && break; sleep 1; done
+          npm run test:a11y -- http://localhost:8788 | tee a11y.txt
+      - name: Problems
+        if: failure()
+        run: grep '✗' a11y.txt | head -30 | while read -r line; do echo "::error::$line"; done
+
   image:
     name: Docker image starts and answers
     runs-on: ubuntu-latest

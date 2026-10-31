@@ -27,10 +27,13 @@
     "mcp:install": "node packages/mcp/src/install.ts",
     "mcp:doctor": "node packages/mcp/src/doctor.ts",
     "test": "node --test \"packages/*/test/*.test.ts\"",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:a11y": "node --disable-warning=ExperimentalWarning scripts/a11y-audit.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "axe-core": "^4.14.0",
+    "playwright": "^1.63.0",
     "typescript": "^7.0.2"
   },
   "license": "AGPL-3.0-or-later"
