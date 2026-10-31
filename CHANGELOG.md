@@ -29,7 +29,8 @@ set up or configured, and its notes say what to do.
 - The image no longer ships npm and corepack (unused at runtime), which removes all of its high and critical scan
   findings.
 - Requests to Garmin that get no answer at all (Wi-Fi dropping, a laptop waking up) are retried like a 503 instead of
-  failing the sync.
+  failing the sync, and signing in to Garmin has a time limit: a connection that never answered could hold up every
+  later sync until a restart.
 - Durations under an hour read "47 min", not "0h 47"; chart axes tick at round values; clearer labels on the run page
   ("Watch temperature") and Today ("last night's sleep").
 - TypeScript 7, and newer GitHub Actions for the image builds.
