@@ -17,8 +17,9 @@ npm run dev:web       # the dashboard with instant reload, against a running ser
 The demo needs no Garmin account, and `npm run demo -- --missing hrv,scale` shows how a screen copes with less data.
 Please check changes there, in both themes, at phone width, and in Greek.
 
-Before a pull request: `npm run typecheck`, `npm test` and `npm run build`. CI runs the same, and also builds and
-starts the Docker image.
+Before a pull request: `npm run typecheck`, `npm test` and `npm run build`. For changes to the dashboard, also
+`npm run test:a11y` with the demo running (it needs Chromium once: `npx playwright install chromium`). CI runs all of
+these, on Linux and Windows, and also builds and starts the Docker image.
 
 ## How the code is written
 
