@@ -6,6 +6,11 @@ set up or configured, and its notes say what to do.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-31
+
+Nothing to change when updating from 0.1.0, except for Docker: take the Compose files from this release (the ones in
+0.1.0 were rejected by `docker compose`).
+
 ### Added
 
 - Backups: a daily automatic one (database and settings, the newest 7 kept, `BACKUP_KEEP`), `npm run backup` for a full
@@ -64,5 +69,6 @@ The first release.
 - Docker image for amd64 and arm64 at `ghcr.io/dtsiakas/running-companion`, with Compose files for local use,
   Tailscale Funnel and Caddy.
 
-[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Dtsiakas/running-companion/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Dtsiakas/running-companion/releases/tag/v0.1.0
