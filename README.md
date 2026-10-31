@@ -421,7 +421,8 @@ Only what a question needs is sent, never the whole database.
 
 ## Releases
 
-`main` is checked on every push and pull request: typecheck, tests, the dashboard build, and the Docker image, which is
+`main` is checked on every push and pull request: typecheck, tests and the dashboard build (on Linux and Windows),
+the Compose files, CodeQL, and the Docker image, which is
 started and checked (fresh install lands on setup, the API is closed, the health check passes, demo mode serves data).
 Each push to `main` also publishes the `edge` image.
 
