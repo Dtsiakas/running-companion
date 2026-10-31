@@ -23,7 +23,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0, pinned by commit: this action's tags have been rewritten before
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0, pinned by commit like any third-party action that sees a registry token
         with:
           image-ref: ghcr.io/dtsiakas/running-companion:edge  # registry paths are lower case
           format: sarif
@@ -34,3 +34,8 @@ jobs:
         with:
           sarif_file: trivy.sarif
           category: image
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trivy-sarif
+          path: trivy.sarif
+          retention-days: 14

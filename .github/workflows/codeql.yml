@@ -24,3 +24,11 @@ jobs:
           languages: javascript-typescript
           queries: security-and-quality
       - uses: github/codeql-action/analyze@v3
+        with:
+          output: codeql-results
+      # The same findings as a file, for reading them without the Security tab (forks, scripts).
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codeql-sarif
+          path: codeql-results
+          retention-days: 14
