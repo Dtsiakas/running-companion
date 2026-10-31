@@ -274,7 +274,7 @@ in what the server returns fails `npm run typecheck` instead of breaking a scree
 
 The app backs itself up once a day: the first scheduled sync of the day (or the start, if it was off) writes
 `data/backups/running-companion-auto-<date>.tar.gz` with the database and settings, and keeps the newest 7
-(`BACKUP_KEEP`; 0 turns it off). Those leave out the original FIT files, which are large and whose contents are all in the
+(`BACKUP_KEEP`; 0 turns it off). Each is about a third of the database's size (three years of runs: about 50 MB). Those leave out the original FIT files, which are large and whose contents are all in the
 database. `npm run backup` makes a full one by hand, FIT files included, and those are never removed automatically.
 
 A backup is an ordinary `.tar.gz` (`tar -tzf` lists it): a `manifest.json` saying which version made it, a consistent
