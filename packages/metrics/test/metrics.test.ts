@@ -120,6 +120,15 @@ test('fitness and fatigue converge to a constant daily load; fatigue converges f
   assert.ok(rows[10]!.fatigue > rows[10]!.fitness);
 });
 
+test('a new watch: no load spike for four weeks, no deep fatigue until fitness has built up', () => {
+  // A big first week: from zero, fatigue races ahead of fitness and this week dwarfs "the 4-week average".
+  const rows = computeDailyMetrics({ ...inputs(60, 0), load: new Map(Array.from({ length: 60 }, (_, i) => [new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10), 150])) });
+  assert.ok(rows.slice(0, 27).every((row) => row.acwr === null), 'no ACWR in the first 27 days');
+  assert.notEqual(rows[27]!.acwr, null);
+  assert.ok(rows[5]!.form < -30, 'form is deeply negative early on');
+  assert.ok(rows.slice(0, 41).every((row) => !row.reasons.some((reason) => reason.code === 'deep_fatigue')), 'but it is not reported yet');
+});
+
 test('status counts systems, not rules: one system amber, two systems red', () => {
   const day = computeDailyMetrics(inputs(1, 0))[0]!;
   const base: DailyMetrics = { ...day, hrvZ: 0, rhrZ: 0, rhr3d: 40, rhrBaseline: 40, sleepH: 7, sleepBaselineH: 7, form: 0, acwr: 1, fitness: 40 };

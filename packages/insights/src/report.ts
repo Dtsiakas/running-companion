@@ -53,8 +53,11 @@ export function getWeeklyReport(db: DatabaseSync, weekStart: string, today: stri
   const end = week.week_end;
   const complete = end < today;
 
-  // The four weeks before this one: "your recent normal".
-  const history = getWeeklySummary(db, 260).filter((w) => w.week_start! < start && w.week_start! >= addDays(start, -28));
+  // The four weeks before this one: "your recent normal". Only with most of those days on record: in someone's first
+  // weeks the "usual" would be a week or two of data, and "656% above your usual" says nothing.
+  const before = loadDays(db, addDays(start, -28), addDays(start, -1));
+  const settled = before.length >= 21;
+  const history = settled ? getWeeklySummary(db, 260).filter((w) => w.week_start! < start && w.week_start! >= addDays(start, -28)) : [];
   const mean = (xs: Array<number | null | undefined>) => {
     const v = xs.filter((x): x is number => typeof x === 'number');
     return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
@@ -67,7 +70,6 @@ export function getWeeklyReport(db: DatabaseSync, weekStart: string, today: stri
   const usualRhr = mean(history.map((w) => w.avg_resting_hr));
 
   const days = loadDays(db, start, complete ? end : today);
-  const before = loadDays(db, addDays(start, -28), addDays(start, -1));
 
   // Training ------------------------------------------------------------------------------------------------------------
   const training: ReportLine[] = [];

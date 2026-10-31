@@ -67,6 +67,10 @@ const RHR_MIN_RISE = 2; // …and at least 2 bpm, so a tiny SD can't trigger it
 const SLEEP_BASELINE_NIGHTS = 28;
 const SHORT_SLEEP_DROP_H = 1; // slept at least 1 h less than your recent normal
 const ACWR_SPIKE = 1.5; // this week's load 50% above the 4-week average
+// Load comparisons need history behind them. In the first four weeks "your 4-week average" is mostly days before you
+// had the watch, so any normal week looks like a spike; and fitness and fatigue start from zero, so form only means
+// something once fitness has had its own time constant to build up.
+const ACWR_MIN_DAYS = 28;
 const FORM_DEEP_FATIGUE = -30;
 
 export function computeDailyMetrics(inputs: DailyInputs): DailyMetrics[] {
@@ -76,7 +80,7 @@ export function computeDailyMetrics(inputs: DailyInputs): DailyMetrics[] {
   let weightTrend: number | null = null;
   let bodyFatTrend: number | null = null;
 
-  for (let date = inputs.from; date <= inputs.to; date = addDays(date, 1)) {
+  for (let date = inputs.from, day = 1; date <= inputs.to; date = addDays(date, 1), day++) {
     const load = inputs.load.get(date) ?? 0;
     // Form uses yesterday's values: how fresh you are going into today, before today's session.
     const form = fitness - fatigue;
@@ -121,7 +125,7 @@ export function computeDailyMetrics(inputs: DailyInputs): DailyMetrics[] {
       fitness,
       fatigue,
       form,
-      acwr: load28 > 0 ? load7 / (load28 / 4) : null,
+      acwr: load28 > 0 && day >= ACWR_MIN_DAYS ? load7 / (load28 / 4) : null,
       runKm7d: sumWindow(inputs.runKm, date, 7),
       runKm28d: sumWindow(inputs.runKm, date, 28),
       hrvMs: inputs.hrvMs.get(date) ?? null,
@@ -141,7 +145,7 @@ export function computeDailyMetrics(inputs: DailyInputs): DailyMetrics[] {
       status: null,
       reasons: [],
     };
-    Object.assign(row, assessStatus(row));
+    Object.assign(row, assessStatus(row, { formSettled: day >= FITNESS_DAYS }));
     rows.push(row);
   }
   return rows;
@@ -163,7 +167,7 @@ const DIMENSION: Record<StatusReason['code'], 'hrv' | 'rhr' | 'sleep' | 'load'> 
  * Without recovery data (HRV, resting HR or sleep) there is no status.
  * This complements Garmin's training readiness; it does not replace it.
  */
-export function assessStatus(day: DailyMetrics): Pick<DailyMetrics, 'status' | 'reasons'> {
+export function assessStatus(day: DailyMetrics, options: { formSettled?: boolean } = {}): Pick<DailyMetrics, 'status' | 'reasons'> {
   if (day.hrvZ === null && day.rhrZ === null && day.sleepH === null) return { status: null, reasons: [] };
 
   const reasons: StatusReason[] = [];
@@ -179,7 +183,7 @@ export function assessStatus(day: DailyMetrics): Pick<DailyMetrics, 'status' | '
   if (day.acwr !== null && day.acwr > ACWR_SPIKE && day.fitness > 10) {
     reasons.push({ code: 'load_spike', message: `This week's load is ${day.acwr.toFixed(1)}× your 4-week average`, values: { value: day.acwr } });
   }
-  if (day.form < FORM_DEEP_FATIGUE) {
+  if (day.form < FORM_DEEP_FATIGUE && options.formSettled !== false) {
     reasons.push({ code: 'deep_fatigue', message: `Form is ${round(day.form)}: fatigue is well above fitness`, values: { value: day.form } });
   }
 
