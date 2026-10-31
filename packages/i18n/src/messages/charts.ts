@@ -13,7 +13,7 @@ export const charts = define(
       hint: 'Touch or hover a chart to see the values at that point.',
       minutes: (n: number) => `${n} min`,
     },
-    map: { start: 'Start', finish: 'Finish' },
+    map: { start: 'Start', finish: 'Finish', route: 'Map of the route, coloured by pace', places: 'Map of the places where you’ve run' },
     load: {
       fitness: 'Fitness',
       fatigue: 'Fatigue',
@@ -35,7 +35,7 @@ export const charts = define(
       hint: 'Άγγιξε ή πέρασε τον δείκτη πάνω από ένα γράφημα για να δεις τις τιμές σε εκείνο το σημείο.',
       minutes: (n: number) => `${n} λεπτά`,
     },
-    map: { start: 'Αφετηρία', finish: 'Τερματισμός' },
+    map: { start: 'Αφετηρία', finish: 'Τερματισμός', route: 'Χάρτης της διαδρομής, χρωματισμένος κατά ρυθμό', places: 'Χάρτης με τα μέρη όπου έχεις τρέξει' },
     load: {
       fitness: 'Φυσική κατάσταση',
       fatigue: 'Κούραση',

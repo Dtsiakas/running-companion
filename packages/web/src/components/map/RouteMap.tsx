@@ -51,7 +51,7 @@ export default function RouteMap({ route, config }: { route: NonNullable<RouteRe
 
   return (
     <figure className={styles.figure}>
-      <div ref={element} className={styles.map} role="img" aria-label="Map of the route, coloured by pace" />
+      <div ref={element} className={styles.map} role="img" aria-label={m.charts.map.route} />
       {route.pace_range ? (
         <figcaption className={styles.scale}>
           <span>{f.paceFromSecondsPerKm(fast).replace(f.paceUnit, '')}</span>

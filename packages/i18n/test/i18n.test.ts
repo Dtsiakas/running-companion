@@ -9,7 +9,8 @@ test('every language has every message, and none is left empty or in English by 
     const walk = (a: unknown, b: unknown, path: string) => {
       if (typeof a === 'string') {
         assert.equal(typeof b, 'string', `${lang}: ${path} should be text`);
-        assert.ok((b as string).trim(), `${lang}: ${path} is empty`);
+        // Empty only where English is empty too (a line some languages don't need).
+        if ((a as string).trim()) assert.ok((b as string).trim(), `${lang}: ${path} is empty`);
         return;
       }
       if (typeof a === 'function') {
