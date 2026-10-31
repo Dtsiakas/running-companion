@@ -58,7 +58,8 @@ export function createFormat(locale: Locale) {
     imperial,
 
     /** 1234.5 → "1,234.5" (English) or "1.234,5" (Greek). */
-    number: (value: number | null | undefined, digits = 0): string => (missing(value) ? NONE : nf(digits).format(round(value, digits))),
+    /** `fixed` keeps trailing zeros ("5.80"), for figures that sit in a column or next to others with two decimals. */
+    number: (value: number | null | undefined, digits = 0, fixed = false): string => (missing(value) ? NONE : nf(digits, fixed).format(round(value, digits))),
     /** A signed number with a real minus sign: "+3", "−2.5". */
     signed: (value: number | null | undefined, digits = 0): string => {
       if (missing(value)) return NONE;

@@ -67,7 +67,7 @@ function RunBody({ run, children: charts }: { run: Activity; children: React.Rea
       </header>
 
       <dl className={blocks.stats}>
-        <Stat label={m.run.distance} value={f.number(f.distanceValue(run.distance_km), 2)} unit={f.distanceUnit} />
+        <Stat label={m.run.distance} value={f.number(f.distanceValue(run.distance_km), 2, true)} unit={f.distanceUnit} />
         <Stat label={m.run.time} value={run.duration} />
         <Stat label={m.run.pace} value={stripPace(run.pace)} unit={f.paceUnit} />
         <Stat label={m.run.heartRate} value={run.avg_hr} unit={run.max_hr ? m.run.max(run.max_hr) : 'bpm'} />

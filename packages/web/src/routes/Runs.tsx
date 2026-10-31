@@ -63,7 +63,7 @@ function RunRow({ run }: { run: Run }) {
         <span className={styles.details}>{details}</span>
       </span>
       <span className={styles.km}>
-        {f.number(f.distanceValue(run.distance_km), 2)}
+        {f.number(f.distanceValue(run.distance_km), 2, true)}
         <small> {f.distanceUnit}</small>
       </span>
     </Link>

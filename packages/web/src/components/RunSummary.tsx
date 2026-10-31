@@ -22,7 +22,7 @@ export function RunSummary({ run, compact = false }: { run: Run; compact?: boole
           </p>
         </div>
         <p className={styles.distance}>
-          {f.number(f.distanceValue(run.distance_km), 2)}
+          {f.number(f.distanceValue(run.distance_km), 2, true)}
           <small> {f.distanceUnit}</small>
         </p>
       </div>
