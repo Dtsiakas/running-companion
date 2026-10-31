@@ -50,7 +50,7 @@ test('tar: what is written reads back, and system tar agrees', async () => {
 
   const dir = mkdtempSync(join(tmpdir(), 'companion-tar-'));
   writeFileSync(join(dir, 'x.tar'), archive);
-  assert.deepEqual(execFileSync('tar', ['-tf', 'x.tar'], { cwd: dir, encoding: 'utf8' }).trim().split('\n'), ['a.txt', 'dir/b.bin', 'empty']);
+  assert.deepEqual(execFileSync('tar', ['-tf', 'x.tar'], { cwd: dir, encoding: 'utf8' }).trim().split(/\r?\n/), ['a.txt', 'dir/b.bin', 'empty']);
 });
 
 test('tar: a damaged header is refused', async () => {
@@ -66,7 +66,7 @@ test('backup and restore: a round trip brings back the database, settings and FI
   if (process.platform !== 'win32') assert.equal(statSync(file).mode & 0o777, 0o600); // Windows has no Unix modes
   assert.equal(summary.manifest.fitFiles, 1);
   assert.equal(summary.manifest.schema, latestSchemaVersion());
-  assert.deepEqual(execFileSync('tar', ['-tzf', 'b.tar.gz'], { cwd: join(source.dataDir, 'backups'), encoding: 'utf8' }).trim().split('\n'), ['manifest.json', 'companion.db', 'settings.json', 'fit/123.fit']);
+  assert.deepEqual(execFileSync('tar', ['-tzf', 'b.tar.gz'], { cwd: join(source.dataDir, 'backups'), encoding: 'utf8' }).trim().split(/\r?\n/), ['manifest.json', 'companion.db', 'settings.json', 'fit/123.fit']);
 
   // Restore over a different install: what was there moves aside, nothing is deleted.
   const target = dataFolder();
