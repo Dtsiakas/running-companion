@@ -19,16 +19,17 @@ All screenshots are from the [demo](#demo), with generated data.
 
 ## Stack
 
-| Part | Tech | Status |
-|---|---|---|
-| Garmin API client | TypeScript, native `fetch` | done |
-| FIT file decoding | `@garmin/fitsdk` (Garmin's official JS SDK) | done |
-| Database | SQLite via Node's built-in `node:sqlite` | done |
-| Sync (backfill + incremental) | TypeScript | done |
-| Metrics engine | TypeScript | done |
-| MCP server (chat with an AI assistant about the data) | `@modelcontextprotocol/sdk` | done |
-| Web server (API, remote MCP with OAuth, scheduled sync) | Express 5, MCP SDK auth | done |
-| Dashboard (PWA) | React 19, Vite, React Router, TanStack Query, Recharts, CSS Modules | done |
+| Part | Tech |
+|---|---|
+| Garmin API client | TypeScript, native `fetch` |
+| FIT file decoding | `@garmin/fitsdk` (Garmin's official JS SDK) |
+| Database | SQLite via Node's built-in `node:sqlite` |
+| Sync (backfill + incremental) | TypeScript |
+| Metrics engine | TypeScript |
+| MCP server (chat with an AI assistant about the data) | `@modelcontextprotocol/sdk` |
+| Web server (API, remote MCP with OAuth, scheduled sync) | Express 5, MCP SDK auth |
+| Dashboard (PWA) | React 19, Vite, React Router, TanStack Query, Recharts, CSS Modules |
+| Deployment | Docker image (amd64, arm64) with Compose files for Tailscale Funnel or Caddy |
 
 ## Layout
 
