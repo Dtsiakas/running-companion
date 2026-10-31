@@ -14,6 +14,7 @@ set up or configured, and its notes say what to do.
 
 - Settings shows whether Claude is connected (and when it last signed in), the connector address to copy, and a
   button that signs Claude out everywhere. It also shows the last backup.
+- Security scanning: CodeQL on every push and pull request, and a weekly Trivy scan of the published image.
 - README screenshots, `SECURITY.md`, `CONTRIBUTING.md` and issue templates.
 
 ### Changed
@@ -26,12 +27,17 @@ set up or configured, and its notes say what to do.
 - Accessibility: every page passes an axe audit in both themes, both languages and at phone width (contrast of
   secondary text, keyboard access to wide tables, map and chart descriptions for screen readers, in Greek too).
 - The login, setup and consent pages use the dashboard's colours.
+- The image no longer ships npm and corepack (unused at runtime), which removes all of its high and critical scan
+  findings.
+- Requests to Garmin that get no answer at all (Wi-Fi dropping, a laptop waking up) are retried like a 503 instead of
+  failing the sync.
 - Durations under an hour read "47 min", not "0h 47"; chart axes tick at round values; clearer labels on the run page
   ("Watch temperature") and Today ("last night's sleep").
 - TypeScript 7, and newer GitHub Actions for the image builds.
 
 ### Fixed
 
+- Login redirects refuse targets with control characters or backslashes, which browsers can turn into another site.
 - A badly encoded session cookie caused a server error on every request instead of a login prompt.
 - The weekly report tool for Claude used the UTC date as "today", a day behind after midnight in Europe.
 - OAuth clients from abandoned connection attempts were never cleaned up.
