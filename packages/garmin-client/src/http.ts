@@ -1,5 +1,5 @@
 import type { TokenProvider } from './auth.ts';
-import { GarminHttpError } from './errors.ts';
+import { GarminError, GarminHttpError } from './errors.ts';
 
 export type QueryValue = string | number | boolean | undefined;
 export type Query = Record<string, QueryValue>;
@@ -8,8 +8,10 @@ export interface HttpClientOptions {
   baseUrl: string;
   tokens: TokenProvider;
   fetch?: typeof fetch;
-  /** Retries for HTTP 429 and 5xx. Default 3. */
+  /** Retries for HTTP 429, 5xx, timeouts and network errors. Default 3. */
   maxRetries?: number;
+  /** First wait before a retry; it doubles each time unless Garmin says how long (Retry-After). Default 1000. */
+  retryBaseMs?: number;
   timeoutMs?: number;
   /** Minimum gap between requests, to stay polite during long backfills. Default 0. */
   minIntervalMs?: number;
@@ -23,6 +25,7 @@ export class HttpClient {
   readonly #maxRetries: number;
   readonly #timeoutMs: number;
   readonly #minIntervalMs: number;
+  readonly #retryBaseMs: number;
   #lastRequestAt = 0;
 
   constructor(options: HttpClientOptions) {
@@ -32,6 +35,7 @@ export class HttpClient {
     this.#maxRetries = options.maxRetries ?? 3;
     this.#timeoutMs = options.timeoutMs ?? 30_000;
     this.#minIntervalMs = options.minIntervalMs ?? 0;
+    this.#retryBaseMs = options.retryBaseMs ?? 1000;
   }
 
   async #throttle(): Promise<void> {
@@ -59,10 +63,20 @@ export class HttpClient {
     for (let attempt = 0; ; attempt++) {
       const token = await this.#tokens.getToken();
       await this.#throttle();
-      const response = await this.#fetch(url, {
-        headers: { Authorization: `Bearer ${token.accessToken}`, Accept: accept },
-        signal: AbortSignal.timeout(this.#timeoutMs),
-      });
+      let response: Response;
+      try {
+        response = await this.#fetch(url, {
+          headers: { Authorization: `Bearer ${token.accessToken}`, Accept: accept },
+          signal: AbortSignal.timeout(this.#timeoutMs),
+        });
+      } catch (error) {
+        // No answer at all (Wi-Fi dropping, a laptop waking up, a request timing out): worth another try, like a 503.
+        if (attempt < this.#maxRetries) {
+          await sleep(this.#retryBaseMs * 2 ** attempt);
+          continue;
+        }
+        throw new GarminError(`Couldn't reach Garmin (${path}): ${error instanceof Error ? error.message : String(error)}`);
+      }
 
       if (response.ok) return response;
 
@@ -76,7 +90,7 @@ export class HttpClient {
       const retryable = response.status === 429 || response.status >= 500;
       if (retryable && attempt < this.#maxRetries) {
         await response.body?.cancel();
-        await sleep(retryDelayMs(response, attempt));
+        await sleep(retryDelayMs(response, attempt, this.#retryBaseMs));
         continue;
       }
 
@@ -93,10 +107,10 @@ export class HttpClient {
   }
 }
 
-function retryDelayMs(response: Response, attempt: number): number {
+function retryDelayMs(response: Response, attempt: number, baseMs: number): number {
   const retryAfter = Number(response.headers.get('retry-after'));
   if (Number.isFinite(retryAfter) && retryAfter > 0) return Math.min(retryAfter, 120) * 1000;
-  return 1000 * 2 ** attempt;
+  return baseMs * 2 ** attempt;
 }
 
 function sleep(ms: number): Promise<void> {
