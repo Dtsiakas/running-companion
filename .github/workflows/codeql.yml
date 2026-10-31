@@ -26,6 +26,11 @@ jobs:
       - uses: github/codeql-action/analyze@v3
         with:
           output: codeql-results
+      # Each finding as a warning on the run page too (up to GitHub's limit per step).
+      - name: Findings
+        run: |
+          jq -r '.runs[].results[] | "::warning file=\(.locations[0].physicalLocation.artifactLocation.uri),line=\(.locations[0].physicalLocation.region.startLine)::\(.ruleId): \(.message.text | split("\n")[0])"' codeql-results/*.sarif | head -50
+          echo "$(jq '[.runs[].results[]] | length' codeql-results/*.sarif) findings"
       # The same findings as a file, for reading them without the Security tab (forks, scripts).
       - uses: actions/upload-artifact@v4
         with:

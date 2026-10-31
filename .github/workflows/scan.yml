@@ -34,6 +34,10 @@ jobs:
         with:
           sarif_file: trivy.sarif
           category: image
+      - name: Findings
+        run: |
+          jq -r '.runs[].results[] | "::warning::\(.ruleId) (\(.level)): \(.message.text | split("\n")[0:3] | join(" "))"' trivy.sarif | head -50
+          echo "$(jq '[.runs[].results[]] | length' trivy.sarif) findings"
       - uses: actions/upload-artifact@v4
         with:
           name: trivy-sarif
