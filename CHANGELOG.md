@@ -47,7 +47,8 @@ Nothing to change when updating from 0.1.0, except for Docker: take the Compose 
 - In the first weeks with the app, an ordinary week was flagged as a training-load spike ("act today") and the weekly
   report said things like "656% above your usual": both compared with a "4-week average" that was mostly days before
   any data. Load spikes now need 28 days of history, deep-fatigue warnings 42 (fitness and fatigue both start from
-  zero), and the weekly comparison with "your usual" three of the previous four weeks on record.
+  zero), and the weekly comparison with "your usual" three of the previous four weeks on record. Milestone estimates
+  ("around 22 January") use the history there is, and wait for two weeks of it.
 - The Compose files in 0.1.0 were rejected by `docker compose` (the optional `.env` was written in a form it doesn't
   accept). CI now validates them.
 - Login redirects refuse targets with control characters or backslashes, which browsers can turn into another site.

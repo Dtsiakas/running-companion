@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { ENGLISH, type I18n } from '@companion/i18n';
+import { daysBetween } from '@companion/dates';
 import { addDays } from './days.ts';
 
 type Row = Record<string, unknown>;
@@ -71,10 +72,13 @@ export function getProgress(db: DatabaseSync, today: string, i18n: I18n = ENGLIS
   milestones.push(...timeMilestones(db, today, i18n));
   milestones.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
-  // Recent pace: the last eight weeks, for "about when" on the next marks.
-  const recent = runs.filter((r) => r.date > addDays(today, -56));
-  const kmPerDay = recent.reduce((s, r) => s + r.km, 0) / 56;
-  const runsPerDay = recent.length / 56;
+  // Recent pace: the last eight weeks, for "about when" on the next marks. With less history, the days there are; under
+  // two weeks, no estimate (one big first week isn't a pace).
+  const since = runs[0]?.date;
+  const window = since ? Math.min(56, daysBetween(since, today) + 1) : 0;
+  const recent = runs.filter((r) => r.date > addDays(today, -window));
+  const kmPerDay = window >= 14 ? recent.reduce((s, r) => s + r.km, 0) / window : 0;
+  const runsPerDay = window >= 14 ? recent.length / window : 0;
   const eta = (missing: number, perDay: number) => (perDay > 0 ? addDays(today, Math.ceil(missing / perDay)) : null);
   const done = km / unit;
   const nextMark = DISTANCE_MARKS.find((mark) => mark > done);
