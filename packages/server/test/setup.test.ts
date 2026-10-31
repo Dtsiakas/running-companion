@@ -170,3 +170,11 @@ test('demo mode: no setup, no login, and settings are read-only', async () => {
     demoServer.close();
   }
 });
+
+test('server pages follow the browser’s language', async () => {
+  const greek = await (await fetch(`${base}/login`, { headers: { 'accept-language': 'el-GR,el;q=0.9' } })).text();
+  assert.match(greek, /<html lang="el">/);
+  assert.match(greek, /Σύνδεση/);
+  const english = await (await fetch(`${base}/login`, { headers: { 'accept-language': 'fr-FR' } })).text();
+  assert.match(english, /Log in/);
+});

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { setupPage } from '../auth/pages.ts';
 import { hashPassword, MIN_PASSWORD_LENGTH, verifyPassword } from '../auth/password.ts';
 import type { Sessions } from '../auth/session.ts';
+import { requestI18n } from '../locale.ts';
 import { isCalendarDate, keyStatus, type KeyCheck } from '../garmin-key.ts';
 
 export interface SettingsRouteOptions {
@@ -35,10 +36,6 @@ function sameCode(given: string, expected: string): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-const KEY_MESSAGES: Record<Exclude<KeyCheck, 'ok'>, string> = {
-  rejected: 'Garmin didn’t accept this key. Check that you copied all of it, or create a new one.',
-  unreachable: 'Couldn’t reach Garmin to check the key. It was saved anyway; the next sync will tell.',
-};
 
 /**
  * The first-start setup page, and the Settings screen's API.
@@ -61,7 +58,7 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
 
   router.use((req: Request, res: Response, next: NextFunction) => {
     if (!setupPending() || req.path === '/setup' || req.path === '/healthz') return next();
-    if (req.path.startsWith('/api/') || req.path === '/mcp') return res.status(401).json({ error: 'Not set up yet', setup: true });
+    if (req.path.startsWith('/api/') || req.path === '/mcp') return res.status(401).json({ error: requestI18n(req).m.pages.notSetUp, setup: true });
     if (req.path === '/login' || req.path.startsWith('/oauth/') || req.accepts(['html', 'json']) === 'html' && !/\.\w+$/.test(req.path)) {
       return res.redirect(`/setup${typeof req.query.code === 'string' ? `?code=${encodeURIComponent(req.query.code)}` : ''}`);
     }
@@ -71,7 +68,7 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
   router.get('/setup', (req, res) => {
     if (!setupPending()) return res.redirect('/');
     const code = typeof req.query.code === 'string' ? req.query.code : '';
-    res.type('html').send(setupPage({ codeRequired: !sameCode(code, options.setupCode), code }));
+    res.type('html').send(setupPage({ codeRequired: !sameCode(code, options.setupCode), code }, requestI18n(req).m.pages));
   });
 
   router.post('/setup', attempts, form, async (req, res) => {
@@ -80,19 +77,20 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
     const code = String(body.code ?? '');
     const expiresOn = String(body.expires ?? '').trim();
     const key = String(body.key ?? '').trim();
+    const { m } = requestI18n(req);
     const again = (error: string) =>
-      res.status(400).type('html').send(setupPage({ codeRequired: !sameCode(code, options.setupCode), code, expiresOn, error }));
+      res.status(400).type('html').send(setupPage({ codeRequired: !sameCode(code, options.setupCode), code, expiresOn, error }, m.pages));
 
-    if (!sameCode(code, options.setupCode)) return again('That setup code isn’t right. Copy it from the server’s log.');
+    if (!sameCode(code, options.setupCode)) return again(m.pages.setup.badCode);
     const password = String(body.password ?? '');
-    if (password.length < MIN_PASSWORD_LENGTH) return again(`Use a password of at least ${MIN_PASSWORD_LENGTH} characters.`);
-    if (password !== body.repeat) return again('The two passwords differ.');
-    if (expiresOn && !isCalendarDate(expiresOn)) return again('The expiry date isn’t a valid date.');
+    if (password.length < MIN_PASSWORD_LENGTH) return again(m.settings.errors.shortPassword(MIN_PASSWORD_LENGTH));
+    if (password !== body.repeat) return again(m.pages.setup.differ);
+    if (expiresOn && !isCalendarDate(expiresOn)) return again(m.settings.errors.badDate);
 
     let keyNote: KeyCheck | null = null;
     if (key) {
       keyNote = await checkGarminKey(key);
-      if (keyNote === 'rejected') return again(KEY_MESSAGES.rejected);
+      if (keyNote === 'rejected') return again(m.settings.errors.keyRejected);
     }
 
     try {
@@ -101,7 +99,7 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
         ...(key ? { garminKey: key, garminKeyAddedAt: new Date().toISOString(), garminKeyExpiresOn: expiresOn || null, garminKeyRejectedAt: null } : {}),
       });
     } catch (error) {
-      return again(error instanceof LockedSettingError ? error.message : 'Couldn’t save the settings file. Check that the data folder is writable.');
+      return again(error instanceof LockedSettingError ? error.message : m.pages.setup.cantSave);
     }
     sessions.start(res);
     if (key) syncSoon();
@@ -112,7 +110,7 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
 
   const api = Router();
   api.use(sessions.requireApi);
-  api.put(/.*/, (_req, res, next) => (options.demo ? res.status(403).json({ error: 'This is a demo with generated data: settings can’t be changed.' }) : next()));
+  api.put(/.*/, (req, res, next) => (options.demo ? res.status(403).json({ error: requestI18n(req).m.settings.errors.demo }) : next()));
 
   const describe = () => {
     const current = settings.read();
@@ -140,11 +138,11 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
   api.put('/garmin-key', json, attempts, (req, res) =>
     save(res, async () => {
       const parsed = keyBody.safeParse(req.body);
-      if (!parsed.success) throw new InputError('Paste the key first.');
+      if (!parsed.success) throw new InputError(requestI18n(req).m.settings.errors.pasteKey);
       const { key, expiresOn } = parsed.data;
-      if (expiresOn && !isCalendarDate(expiresOn)) throw new InputError('The expiry date isn’t a valid date.');
+      if (expiresOn && !isCalendarDate(expiresOn)) throw new InputError(requestI18n(req).m.settings.errors.badDate);
       const check = await checkGarminKey(key);
-      if (check === 'rejected') throw new InputError(KEY_MESSAGES.rejected);
+      if (check === 'rejected') throw new InputError(requestI18n(req).m.settings.errors.keyRejected);
       settings.update({ garminKey: key, garminKeyAddedAt: new Date().toISOString(), garminKeyExpiresOn: expiresOn || null, garminKeyRejectedAt: null });
       syncSoon();
     }),
@@ -153,7 +151,7 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
   api.put('/garmin-key/expiry', json, (req, res) =>
     save(res, () => {
       const expiresOn = (req.body as { expiresOn?: unknown } | undefined)?.expiresOn;
-      if (expiresOn !== null && (typeof expiresOn !== 'string' || !isCalendarDate(expiresOn))) throw new InputError('The expiry date isn’t a valid date.');
+      if (expiresOn !== null && (typeof expiresOn !== 'string' || !isCalendarDate(expiresOn))) throw new InputError(requestI18n(req).m.settings.errors.badDate);
       settings.update({ garminKeyExpiresOn: expiresOn });
     }),
   );
@@ -161,8 +159,8 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
   api.put('/password', json, attempts, (req, res) =>
     save(res, async () => {
       const { current = '', next = '' } = (req.body ?? {}) as { current?: string; next?: string };
-      if (!(await verifyPassword(String(current), settings.read().passwordHash))) throw new InputError('Your current password isn’t right.');
-      if (String(next).length < MIN_PASSWORD_LENGTH) throw new InputError(`Use a password of at least ${MIN_PASSWORD_LENGTH} characters.`);
+      if (!(await verifyPassword(String(current), settings.read().passwordHash))) throw new InputError(requestI18n(req).m.settings.errors.wrongPassword);
+      if (String(next).length < MIN_PASSWORD_LENGTH) throw new InputError(requestI18n(req).m.settings.errors.shortPassword(MIN_PASSWORD_LENGTH));
       // A new session secret logs out every other browser, which is the point of changing a password; this one
       // gets a fresh session below. Claude's connector keeps working: it has its own tokens.
       settings.update({ passwordHash: await hashPassword(String(next)), ...(settings.locked().has('sessionSecret') ? {} : { sessionSecret: randomBytes(32).toString('base64url') }) });

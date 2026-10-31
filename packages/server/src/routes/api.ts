@@ -115,11 +115,11 @@ export function apiRoutes({ db, writeDb, sync, isSyncRunning, cartoKey = null }:
 
   router.get('/sync', (_req, res) => res.json({ running: isSyncRunning() }));
 
-  router.post('/sync', async (_req, res) => {
+  router.post('/sync', async (req, res) => {
     try {
       res.json(await sync());
     } catch (error) {
-      res.status(502).json({ error: `Sync failed: ${error instanceof Error ? error.message : String(error)}` });
+      res.status(502).json({ error: requestI18n(req).m.pages.syncFailed(error instanceof Error ? error.message : String(error)) });
     }
   });
 

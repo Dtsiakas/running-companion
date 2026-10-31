@@ -4,6 +4,7 @@ import { charts } from './charts.ts';
 import { fuel } from './fuel.ts';
 import { insight } from './insight.ts';
 import { notes } from './notes.ts';
+import { pages } from './pages.ts';
 import { patterns } from './patterns.ts';
 import { progress } from './progress.ts';
 import { report } from './report.ts';
@@ -18,4 +19,4 @@ import { weather } from './weather.ts';
 import { week } from './week.ts';
 
 /** Every area of text. Add an area here when you add its file. */
-export const AREAS = { app, settings, insight, notes, today, run, charts, signals, weather, week, sleep, body, fuel, progress, trends, patterns, status, report };
+export const AREAS = { app, settings, insight, notes, today, run, charts, signals, weather, week, sleep, body, fuel, progress, trends, patterns, status, report, pages };

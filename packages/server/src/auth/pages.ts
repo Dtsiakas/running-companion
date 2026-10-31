@@ -1,5 +1,10 @@
+import { ENGLISH, type I18n } from '@companion/i18n';
+
+type T = I18n['m']['pages'];
+
 /**
- * The two server-rendered pages: login (dashboard) and consent (Claude connector).
+ * The server-rendered pages: login (dashboard), first-start setup and consent (Claude connector), in the browser's
+ * language (Accept-Language), since they come before the app and its language setting.
  * Plain HTML with no scripts, so they work before the dashboard exists and can't be broken by it.
  * Every interpolated value goes through escapeHtml.
  */
@@ -7,9 +12,9 @@ export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
 }
 
-function layout(title: string, body: string, width = 380): string {
+function layout(title: string, body: string, t: T, width = 380): string {
   return `<!doctype html>
-<html lang="en">
+<html lang="${t.lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -41,41 +46,40 @@ function layout(title: string, body: string, width = 380): string {
 </html>`;
 }
 
-export function loginPage({ next, error }: { next: string; error?: string }): string {
+export function loginPage({ next, error }: { next: string; error?: string }, t: T = ENGLISH.m.pages): string {
   return layout(
-    'Log in',
+    t.logIn,
     `<h1>Running Companion</h1>
-<p>Log in to see your dashboard.</p>
+<p>${escapeHtml(t.logInIntro)}</p>
 ${error ? `<div class="error">${escapeHtml(error)}</div>` : ''}
 <form method="post" action="/login">
   <input type="hidden" name="next" value="${escapeHtml(next)}">
-  <label for="password">Password</label>
+  <label for="password">${escapeHtml(t.password)}</label>
   <input id="password" name="password" type="password" autocomplete="current-password" required autofocus>
-  <div class="actions"><button type="submit">Log in</button></div>
+  <div class="actions"><button type="submit">${escapeHtml(t.logIn)}</button></div>
 </form>`,
+    t,
   );
 }
 
-export function consentPage({ requestId, clientName, redirectHost, needsPassword, error }: {
-  requestId: string;
-  clientName: string;
-  redirectHost: string;
-  needsPassword: boolean;
-  error?: string;
-}): string {
+export function consentPage(
+  { requestId, clientName, redirectHost, needsPassword, error }: { requestId: string; clientName: string; redirectHost: string; needsPassword: boolean; error?: string },
+  t: T = ENGLISH.m.pages,
+): string {
   return layout(
-    'Allow access',
-    `<h1>Allow ${escapeHtml(clientName)}?</h1>
-<p><strong>${escapeHtml(clientName)}</strong> (${escapeHtml(redirectHost)}) wants to read your training and health data and run Garmin syncs.</p>
+    t.allowTitle,
+    `<h1>${escapeHtml(t.allow(clientName))}</h1>
+<p>${t.wants(escapeHtml(clientName), escapeHtml(redirectHost))}</p>
 ${error ? `<div class="error">${escapeHtml(error)}</div>` : ''}
 <form method="post" action="/oauth/consent">
   <input type="hidden" name="request" value="${escapeHtml(requestId)}">
-  ${needsPassword ? '<label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus>' : ''}
+  ${needsPassword ? `<label for="password">${escapeHtml(t.password)}</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus>` : ''}
   <div class="actions">
-    <button type="submit" name="action" value="deny" class="secondary" formnovalidate>Deny</button>
-    <button type="submit" name="action" value="approve">Allow</button>
+    <button type="submit" name="action" value="deny" class="secondary" formnovalidate>${escapeHtml(t.deny)}</button>
+    <button type="submit" name="action" value="approve">${escapeHtml(t.allowButton)}</button>
   </div>
 </form>`,
+    t,
   );
 }
 
@@ -90,41 +94,44 @@ export interface SetupForm {
  * First start: the only page there is until it's done. The setup code proves the person filling it in can see the
  * server's log, so whoever finds a fresh install's address first can't claim it.
  */
-export function setupPage({ codeRequired, code = '', expiresOn = '', error }: SetupForm): string {
+export function setupPage({ codeRequired, code = '', expiresOn = '', error }: SetupForm, t: T = ENGLISH.m.pages): string {
+  const s = t.setup;
+  const link = '<a href="https://connect.garmin.com/app/settings/personalApiToken" target="_blank" rel="noreferrer">Garmin Connect</a>';
   return layout(
-    'Set up',
-    `<h1>Set up Running Companion</h1>
-<p>A password and your Garmin key, once. You can change both later in Settings.</p>
+    s.title,
+    `<h1>${escapeHtml(s.heading)}</h1>
+<p>${escapeHtml(s.intro)}</p>
 ${error ? `<div class="error" role="alert">${escapeHtml(error)}</div>` : ''}
 <form method="post" action="/setup">
   ${
     codeRequired
-      ? `<label for="code">Setup code</label>
+      ? `<label for="code">${escapeHtml(s.code)}</label>
   <input id="code" name="code" type="text" value="${escapeHtml(code)}" autocomplete="off" spellcheck="false" required>
-  <p class="hint">Printed in the server's log when it started.</p>`
+  <p class="hint">${escapeHtml(s.codeHint)}</p>`
       : `<input type="hidden" name="code" value="${escapeHtml(code)}">`
   }
-  <h2>Password</h2>
-  <p class="hint" style="margin-top:0">For this app only. At least 12 characters; a few words in a row works well.</p>
-  <label for="password">New password</label>
+  <h2>${escapeHtml(s.passwordTitle)}</h2>
+  <p class="hint" style="margin-top:0">${escapeHtml(s.passwordHint)}</p>
+  <label for="password">${escapeHtml(s.newPassword)}</label>
   <input id="password" name="password" type="password" autocomplete="new-password" minlength="12" required>
-  <label for="repeat">Repeat it</label>
+  <label for="repeat">${escapeHtml(s.repeat)}</label>
   <input id="repeat" name="repeat" type="password" autocomplete="new-password" minlength="12" required>
 
-  <h2>Garmin</h2>
-  <p class="hint" style="margin-top:0">Create a Personal API key at <a href="https://connect.garmin.com/app/settings/personalApiToken" target="_blank" rel="noreferrer">Garmin Connect</a> and paste it here. It stays on this server and is never shown again. You can skip this and add it later.</p>
-  <label for="key">API key</label>
+  <h2>${escapeHtml(s.garminTitle)}</h2>
+  <p class="hint" style="margin-top:0">${escapeHtml(s.garminHint('@@LINK@@')).replace('@@LINK@@', link)}</p>
+  <label for="key">${escapeHtml(s.apiKey)}</label>
   <input id="key" name="key" type="password" autocomplete="off" spellcheck="false">
-  <label for="expires">Expires on (optional)</label>
+  <label for="expires">${escapeHtml(s.expires)}</label>
   <input id="expires" name="expires" type="date" value="${escapeHtml(expiresOn)}">
-  <p class="hint">Garmin shows the date when you create the key. With it, the app reminds you two weeks before.</p>
+  <p class="hint">${escapeHtml(s.expiresHint)}</p>
 
-  <div class="actions"><button type="submit">Finish setup</button></div>
+  <div class="actions"><button type="submit">${escapeHtml(s.finish)}</button></div>
 </form>`,
+    t,
     460,
   );
 }
 
-export function messagePage(title: string, message: string): string {
-  return layout(title, `<h1>${escapeHtml(title)}</h1><p>${escapeHtml(message)}</p>`);
+export function messagePage(title: string, message: string, t: T = ENGLISH.m.pages): string {
+  return layout(title, `<h1>${escapeHtml(title)}</h1><p>${escapeHtml(message)}</p>`, t);
 }

@@ -4,6 +4,7 @@ import type { CompanionOAuthProvider } from '../auth/oauth-provider.ts';
 import { consentPage, loginPage, messagePage } from '../auth/pages.ts';
 import { verifyPassword } from '../auth/password.ts';
 import type { Sessions } from '../auth/session.ts';
+import { requestI18n } from '../locale.ts';
 
 export interface AuthRouteOptions {
   sessions: Sessions;
@@ -28,19 +29,23 @@ export function authRoutes({ sessions, passwordHash, oauth }: AuthRouteOptions):
     limit: 10,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
-    handler: (_req, res) => res.status(429).type('html').send(messagePage('Too many attempts', 'Wait 15 minutes, then try again.')),
+    handler: (req, res) => {
+      const t = requestI18n(req).m.pages;
+      res.status(429).type('html').send(messagePage(t.tooMany, t.waitRetry, t));
+    },
   });
 
   router.get('/login', (req, res) => {
     const next = safeNext(req.query.next);
     if (sessions.isValid(req)) return res.redirect(next);
-    res.type('html').send(loginPage({ next }));
+    res.type('html').send(loginPage({ next }, requestI18n(req).m.pages));
   });
 
   router.post('/login', passwordAttempts, form, async (req, res) => {
     const next = safeNext(req.body?.next);
     if (!(await verifyPassword(String(req.body?.password ?? ''), passwordHash()))) {
-      return res.status(401).type('html').send(loginPage({ next, error: 'Wrong password.' }));
+      const t = requestI18n(req).m.pages;
+      return res.status(401).type('html').send(loginPage({ next, error: t.wrongPassword }, t));
     }
     sessions.start(res);
     res.redirect(303, next);
@@ -54,21 +59,23 @@ export function authRoutes({ sessions, passwordHash, oauth }: AuthRouteOptions):
   router.get('/oauth/consent', (req, res) => {
     const requestId = String(req.query.request ?? '');
     const pending = oauth.getPending(requestId);
-    if (!pending) return res.status(400).type('html').send(messagePage('Request expired', 'Start the connection again from Claude.'));
+    const t = requestI18n(req).m.pages;
+    if (!pending) return res.status(400).type('html').send(messagePage(t.expired, t.startAgain, t));
     res.type('html').send(
       consentPage({
         requestId,
-        clientName: pending.client.client_name ?? 'An application',
+        clientName: pending.client.client_name ?? t.anApp,
         redirectHost: new URL(pending.params.redirectUri).host,
         needsPassword: !sessions.isValid(req),
-      }),
+      }, t),
     );
   });
 
   router.post('/oauth/consent', passwordAttempts, form, async (req, res) => {
     const requestId = String(req.body?.request ?? '');
     const pending = oauth.getPending(requestId);
-    if (!pending) return res.status(400).type('html').send(messagePage('Request expired', 'Start the connection again from Claude.'));
+    const t = requestI18n(req).m.pages;
+    if (!pending) return res.status(400).type('html').send(messagePage(t.expired, t.startAgain, t));
 
     if (req.body?.action === 'deny') return res.redirect(303, oauth.deny(requestId).href);
 
@@ -78,11 +85,11 @@ export function authRoutes({ sessions, passwordHash, oauth }: AuthRouteOptions):
         return res.status(401).type('html').send(
           consentPage({
             requestId,
-            clientName: pending.client.client_name ?? 'An application',
+            clientName: pending.client.client_name ?? t.anApp,
             redirectHost: new URL(pending.params.redirectUri).host,
             needsPassword: true,
-            error: 'Wrong password.',
-          }),
+            error: t.wrongPassword,
+          }, t),
         );
       }
       sessions.start(res);
