@@ -18,6 +18,7 @@ Nothing to change when updating from 0.1.0, except for Docker: take the Compose 
   Docker through standard input and output.
 - Settings shows whether Claude is connected (and when it last signed in), the connector address to copy, and a
   button that signs Claude out everywhere. It also shows the last backup.
+- Tests run on Windows as well as Linux in CI, since the app is often run on a Windows laptop.
 - Security scanning: CodeQL on every push and pull request, and a weekly Trivy scan of the published image.
 - README screenshots, `SECURITY.md`, `CONTRIBUTING.md` and issue templates.
 
