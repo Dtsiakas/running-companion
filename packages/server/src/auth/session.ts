@@ -82,7 +82,12 @@ export class Sessions {
 function readCookie(req: Request, name: string): string | undefined {
   for (const part of (req.headers.cookie ?? '').split(';')) {
     const [key, ...value] = part.trim().split('=');
-    if (key === name) return decodeURIComponent(value.join('='));
+    if (key !== name) continue;
+    try {
+      return decodeURIComponent(value.join('='));
+    } catch {
+      return undefined; // A malformed cookie is no session, not a server error.
+    }
   }
   return undefined;
 }

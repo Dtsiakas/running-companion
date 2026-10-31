@@ -43,6 +43,14 @@ test('units and decimal commas follow the locale', () => {
   assert.equal(createI18n().m.app.nav.close, 'Close');
 });
 
+test('durations under an hour read as minutes, not "0h"', () => {
+  const f = createFormat({ lang: 'en', units: 'metric' });
+  assert.equal(f.hoursMinutes(47 / 60), '47 min');
+  assert.equal(f.hoursMinutes(7.43), '7h 26');
+  assert.equal(f.hours(0.5), '30 min');
+  assert.equal(f.hours(6.6), '6h 36m');
+});
+
 test('language and units from the browser or an Accept-Language header', () => {
   assert.deepEqual(parseAcceptLanguage('el-GR,el;q=0.9,en;q=0.8'), ['el-GR', 'el', 'en']);
   assert.equal(pickLang(parseAcceptLanguage('fr-FR,el;q=0.5')), 'el');

@@ -109,17 +109,17 @@ export function createFormat(locale: Locale) {
     // Time ---------------------------------------------------------------------------------------------------------
     /** "4:21" or "1:02:05" */
     clock,
-    /** 7.43 → "7h 26" */
+    /** 7.43 → "7h 26"; under an hour, "47 min" (not "0h 47"). */
     hoursMinutes: (hours: number | null | undefined): string => {
       if (missing(hours)) return NONE;
       const total = Math.round(hours * 60);
-      return `${Math.floor(total / 60)}${H} ${String(total % 60).padStart(2, '0')}`;
+      return total < 60 ? `${total} ${MIN}` : `${Math.floor(total / 60)}${H} ${String(total % 60).padStart(2, '0')}`;
     },
-    /** 6.6 → "6h 36m" */
+    /** 6.6 → "6h 36m"; under an hour, "47 min". */
     hours: (hours: number | null | undefined): string => {
       if (missing(hours)) return NONE;
       const total = Math.round(hours * 60);
-      return `${Math.floor(total / 60)}${H} ${String(total % 60).padStart(2, '0')}${M}`;
+      return total < 60 ? `${total} ${MIN}` : `${Math.floor(total / 60)}${H} ${String(total % 60).padStart(2, '0')}${M}`;
     },
     /** A span of minutes: "45 min" or "3h 07m". */
     span: (minutes: number | null | undefined): string => {

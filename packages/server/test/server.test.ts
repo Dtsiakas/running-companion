@@ -113,6 +113,8 @@ test('the removed check-in, race and notes endpoints are gone', async () => {
 test('a tampered session cookie is rejected', async () => {
   const forged = `companion_session=${Buffer.from(JSON.stringify({ exp: Date.now() + 1e9 })).toString('base64url')}.invalid`;
   assert.equal((await fetch(`${base}/api/today`, { headers: { cookie: forged } })).status, 401);
+  // Badly encoded: still just "not logged in", never a server error.
+  assert.equal((await fetch(`${base}/api/today`, { headers: { cookie: 'companion_session=%E0%A4%A' } })).status, 401);
 });
 
 test('the login redirect only goes to paths on this site', async () => {

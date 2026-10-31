@@ -136,11 +136,18 @@ export class CompanionOAuthProvider implements OAuthServerProvider {
     this.#db.prepare('DELETE FROM oauth_tokens WHERE token_hash = ? AND client_id = ?').run(sha256(request.token), client.client_id);
   }
 
-  /** Removes expired codes and tokens. Called by the scheduler. */
+  /**
+   * Removes expired codes and tokens, and clients that haven't held a token for a month. Registration is open (that's
+   * how Claude connects), so without this every abandoned or repeated connection attempt would stay forever.
+   * Called by the scheduler.
+   */
   pruneExpired(): void {
     const now = Date.now();
     this.#db.prepare('DELETE FROM oauth_codes WHERE expires_at < ?').run(now);
     this.#db.prepare('DELETE FROM oauth_tokens WHERE expires_at < ?').run(now);
+    this.#db
+      .prepare('DELETE FROM oauth_clients WHERE created_at < ? AND client_id NOT IN (SELECT client_id FROM oauth_tokens) AND client_id NOT IN (SELECT client_id FROM oauth_codes)')
+      .run(now - REFRESH_TTL_MS);
   }
 
   #issueTokens(clientId: string, scopes: string, resource: string | null): OAuthTokens {
