@@ -317,7 +317,7 @@ docker compose start app
 ## Docker
 
 Every release is published as an image for amd64 and arm64 (a Raspberry Pi 4 or 5 works):
-`ghcr.io/dtsiakas/running-companion`. `latest` is the newest release, `0.1.0` (or `0.1`) pins one, and `edge` follows
+`ghcr.io/dtsiakas/running-companion`. `latest` is the newest release, `0.2.0` (or `0.2`) pins one, and `edge` follows
 `main`. Everything the app keeps (database, settings, Garmin token, FIT files) is in `/data`, so mount a volume there and
 updating is just pulling a newer image.
 

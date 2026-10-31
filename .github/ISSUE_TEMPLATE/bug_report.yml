@@ -27,7 +27,7 @@ body:
     attributes:
       label: Version
       description: Settings → About, or /healthz.
-      placeholder: 0.1.0
+      placeholder: 0.2.0
     validations:
       required: true
   - type: dropdown
