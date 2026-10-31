@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { GarminHttpError, InvalidApiKeyError } from './errors.ts';
+import { GarminError, GarminHttpError, InvalidApiKeyError } from './errors.ts';
 
 const TOKEN_PATH = '/personalapitoken-service/personal-api/personal-api-key/token';
 
@@ -28,7 +28,13 @@ export interface TokenProviderOptions {
   /** Where to cache the bearer token between runs. Omit to keep it in memory only. */
   cacheFile?: string;
   fetch?: typeof fetch;
+  /** Give up on one exchange after this long. Default 30 s. */
+  timeoutMs?: number;
+  /** First wait before retrying a failed exchange (network error, 429, 5xx); doubles each time. Default 1000. */
+  retryBaseMs?: number;
 }
+
+const EXCHANGE_ATTEMPTS = 3;
 
 /**
  * Exchanges the long-lived Personal API key for a short-lived bearer token and caches it.
@@ -40,6 +46,8 @@ export class TokenProvider {
   readonly #baseUrl: string;
   readonly #cacheFile: string | undefined;
   readonly #fetch: typeof fetch;
+  readonly #timeoutMs: number;
+  readonly #retryBaseMs: number;
   #token: BearerToken | undefined;
   #pending: Promise<BearerToken> | undefined;
 
@@ -49,6 +57,8 @@ export class TokenProvider {
     this.#baseUrl = options.baseUrl;
     this.#cacheFile = options.cacheFile;
     this.#fetch = options.fetch ?? fetch;
+    this.#timeoutMs = options.timeoutMs ?? 30_000;
+    this.#retryBaseMs = options.retryBaseMs ?? 1000;
   }
 
   async getToken(forceRefresh = false): Promise<BearerToken> {
@@ -65,12 +75,29 @@ export class TokenProvider {
     return this.#token;
   }
 
+  /**
+   * One exchange, with a time limit and a few retries for answers that may be passing (no connection, 429, 5xx).
+   * Without the limit a connection that never answered would hold the sync, which runs one at a time, forever.
+   */
   async #exchange(): Promise<BearerToken> {
-    const response = await this.#fetch(this.#baseUrl + TOKEN_PATH, {
-      method: 'POST',
-      headers: { Authorization: `ApiKey ${this.#apiKey}`, Accept: 'application/json, text/plain' },
-    });
-    const text = await response.text();
+    let response: Response | undefined;
+    let text = '';
+    for (let attempt = 0; attempt < EXCHANGE_ATTEMPTS; attempt++) {
+      if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, this.#retryBaseMs * 2 ** (attempt - 1)));
+      try {
+        response = await this.#fetch(this.#baseUrl + TOKEN_PATH, {
+          method: 'POST',
+          headers: { Authorization: `ApiKey ${this.#apiKey}`, Accept: 'application/json, text/plain' },
+          signal: AbortSignal.timeout(this.#timeoutMs),
+        });
+        text = await response.text();
+      } catch (error) {
+        if (attempt === EXCHANGE_ATTEMPTS - 1) throw new GarminError(`Couldn't reach Garmin to sign in: ${error instanceof Error ? error.message : String(error)}`);
+        continue;
+      }
+      if (response.status !== 429 && response.status < 500) break;
+    }
+    response = response!;
 
     if (!response.ok) {
       const error = new GarminHttpError(response.status, 'POST', TOKEN_PATH, text);

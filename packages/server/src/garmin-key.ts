@@ -13,7 +13,8 @@ export type KeyCheck = 'ok' | 'rejected' | 'unreachable';
  */
 export async function checkGarminKey(key: string): Promise<KeyCheck> {
   try {
-    await new TokenProvider({ apiKey: key, baseUrl: resolveBaseUrl() }).getToken();
+    // Someone is waiting on the setup page: shorter limits than a sync's, so offline answers within about half a minute.
+    await new TokenProvider({ apiKey: key, baseUrl: resolveBaseUrl(), timeoutMs: 8_000, retryBaseMs: 500 }).getToken();
     return 'ok';
   } catch (error) {
     return error instanceof InvalidApiKeyError ? 'rejected' : 'unreachable';
