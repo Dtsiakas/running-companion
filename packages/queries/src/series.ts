@@ -2,6 +2,7 @@ import { ENGLISH, type I18n } from '@companion/i18n';
 import type { DatabaseSync } from 'node:sqlite';
 import { km, round } from './format.ts';
 import { getWeeklySummary, listActivities } from './queries.ts';
+import { addDays, mondayOf } from '@companion/dates';
 
 type Row = Record<string, unknown>;
 const n = (value: unknown) => (value === null || value === undefined ? null : Number(value));
@@ -83,17 +84,7 @@ export function getBaselineBands(db: DatabaseSync, date: string) {
 // One week -----------------------------------------------------------------------------------------------------
 
 /** Monday of the week containing `date`. */
-export function weekStartOf(date: string): string {
-  const day = new Date(`${date}T00:00:00Z`);
-  day.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7));
-  return day.toISOString().slice(0, 10);
-}
-
-function addDays(date: string, days: number): string {
-  const day = new Date(`${date}T00:00:00Z`);
-  day.setUTCDate(day.getUTCDate() + days);
-  return day.toISOString().slice(0, 10);
-}
+export const weekStartOf = mondayOf;
 
 /** Everything for the weekly report: the summary row, the week before for comparison, its runs and its days. */
 export function getWeek(db: DatabaseSync, weekStart: string, i18n: I18n = ENGLISH) {

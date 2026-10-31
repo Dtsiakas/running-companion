@@ -9,6 +9,7 @@
     "./sql": "./src/sql.ts"
   },
   "dependencies": {
+    "@companion/dates": "*",
     "@companion/i18n": "*",
     "@companion/weather": "*"
   }

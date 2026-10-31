@@ -1,23 +1,13 @@
 import { ENGLISH, type I18n } from '@companion/i18n';
 import type { DatabaseSync } from 'node:sqlite';
 import { round } from './format.ts';
+import { addDays, mondayOf } from '@companion/dates';
 
 type Row = Record<string, unknown>;
 const n = (value: unknown) => (value === null || value === undefined ? null : Number(value));
 const s = (value: unknown) => (value === null || value === undefined ? null : String(value));
 const hours = (seconds: unknown) => round((n(seconds) ?? NaN) / 3600, 2);
 
-function addDays(date: string, days: number): string {
-  const day = new Date(`${date}T00:00:00Z`);
-  day.setUTCDate(day.getUTCDate() + days);
-  return day.toISOString().slice(0, 10);
-}
-
-/** Monday of the week containing `date`. */
-function mondayOf(date: string): string {
-  const day = new Date(`${date}T00:00:00Z`);
-  return addDays(date, -((day.getUTCDay() + 6) % 7));
-}
 
 /** The user's time zone from their Garmin profile; sleep times are stored in UTC. */
 function timeZone(db: DatabaseSync): string | undefined {

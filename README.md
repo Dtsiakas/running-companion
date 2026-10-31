@@ -47,6 +47,7 @@ packages/
   web/             dashboard PWA (React); `npm run build` writes packages/web/dist, which the server serves
   config/          project paths, .env loading, the settings file
   demo/            generated demo runner, written into the same tables a sync fills
+  dates/           calendar dates (YYYY-MM-DD): arithmetic in UTC, "today" in a time zone
   i18n/            messages in English and Greek, units, number and date formatting (shared by server and app)
   cli/             command line entry points: sync, metrics, discover, auth:check, demo
 data/              your data (gitignored)

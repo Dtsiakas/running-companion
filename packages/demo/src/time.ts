@@ -1,19 +1,8 @@
 /** Calendar dates (YYYY-MM-DD) and wall-clock times in a named time zone, without a date library. */
 
-export function addDays(date: string, days: number): string {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
+import { daysBetween } from '@companion/dates';
 
-export function daysBetween(from: string, to: string): number {
-  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
-}
-
-/** 0 = Monday … 6 = Sunday. */
-export function weekday(date: string): number {
-  return (new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7;
-}
+export { addDays, daysBetween, weekday } from '@companion/dates';
 
 /** Day of the year, 1–366. */
 export function dayOfYear(date: string): number {

@@ -8,9 +8,10 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@garmin/fitsdk": "^21.218.0",
+    "@companion/dates": "*",
     "@companion/db": "*",
     "@companion/garmin-client": "*",
+    "@garmin/fitsdk": "^21.218.0",
     "fflate": "^0.8.3"
   }
 }

@@ -16,6 +16,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/cli/package.json packages/cli/
 COPY packages/config/package.json packages/config/
+COPY packages/dates/package.json packages/dates/
 COPY packages/db/package.json packages/db/
 COPY packages/demo/package.json packages/demo/
 COPY packages/garmin-client/package.json packages/garmin-client/

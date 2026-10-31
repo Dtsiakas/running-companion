@@ -60,6 +60,4 @@ export function keyStatus(settings: Settings, today: string, options: { fromEnv:
 }
 
 /** A YYYY-MM-DD date that exists. */
-export function isCalendarDate(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && new Date(`${value}T00:00:00Z`).toISOString().startsWith(value);
-}
+export { isCalendarDate } from '@companion/dates';

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@companion/config": "*",
+    "@companion/dates": "*",
     "@companion/db": "*",
     "@companion/garmin-client": "*",
     "@companion/i18n": "*",

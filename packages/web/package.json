@@ -18,6 +18,7 @@
     "vite-plugin-pwa": "^2.0.0"
   },
   "dependencies": {
+    "@companion/dates": "*",
     "@companion/i18n": "*",
     "@fontsource/barlow": "^5.3.0",
     "@fontsource/barlow-condensed": "^5.3.0",

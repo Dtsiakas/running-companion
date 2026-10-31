@@ -9,6 +9,7 @@
     "./fuel": "./src/fuel.ts"
   },
   "dependencies": {
+    "@companion/dates": "*",
     "@companion/i18n": "*",
     "@companion/queries": "*"
   },

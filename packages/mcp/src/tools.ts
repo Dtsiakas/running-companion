@@ -7,6 +7,7 @@ import { fuelPlan, getBodyReport, getFormTrend, getPatterns, getProgress, getSig
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { dataGuide, SERVER_INSTRUCTIONS } from './guide.ts';
+import { addDays, mondayOf, today } from '@companion/dates';
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
 const CATEGORIES = ['easy', 'long', 'recovery', 'tempo', 'threshold', 'intervals', 'sprint', 'test', 'other'] as const;
@@ -34,6 +35,11 @@ export interface ToolsOptions {
  * (server.ts), the web server over HTTP (packages/server). The caller owns the database connection.
  */
 export function createMcpServer({ db, writeDb, sync, query = async (sql) => runQuery(db, sql) }: ToolsOptions): McpServer {
+  /** Today in the user's own time zone (the Garmin profile's), not the server's: near midnight they can differ. */
+  const localToday = () => {
+    const zone = (db.prepare('SELECT time_zone FROM profile_snapshots ORDER BY calendar_date DESC LIMIT 1').get() as { time_zone?: string } | undefined)?.time_zone;
+    return today(zone ?? 'UTC');
+  };
   const json = (value: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(value) }] });
   const server = new McpServer({ name: 'running-companion', version: APP_VERSION }, { instructions: SERVER_INSTRUCTIONS });
 
@@ -191,8 +197,8 @@ export function createMcpServer({ db, writeDb, sync, query = async (sql) => runQ
       annotations: READ_ONLY,
     },
     async ({ week_start }) => {
-      const today = new Date().toLocaleDateString('en-CA'); // local, like every other "today"
-      return json(getWeeklyReport(db, week_start ?? previousDay(mondayOf(today), 7), today) ?? { error: 'No data for that week.' });
+      const today = localToday();
+      return json(getWeeklyReport(db, week_start ?? addDays(mondayOf(today), -7), today) ?? { error: 'No data for that week.' });
     },
   );
 
@@ -248,10 +254,6 @@ export function createMcpServer({ db, writeDb, sync, query = async (sql) => runQ
 
   // Progress ------------------------------------------------------------------------------------------
   /** Today in the user's own time zone (the Garmin profile's), not UTC: near midnight the two can be different days. */
-  const localToday = () => {
-    const zone = (db.prepare('SELECT time_zone FROM profile_snapshots ORDER BY calendar_date DESC LIMIT 1').get() as { time_zone?: string } | undefined)?.time_zone;
-    return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: zone ?? 'UTC' }).format(new Date());
-  };
 
   server.registerTool(
     'get_progress',
@@ -271,13 +273,4 @@ export function createMcpServer({ db, writeDb, sync, query = async (sql) => runQ
   return server;
 }
 
-function mondayOf(day: string): string {
-  const d = new Date(`${day}T00:00:00Z`);
-  return previousDay(day, (d.getUTCDay() + 6) % 7);
-}
 
-function previousDay(day: string, days = 1): string {
-  const d = new Date(`${day}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - days);
-  return d.toISOString().slice(0, 10);
-}

@@ -1,21 +1,7 @@
 import { f, m } from './i18n.ts';
 
-/** Calendar dates are 'YYYY-MM-DD' strings, as the API sends them. Arithmetic in UTC avoids daylight-saving surprises. */
-export function addDays(date: string, days: number): string {
-  const day = new Date(`${date}T00:00:00Z`);
-  day.setUTCDate(day.getUTCDate() + days);
-  return day.toISOString().slice(0, 10);
-}
-
-export function weekStartOf(date: string): string {
-  const day = new Date(`${date}T00:00:00Z`);
-  return addDays(date, -((day.getUTCDay() + 6) % 7));
-}
-
-export function todayLocal(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
+/** Calendar dates are 'YYYY-MM-DD' strings, as the API sends them; see @companion/dates. */
+export { addDays, mondayOf as weekStartOf, today as todayLocal } from '@companion/dates';
 
 // Display: in the reader's language (see lib/i18n.ts).
 

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@companion/config": "*",
+    "@companion/dates": "*",
     "@companion/db": "*",
     "@companion/insights": "*",
     "@companion/jobs": "*",

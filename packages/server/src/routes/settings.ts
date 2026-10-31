@@ -10,6 +10,7 @@ import { requestI18n } from '../locale.ts';
 import { isCalendarDate, keyStatus, type KeyCheck } from '../garmin-key.ts';
 import type { CompanionOAuthProvider } from '../auth/oauth-provider.ts';
 import type { BackupStatus } from '@companion/jobs';
+import { today } from '@companion/dates';
 
 export interface SettingsRouteOptions {
   settings: SettingsStore;
@@ -32,7 +33,7 @@ export interface SettingsRouteOptions {
   backupKeep?: number;
 }
 
-const localToday = () => new Date().toLocaleDateString('en-CA');
+const localToday = () => today();
 
 export const needsSetup = (settings: SettingsStore) => !settings.read().passwordHash;
 
