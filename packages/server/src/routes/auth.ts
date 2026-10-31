@@ -13,9 +13,15 @@ export interface AuthRouteOptions {
   oauth: CompanionOAuthProvider;
 }
 
-/** Only same-site relative paths, so a crafted link can't use the login page to redirect somewhere else. */
-function safeNext(next: unknown): string {
-  return typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : '/';
+/**
+ * Only same-site relative paths, so a crafted link can't use the login page to redirect somewhere else. Browsers drop
+ * tabs and newlines in URLs and read a backslash as a slash, so "/\t/evil.com" or "/\\evil.com" would become
+ * "//evil.com", another site: anything with those characters, or a second slash at the start, goes to the home page.
+ */
+export function safeNext(next: unknown): string {
+  if (typeof next !== 'string' || !next.startsWith('/') || next.length > 2000) return '/';
+  if (/[\u0000-\u001f\u007f\\]/.test(next) || next.startsWith('//')) return '/';
+  return next;
 }
 
 /** Login, logout, and the OAuth consent page that Claude's connector sends you to. */

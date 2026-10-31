@@ -18,12 +18,12 @@ jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - uses: actions/checkout@v7
+      - uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
           queries: security-and-quality
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
         with:
           output: codeql-results
       # Each finding as a warning on the run page too (up to GitHub's limit per step).
@@ -32,7 +32,7 @@ jobs:
           jq -r '.runs[].results[] | "::warning file=\(.locations[0].physicalLocation.artifactLocation.uri),line=\(.locations[0].physicalLocation.region.startLine)::\(.ruleId): \(.message.text | split("\n")[0])"' codeql-results/*.sarif | head -50
           echo "::notice::$(jq '[.runs[].results[]] | length' codeql-results/*.sarif) findings"
       # The same findings as a file, for reading them without the Security tab (forks, scripts).
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: codeql-sarif
           path: codeql-results

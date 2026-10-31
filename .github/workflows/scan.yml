@@ -17,7 +17,7 @@ jobs:
   trivy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -30,7 +30,7 @@ jobs:
           output: trivy.sarif
           severity: HIGH,CRITICAL
           ignore-unfixed: true
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy.sarif
           category: image
@@ -38,7 +38,7 @@ jobs:
         run: |
           jq -r '.runs[].results[] | "::warning::\(.ruleId) (\(.level)): \(.message.text | split("\n")[0:3] | join(" "))"' trivy.sarif | head -50
           echo "::notice::$(jq '[.runs[].results[]] | length' trivy.sarif) findings"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: trivy-sarif
           path: trivy.sarif

@@ -122,6 +122,14 @@ test('the login redirect only goes to paths on this site', async () => {
   assert.equal(login.headers.get('location'), '/');
 });
 
+test('redirect targets: tricks that browsers turn into another site are refused', async () => {
+  const { safeNext } = await import('../src/routes/auth.ts');
+  for (const bad of ['//evil.example', '/\\evil.example', '/\t/evil.example', '/\n/evil.example', 'https://evil.example', 'evil', '', null, 42]) {
+    assert.equal(safeNext(bad), '/', JSON.stringify(bad));
+  }
+  assert.equal(safeNext('/runs/12?tab=laps'), '/runs/12?tab=laps');
+});
+
 // Claude's connector: OAuth + MCP ------------------------------------------------------------------------------
 
 test('/mcp without a token answers 401 and points to the OAuth metadata', async () => {

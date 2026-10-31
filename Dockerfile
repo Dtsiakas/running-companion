@@ -53,7 +53,10 @@ ENV NODE_ENV=production \
     PORT=8787
 WORKDIR /app
 COPY --from=build --chown=node:node /app /app
-RUN mkdir -p /data && chown node:node /data
+# npm and corepack come with the Node image but nothing here runs them: removing them takes their dependencies (and
+# those dependencies' security advisories) out of the image.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+ && mkdir -p /data && chown node:node /data
 # Not root: the app only ever writes to /data.
 USER node
 VOLUME /data
