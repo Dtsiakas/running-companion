@@ -1,3 +1,5 @@
+import { ENGLISH, type I18n } from '@companion/i18n';
+import { distanceName } from './progress.ts';
 import type { DatabaseSync } from 'node:sqlite';
 import { getActivity, getWeek, getWeeklySummary } from '@companion/queries';
 import { addDays, clockFromMinutes, loadDays, type Day } from './days.ts';
@@ -29,15 +31,22 @@ export interface WeeklyReport {
 }
 
 const KEY_CATEGORIES = new Set(['threshold', 'intervals', 'tempo', 'sprint', 'test', 'long']);
-const DISTANCES: Record<string, string> = { '1000': '1 km', '1609.344': '1 mile', '3000': '3 km', '5000': '5 km', '10000': '10 km', '21097.5': 'Half marathon' };
+/** Distances a weekly best is reported for. */
+const BEST_DISTANCES = new Set(['1000', '1609.344', '3000', '5000', '10000', '21097.5']);
 
 /**
  * The week as a short written report, built only from the data: the same facts every time, with or without Claude.
  * Comparisons are with the previous week (what changed) and the four weeks before (what's normal for you lately);
  * Claude's review, when you ask for one, starts from this report.
  */
-export function getWeeklyReport(db: DatabaseSync, weekStart: string, today: string): WeeklyReport | null {
-  const week = getWeek(db, weekStart);
+export function getWeeklyReport(db: DatabaseSync, weekStart: string, today: string, i18n: I18n = ENGLISH): WeeklyReport | null {
+  const { m, f } = i18n;
+  const t = m.report;
+  const relative = (value: number, usual: number) => {
+    const change = value / usual - 1;
+    return Math.abs(change) < 0.05 ? t.inLine : change > 0 ? t.above(pct(change)) : t.below(pct(change));
+  };
+  const week = getWeek(db, weekStart, i18n);
   const summary = week.summary;
   if (!summary) return null;
   const start = week.week_start;
@@ -64,32 +73,32 @@ export function getWeeklyReport(db: DatabaseSync, weekStart: string, today: stri
   const training: ReportLine[] = [];
   const km = summary.km ?? 0;
   training.push({
-    text: `${summary.runs ?? 0} runs, ${round(km)} km in ${hours(summary.hours)}${usualKm ? `: ${relative(km, usualKm)} ${complete ? `your average week of the last four (${round(usualKm)} km)` : `your usual for the first ${elapsed} days of a week (${round(usualKm)} km)`}` : ''}.`,
+    text: `${t.volume(summary.runs ?? 0, f.distance(km), f.hoursMinutes(summary.hours))}${usualKm ? (complete ? t.vsAverage(relative(km, usualKm), f.distance(usualKm)) : t.vsSoFar(relative(km, usualKm), elapsed, f.distance(usualKm))) : ''}.`,
     tone: 'neutral',
   });
-  if (summary.longest_km) training.push({ text: `Longest run ${round(summary.longest_km)} km.`, tone: 'neutral' });
+  if (summary.longest_km) training.push({ text: t.longest(f.distance(summary.longest_km)), tone: 'neutral' });
   const easy = summary.intensity_pct?.low;
   if (easy !== null && easy !== undefined) {
     training.push({
-      text: `${easy}% of running time was easy${easy >= 80 ? ', the balance endurance training aims for' : easy < 65 ? ', below the 70–80% that endurance progress usually rests on' : ''}.`,
+      text: t.easy(easy, easy >= 80, easy < 65),
       tone: easy >= 80 ? 'good' : easy < 65 ? 'concern' : 'neutral',
     });
   }
   if (summary.form_end !== null) {
-    training.push({ text: `Form ended the week at ${signed(summary.form_end)} (fitness ${summary.fitness_end}).`, tone: summary.form_end < -30 ? 'concern' : 'neutral' });
+    training.push({ text: t.form(f.signed(summary.form_end, 1), f.number(summary.fitness_end, 1)), tone: summary.form_end < -30 ? 'concern' : 'neutral' });
   }
 
   // Key sessions: the workouts with a purpose, and how they went against the plan.
   const keySessions = week.runs
     .filter((run) => KEY_CATEGORIES.has(run.category ?? ''))
     .map((run) => {
-      const detail = getActivity(db, run.activity_id!);
+      const detail = getActivity(db, run.activity_id!, i18n);
       const steps = 'executed_steps' in detail ? (detail.executed_steps ?? []).filter((s) => s.on_target !== null) : [];
       const onTarget = steps.filter((s) => s.on_target === 'on').length;
-      const parts: string[] = [`${run.distance_km} km at ${run.pace ?? '–'}, ${run.avg_hr ?? '–'} bpm`];
-      if (steps.length) parts.push(onTarget === steps.length ? `every step on target` : `${onTarget} of ${steps.length} steps on target`);
-      if (run.category === 'long' && run.decoupling_pct !== null) parts.push(`decoupling ${run.decoupling_pct}%${run.decoupling_pct < 5 ? ' (held up well)' : ' (faded in the second half)'}`);
-      return { activity_id: run.activity_id!, date: run.date!, name: run.name ?? 'Run', verdict: parts.join(', ') };
+      const parts: string[] = [t.session(f.distance(run.distance_km, 2), run.pace ?? '–', String(run.avg_hr ?? '–'))];
+      if (steps.length) parts.push(onTarget === steps.length ? t.everyStep : t.stepsOn(onTarget, steps.length));
+      if (run.category === 'long' && run.decoupling_pct !== null) parts.push(t.decoupling(f.percent(run.decoupling_pct, 1), run.decoupling_pct < 5));
+      return { activity_id: run.activity_id!, date: run.date!, name: run.name ?? t.run, verdict: parts.join(', ') };
     })
     .reverse();
 
@@ -98,14 +107,14 @@ export function getWeeklyReport(db: DatabaseSync, weekStart: string, today: stri
   if (summary.avg_hrv_ms && usualHrv) {
     const change = summary.avg_hrv_ms / usualHrv - 1;
     recovery.push({
-      text: `HRV averaged ${Math.round(summary.avg_hrv_ms)} ms, ${Math.abs(change) < 0.02 ? 'in line with' : `${pct(change)} ${change >= 0 ? 'above' : 'below'}`} the four weeks before.`,
+      text: t.hrv(Math.round(summary.avg_hrv_ms), Math.abs(change) < 0.02 ? t.inLine : change >= 0 ? t.above(pct(change)) : t.below(pct(change))),
       tone: change >= 0.03 ? 'good' : change <= -0.05 ? 'concern' : 'neutral',
     });
   }
   if (summary.avg_resting_hr && usualRhr) {
     const change = summary.avg_resting_hr - usualRhr;
     recovery.push({
-      text: `Resting heart rate averaged ${round(summary.avg_resting_hr)} bpm${Math.abs(change) < 0.5 ? ', steady' : `, ${round(Math.abs(change))} ${change > 0 ? 'above' : 'below'} the four weeks before`}.`,
+      text: Math.abs(change) < 0.5 ? t.rhrSteady(f.number(summary.avg_resting_hr, 1)) : t.rhr(f.number(summary.avg_resting_hr, 1), f.number(Math.abs(change), 1), change > 0),
       tone: change >= 2 ? 'concern' : change <= -1 ? 'good' : 'neutral',
     });
   }
@@ -114,7 +123,7 @@ export function getWeeklyReport(db: DatabaseSync, weekStart: string, today: stri
   const amber = statuses.filter((s) => s === 'amber').length;
   const green = statuses.filter((s) => s === 'green').length;
   if (green + amber + red) {
-    recovery.push({ text: `Recovery status: ${green} green, ${amber} amber, ${red} red ${green + amber + red === 1 ? 'day' : 'days'}.`, tone: red >= 2 ? 'concern' : amber + red === 0 ? 'good' : 'neutral' });
+    recovery.push({ text: t.statuses(green, amber, red), tone: red >= 2 ? 'concern' : amber + red === 0 ? 'good' : 'neutral' });
   }
 
   // Sleep: length against Garmin's need, quality, and how regular bedtimes were.
@@ -123,7 +132,7 @@ export function getWeeklyReport(db: DatabaseSync, weekStart: string, today: stri
   if (slept.n) {
     const short = need ? need - slept.mean : null;
     recovery.push({
-      text: `Sleep averaged ${hours(slept.mean)} a night${need ? ` against an estimated need of ${hours(need)}` : ''}${short !== null && short >= 0.75 ? `: about ${hours(short)} short each night` : ''}.`,
+      text: t.sleep(f.hoursMinutes(slept.mean), need ? f.hoursMinutes(need) : null, short !== null && short >= 0.75 ? f.hoursMinutes(short) : null),
       tone: short !== null && short >= 1 ? 'concern' : short !== null && short <= 0.25 ? 'good' : 'neutral',
     });
   }
@@ -131,12 +140,12 @@ export function getWeeklyReport(db: DatabaseSync, weekStart: string, today: stri
   const scoresBefore = summarize(values(before, 'sleep_score'));
   if (scores.n && scoresBefore.n) {
     const change = scores.mean - scoresBefore.mean;
-    recovery.push({ text: `Sleep score averaged ${Math.round(scores.mean)}${Math.abs(change) >= 3 ? `, ${Math.round(Math.abs(change))} points ${change > 0 ? 'better' : 'worse'} than the four weeks before` : ''}.`, tone: change >= 3 ? 'good' : change <= -5 ? 'concern' : 'neutral' });
+    recovery.push({ text: t.sleepScore(Math.round(scores.mean), Math.abs(change) >= 3 ? Math.round(change) : null), tone: change >= 3 ? 'good' : change <= -5 ? 'concern' : 'neutral' });
   }
   const bedtimes = summarize(values(days, 'bedtime_min'));
   if (bedtimes.n >= 4) {
     recovery.push({
-      text: `Bedtime averaged ${clockFromMinutes(bedtimes.mean)}${bedtimes.sd >= 60 ? `, but varied by about ${Math.round(bedtimes.sd)} minutes` : ', fairly regular'}.`,
+      text: t.bedtime(clockFromMinutes(bedtimes.mean), bedtimes.sd >= 60 ? Math.round(bedtimes.sd) : null),
       tone: bedtimes.sd >= 60 ? 'concern' : 'neutral',
     });
   }
@@ -147,21 +156,21 @@ export function getWeeklyReport(db: DatabaseSync, weekStart: string, today: stri
   const stressBefore = summarize(values(before, 'stress'));
   if (stress.n && stressBefore.n) {
     const change = stress.mean - stressBefore.mean;
-    life.push({ text: `All-day stress averaged ${Math.round(stress.mean)}${Math.abs(change) >= 2 ? `, ${change > 0 ? 'higher' : 'lower'} than the four weeks before (${Math.round(stressBefore.mean)})` : ', as usual'}.`, tone: change >= 4 ? 'concern' : change <= -2 ? 'good' : 'neutral' });
+    life.push({ text: t.stress(Math.round(stress.mean), Math.abs(change) >= 2 ? Math.round(stressBefore.mean) : null, change > 0), tone: change >= 4 ? 'concern' : change <= -2 ? 'good' : 'neutral' });
   }
   const battery = summarize(values(days, 'body_battery'));
-  if (battery.n) life.push({ text: `Body Battery reached ${Math.round(battery.mean)} on a typical morning.`, tone: battery.mean >= 80 ? 'good' : battery.mean < 60 ? 'concern' : 'neutral' });
+  if (battery.n) life.push({ text: t.battery(Math.round(battery.mean)), tone: battery.mean >= 80 ? 'good' : battery.mean < 60 ? 'concern' : 'neutral' });
 
   // Body -----------------------------------------------------------------------------------------------------------------
   const body: ReportLine[] = [];
-  const weightChange = weekChange(db, start, end);
+  const weightChange = weekChange(db, start, end, i18n);
   if (weightChange) body.push(weightChange);
 
   // Bests and signals ---------------------------------------------------------------------------------------------------------
-  const bests = newBests(db, start, end);
+  const bests = newBests(db, start, end, i18n);
   const signalCounts = new Map<string, { title: string; level: 'warning' | 'watch' | 'positive'; days: number }>();
   for (const day of days) {
-    for (const signal of getSignals(db, day.date)) {
+    for (const signal of getSignals(db, day.date, i18n)) {
       const seen = signalCounts.get(signal.id);
       signalCounts.set(signal.id, { title: signal.title, level: seen && seen.level === 'warning' ? 'warning' : signal.level, days: (seen?.days ?? 0) + 1 });
     }
@@ -171,7 +180,7 @@ export function getWeeklyReport(db: DatabaseSync, weekStart: string, today: stri
     week_start: start,
     week_end: end,
     complete,
-    headline: headline(km, usualKm, summary.avg_hrv_ms, usualHrv, red, complete),
+    headline: headline(km, usualKm, summary.avg_hrv_ms, usualHrv, red, complete, t),
     training,
     recovery,
     life,
@@ -183,19 +192,19 @@ export function getWeeklyReport(db: DatabaseSync, weekStart: string, today: stri
 }
 
 /** "A lighter week, and recovery improved." The volume word follows the plan's own logic: lighter is often deliberate. */
-function headline(km: number, usualKm: number | null, hrv: number | null, usualHrv: number | null, red: number, complete: boolean): string {
-  const prefix = complete ? '' : 'So far, ';
-  const volume = !usualKm ? 'A week of training' : km >= usualKm * 1.15 ? 'A bigger week than usual' : km <= usualKm * 0.75 ? 'A lighter week than usual' : 'A steady week';
+function headline(km: number, usualKm: number | null, hrv: number | null, usualHrv: number | null, red: number, complete: boolean, t: I18n['m']['report']): string {
+  const h = t.headline;
+  const volume = !usualKm ? h.plain : km >= usualKm * 1.15 ? h.bigger : km <= usualKm * 0.75 ? h.lighter : h.steady;
   let recovery = '';
-  if (red >= 2) recovery = ', with recovery under strain';
-  else if (hrv && usualHrv && hrv / usualHrv - 1 >= 0.03) recovery = ', and recovery improved';
-  else if (hrv && usualHrv && hrv / usualHrv - 1 <= -0.05) recovery = ', and recovery dipped';
+  if (red >= 2) recovery = h.strain;
+  else if (hrv && usualHrv && hrv / usualHrv - 1 >= 0.03) recovery = h.improved;
+  else if (hrv && usualHrv && hrv / usualHrv - 1 <= -0.05) recovery = h.dipped;
   const text = `${volume}${recovery}.`;
-  return complete ? text : prefix + text.charAt(0).toLowerCase() + text.slice(1);
+  return complete ? text : h.soFar(text);
 }
 
 /** Weight trend over the week. Losing more than about 1% of body weight a week while training hard is worth flagging. */
-function weekChange(db: DatabaseSync, start: string, end: string): ReportLine | null {
+function weekChange(db: DatabaseSync, start: string, end: string, { m, f }: I18n): ReportLine | null {
   const at = (date: string) => (db.prepare('SELECT weight_trend_kg AS w FROM daily_metrics WHERE calendar_date <= ? AND weight_trend_kg IS NOT NULL ORDER BY calendar_date DESC LIMIT 1').get(date) as Row | undefined)?.w;
   const first = at(addDays(start, -1));
   const last = at(end);
@@ -203,13 +212,13 @@ function weekChange(db: DatabaseSync, start: string, end: string): ReportLine | 
   const change = Number(last) - Number(first);
   const share = change / Number(first);
   return {
-    text: `Weight trend ${round(Number(last))} kg${Math.abs(change) < 0.1 ? ', unchanged' : `, ${round(Math.abs(change))} kg ${change > 0 ? 'up' : 'down'} on the week`}${share <= -0.01 ? ': faster than the 0.5–1% a week that protects training and recovery' : ''}.`,
+    text: m.report.weight(f.weight(Number(last)), Math.abs(change) < 0.1 ? null : f.weight(Math.abs(change)), change > 0, share <= -0.01),
     tone: share <= -0.01 ? 'concern' : 'neutral',
   };
 }
 
 /** Best efforts inside this week's runs that beat everything before: ever, or in the last year. */
-function newBests(db: DatabaseSync, start: string, end: string): WeeklyReport['bests'] {
+function newBests(db: DatabaseSync, start: string, end: string, i18n: I18n): WeeklyReport['bests'] {
   const rows = db
     .prepare(
       `SELECT e.distance_m, e.duration_s, a.activity_id, a.calendar_date,
@@ -225,8 +234,8 @@ function newBests(db: DatabaseSync, start: string, end: string): WeeklyReport['b
     const ever = row.before_ever === null ? null : Number(row.before_ever);
     const year = row.before_year === null ? null : Number(row.before_year);
     const scope = ever !== null && seconds < ever ? 'all-time' : year !== null && seconds < year ? 'year' : null;
-    const distance = DISTANCES[String(row.distance_m)];
-    if (!scope || !distance) continue;
+    if (!scope || !BEST_DISTANCES.has(String(row.distance_m))) continue;
+    const distance = distanceName(Number(row.distance_m), i18n);
     const current = best.get(distance);
     if (!current || seconds < current.seconds) best.set(distance, { distance, time: clock(seconds), scope, activity_id: Number(row.activity_id), date: String(row.calendar_date), seconds });
   }
@@ -234,18 +243,7 @@ function newBests(db: DatabaseSync, start: string, end: string): WeeklyReport['b
 }
 
 const values = (days: Day[], key: keyof Day) => days.map((d) => d[key]).filter((v): v is number => typeof v === 'number');
-const round = (value: number) => Math.round(value * 10) / 10;
 const pct = (share: number) => `${Math.round(Math.abs(share) * 100)}%`;
-const signed = (value: number) => (value < 0 ? `−${Math.abs(value)}` : String(value));
-function relative(value: number, usual: number): string {
-  const change = value / usual - 1;
-  return Math.abs(change) < 0.05 ? 'in line with' : `${pct(change)} ${change > 0 ? 'above' : 'below'}`;
-}
-function hours(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '–';
-  const minutes = Math.round(value * 60);
-  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}`;
-}
 function clock(seconds: number): string {
   const s = Math.round(seconds);
   const h = Math.floor(s / 3600);

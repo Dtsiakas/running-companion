@@ -1,0 +1,83 @@
+import { define, plural } from '../define.ts';
+
+/** The week in short (packages/insights/src/report.ts). Values arrive formatted with their units. */
+export const report = define(
+  {
+    volume: (runs: number, distance: string, time: string) => `${runs} ${plural(runs, 'run', 'runs')}, ${distance} in ${time}`,
+    vsAverage: (relative: string, usual: string) => `: ${relative} your average week of the last four (${usual})`,
+    vsSoFar: (relative: string, days: number, usual: string) => `: ${relative} your usual for the first ${days} days of a week (${usual})`,
+    inLine: 'in line with',
+    above: (pct: string) => `${pct} above`,
+    below: (pct: string) => `${pct} below`,
+    longest: (distance: string) => `Longest run ${distance}.`,
+    easy: (pct: number, good: boolean, low: boolean) => `${pct}% of running time was easy${good ? ', the balance endurance training aims for' : low ? ', below the 70–80% that endurance progress usually rests on' : ''}.`,
+    form: (form: string, fitness: string) => `Form ended the week at ${form} (fitness ${fitness}).`,
+    session: (distance: string, pace: string, hr: string) => `${distance} at ${pace}, ${hr} bpm`,
+    everyStep: 'every step on target',
+    stepsOn: (on: number, all: number) => `${on} of ${all} steps on target`,
+    decoupling: (pct: string, held: boolean) => `decoupling ${pct}${held ? ' (held up well)' : ' (faded in the second half)'}`,
+    run: 'Run',
+    hrv: (ms: number, comparison: string) => `HRV averaged ${ms} ms, ${comparison} the four weeks before.`,
+    rhrSteady: (bpm: string) => `Resting heart rate averaged ${bpm} bpm, steady.`,
+    rhr: (bpm: string, change: string, up: boolean) => `Resting heart rate averaged ${bpm} bpm, ${change} ${up ? 'above' : 'below'} the four weeks before.`,
+    statuses: (green: number, amber: number, red: number) => `Recovery status: ${green} green, ${amber} amber, ${red} red ${plural(green + amber + red, 'day', 'days')}.`,
+    sleep: (slept: string, need: string | null, short: string | null) =>
+      `Sleep averaged ${slept} a night${need ? ` against an estimated need of ${need}` : ''}${short ? `: about ${short} short each night` : ''}.`,
+    sleepScore: (score: number, change: number | null) => `Sleep score averaged ${score}${change !== null ? `, ${Math.abs(change)} points ${change > 0 ? 'better' : 'worse'} than the four weeks before` : ''}.`,
+    bedtime: (mean: string, varied: number | null) => `Bedtime averaged ${mean}${varied !== null ? `, but varied by about ${varied} minutes` : ', fairly regular'}.`,
+    stress: (mean: number, before: number | null, higher: boolean) =>
+      `All-day stress averaged ${mean}${before !== null ? `, ${higher ? 'higher' : 'lower'} than the four weeks before (${before})` : ', as usual'}.`,
+    battery: (n: number) => `Body Battery reached ${n} on a typical morning.`,
+    weight: (weight: string, change: string | null, up: boolean, tooFast: boolean) =>
+      `Weight trend ${weight}${change === null ? ', unchanged' : `, ${change} ${up ? 'up' : 'down'} on the week`}${tooFast ? ': faster than the 0.5–1% a week that protects training and recovery' : ''}.`,
+    headline: {
+      plain: 'A week of training',
+      bigger: 'A bigger week than usual',
+      lighter: 'A lighter week than usual',
+      steady: 'A steady week',
+      strain: ', with recovery under strain',
+      improved: ', and recovery improved',
+      dipped: ', and recovery dipped',
+      soFar: (text: string) => `So far, ${text.charAt(0).toLowerCase()}${text.slice(1)}`,
+    },
+  },
+  {
+    volume: (runs: number, distance: string, time: string) => `${runs} ${plural(runs, 'τρέξιμο', 'τρεξίματα')}, ${distance} σε ${time}`,
+    vsAverage: (relative: string, usual: string) => `: ${relative} τη μέση εβδομάδα των τεσσάρων τελευταίων (${usual})`,
+    vsSoFar: (relative: string, days: number, usual: string) => `: ${relative} το συνηθισμένο σου για τις πρώτες ${days} μέρες μιας εβδομάδας (${usual})`,
+    inLine: 'στα επίπεδα με',
+    above: (pct: string) => `${pct} πάνω από`,
+    below: (pct: string) => `${pct} κάτω από`,
+    longest: (distance: string) => `Μεγαλύτερο τρέξιμο ${distance}.`,
+    easy: (pct: number, good: boolean, low: boolean) => `Το ${pct}% του χρόνου τρεξίματος ήταν χαλαρό${good ? ', η ισορροπία που στοχεύει η προπόνηση αντοχής' : low ? ', κάτω από το 70–80% στο οποίο στηρίζεται συνήθως η πρόοδος στην αντοχή' : ''}.`,
+    form: (form: string, fitness: string) => `Η φόρμα έκλεισε την εβδομάδα στο ${form} (φυσική κατάσταση ${fitness}).`,
+    session: (distance: string, pace: string, hr: string) => `${distance} με ${pace}, ${hr} bpm`,
+    everyStep: 'κάθε βήμα στον στόχο',
+    stepsOn: (on: number, all: number) => `${on} από ${all} βήματα στον στόχο`,
+    decoupling: (pct: string, held: boolean) => `αποσύζευξη ${pct}${held ? ' (άντεξε καλά)' : ' (έπεσε στο δεύτερο μισό)'}`,
+    run: 'Τρέξιμο',
+    hrv: (ms: number, comparison: string) => `Το HRV ήταν κατά μέσο όρο ${ms} ms, ${comparison} τις τέσσερις προηγούμενες εβδομάδες.`,
+    rhrSteady: (bpm: string) => `Οι παλμοί ηρεμίας ήταν κατά μέσο όρο ${bpm} bpm, σταθεροί.`,
+    rhr: (bpm: string, change: string, up: boolean) => `Οι παλμοί ηρεμίας ήταν κατά μέσο όρο ${bpm} bpm, ${change} ${up ? 'πάνω από' : 'κάτω από'} τις τέσσερις προηγούμενες εβδομάδες.`,
+    statuses: (green: number, amber: number, red: number) => `Κατάσταση αποκατάστασης: ${green} πράσινες, ${amber} πορτοκαλί, ${red} κόκκινες ${plural(green + amber + red, 'μέρα', 'μέρες')}.`,
+    sleep: (slept: string, need: string | null, short: string | null) =>
+      `Ύπνος κατά μέσο όρο ${slept} τη νύχτα${need ? ` με εκτιμώμενη ανάγκη ${need}` : ''}${short ? `: περίπου ${short} λιγότερο κάθε νύχτα` : ''}.`,
+    sleepScore: (score: number, change: number | null) => `Βαθμολογία ύπνου κατά μέσο όρο ${score}${change !== null ? `, ${Math.abs(change)} μονάδες ${change > 0 ? 'καλύτερα' : 'χειρότερα'} από τις τέσσερις προηγούμενες εβδομάδες` : ''}.`,
+    bedtime: (mean: string, varied: number | null) => `Ώρα ύπνου κατά μέσο όρο ${mean}${varied !== null ? `, αλλά με απόκλιση περίπου ${varied} λεπτών` : ', αρκετά σταθερή'}.`,
+    stress: (mean: number, before: number | null, higher: boolean) =>
+      `Ημερήσιο στρες κατά μέσο όρο ${mean}${before !== null ? `, ${higher ? 'υψηλότερο' : 'χαμηλότερο'} από τις τέσσερις προηγούμενες εβδομάδες (${before})` : ', όπως συνήθως'}.`,
+    battery: (n: number) => `Το Body Battery έφτανε το ${n} ένα τυπικό πρωί.`,
+    weight: (weight: string, change: string | null, up: boolean, tooFast: boolean) =>
+      `Τάση βάρους ${weight}${change === null ? ', αμετάβλητη' : `, ${change} ${up ? 'πάνω' : 'κάτω'} μέσα στην εβδομάδα`}${tooFast ? ': πιο γρήγορα από το 0,5–1% την εβδομάδα που προστατεύει προπόνηση και αποκατάσταση' : ''}.`,
+    headline: {
+      plain: 'Μια εβδομάδα προπόνησης',
+      bigger: 'Μεγαλύτερη εβδομάδα από το συνηθισμένο',
+      lighter: 'Πιο ελαφριά εβδομάδα από το συνηθισμένο',
+      steady: 'Μια σταθερή εβδομάδα',
+      strain: ', με την αποκατάσταση υπό πίεση',
+      improved: ', και η αποκατάσταση βελτιώθηκε',
+      dipped: ', και η αποκατάσταση υποχώρησε',
+      soFar: (text: string) => `Μέχρι στιγμής: ${text.charAt(0).toLowerCase()}${text.slice(1)}`,
+    },
+  },
+);

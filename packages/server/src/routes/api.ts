@@ -49,9 +49,9 @@ export function apiRoutes({ db, writeDb, sync, isSyncRunning, cartoKey = null }:
 
   router.get('/session', (_req, res) => res.json({ loggedIn: true }));
 
-  router.get('/today', handle(z.object({ date: date.optional() }), ({ date: day }) => getToday(db, day)));
+  router.get('/today', handle(z.object({ date: date.optional() }), ({ date: day }, req) => getToday(db, day, requestI18n(req))));
 
-  router.get('/weeks', handle(z.object({ weeks: z.coerce.number().int().min(1).max(260).default(12) }), ({ weeks }) => getWeeklySummary(db, weeks)));
+  router.get('/weeks', handle(z.object({ weeks: z.coerce.number().int().min(1).max(260).default(12) }), ({ weeks }, req) => getWeeklySummary(db, weeks, requestI18n(req))));
 
   router.get(
     '/activities',
@@ -64,11 +64,11 @@ export function apiRoutes({ db, writeDb, sync, isSyncRunning, cartoKey = null }:
         limit: z.coerce.number().int().min(1).max(200).default(20),
         offset: z.coerce.number().int().min(0).default(0),
       }),
-      (filters) => listActivities(db, filters),
+      (filters, req) => listActivities(db, filters, requestI18n(req)),
     ),
   );
 
-  router.get('/activities/:id', handle(z.object({ id: z.coerce.number().int().positive() }), ({ id }) => getActivity(db, id)));
+  router.get('/activities/:id', handle(z.object({ id: z.coerce.number().int().positive() }), ({ id }, req) => getActivity(db, id, requestI18n(req))));
 
   router.get('/activities/:id/route', handle(z.object({ id: z.coerce.number().int().positive() }), ({ id }) => getRoute(db, id)));
   router.get('/map', (_req, res) => res.json(cartoKey ? { provider: 'carto', key: cartoKey } : { provider: 'osm', key: null }));
@@ -83,9 +83,9 @@ export function apiRoutes({ db, writeDb, sync, isSyncRunning, cartoKey = null }:
 
   router.get('/baselines', handle(z.object({ date }), ({ date: day }) => getBaselineBands(db, day)));
 
-  router.get('/week', handle(z.object({ start: date }), ({ start }) => getWeek(db, start)));
+  router.get('/week', handle(z.object({ start: date }), ({ start }, req) => getWeek(db, start, requestI18n(req))));
 
-  router.get('/best-efforts', handle(z.object({ since: date.optional() }), ({ since }) => getBestEfforts(db, since)));
+  router.get('/best-efforts', handle(z.object({ since: date.optional() }), ({ since }, req) => getBestEfforts(db, since, requestI18n(req))));
 
   router.get('/trend-metrics', (_req, res) => res.json(getAvailableTrendMetrics(db)));
 
@@ -104,7 +104,7 @@ export function apiRoutes({ db, writeDb, sync, isSyncRunning, cartoKey = null }:
 
   // Insights: today's signals, and the patterns in your history -----------------------------------------------
   router.get('/signals', handle(z.object({ date }), ({ date: day }, req) => getSignals(db, day, requestI18n(req))));
-  router.get('/report', handle(z.object({ start: date, today: date }), ({ start, today }) => getWeeklyReport(db, start, today)));
+  router.get('/report', handle(z.object({ start: date, today: date }), ({ start, today }, req) => getWeeklyReport(db, start, today, requestI18n(req))));
   router.get('/body', handle(z.object({ date }), ({ date: day }, req) => getBodyReport(db, day, requestI18n(req))));
   router.get('/sleep', handle(z.object({ date }), ({ date: day }) => ({ sleep: getSleepReport(db, day), stress: getStressReport(db, day) })));
   router.get('/patterns', handle(z.object({ date }), ({ date: day }, req) => getPatterns(db, day, requestI18n(req))));

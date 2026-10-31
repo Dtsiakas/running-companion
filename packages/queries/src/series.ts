@@ -1,3 +1,4 @@
+import { ENGLISH, type I18n } from '@companion/i18n';
 import type { DatabaseSync } from 'node:sqlite';
 import { km, round } from './format.ts';
 import { getWeeklySummary, listActivities } from './queries.ts';
@@ -95,7 +96,7 @@ function addDays(date: string, days: number): string {
 }
 
 /** Everything for the weekly report: the summary row, the week before for comparison, its runs and its days. */
-export function getWeek(db: DatabaseSync, weekStart: string) {
+export function getWeek(db: DatabaseSync, weekStart: string, i18n: I18n = ENGLISH) {
   const start = weekStartOf(weekStart);
   const end = addDays(start, 6);
   const previousStart = addDays(start, -7);
@@ -110,7 +111,7 @@ export function getWeek(db: DatabaseSync, weekStart: string) {
     previous: find(previousStart),
     /** Weekly load and km for the 12 weeks up to this one, for the "this week vs recent weeks" chart. */
     recent: weeks.filter((week) => week.week_start! <= start).slice(-12).map((week) => ({ week_start: week.week_start, km: week.km, load: week.load })),
-    runs: listActivities(db, { from: start, to: end, limit: 50 }),
+    runs: listActivities(db, { from: start, to: end, limit: 50 }, i18n),
     days: getDailySeries(db, { from: start, to: end }),
     has_previous_week: String(range.first ?? '') <= addDays(start, -1),
     has_next_week: String(range.last ?? '') >= addDays(end, 1),

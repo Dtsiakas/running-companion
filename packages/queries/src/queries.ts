@@ -1,3 +1,4 @@
+import { ENGLISH, type Format, type I18n } from '@companion/i18n';
 import type { DatabaseSync } from 'node:sqlite';
 import { duration, km, pace, percent, round } from './format.ts';
 import { coolEquivalentPace, heatCost } from '@companion/weather/heat';
@@ -9,7 +10,7 @@ const s = (value: unknown) => (value === null || value === undefined ? null : St
 
 // Today ------------------------------------------------------------------------------------------------
 
-export function getToday(db: DatabaseSync, date?: string) {
+export function getToday(db: DatabaseSync, date?: string, i18n: I18n = ENGLISH) {
   const day = (date
     ? db.prepare('SELECT * FROM daily_metrics WHERE calendar_date = ?').get(date)
     : db.prepare('SELECT * FROM daily_metrics ORDER BY calendar_date DESC LIMIT 1').get()) as Row | undefined;
@@ -24,7 +25,7 @@ export function getToday(db: DatabaseSync, date?: string) {
   return {
     date: String(day.calendar_date),
     status: day.status === null ? null : (String(day.status) as 'green' | 'amber' | 'red'),
-    reasons: day.status_reasons ? (JSON.parse(String(day.status_reasons)) as Array<{ message: string }>).map((r) => r.message) : [],
+    reasons: day.status_reasons ? (JSON.parse(String(day.status_reasons)) as StoredReason[]).map((r) => reasonText(r, i18n)) : [],
     recovery: {
       hrv_last_night_ms: round(n(day.hrv_ms), 0),
       hrv_7d_ms: round(n(day.hrv_7d_ms), 0),
@@ -50,9 +51,9 @@ export function getToday(db: DatabaseSync, date?: string) {
     body: {
       weight_trend_kg: round(n(day.weight_trend_kg)),
       body_fat_trend_pct: round(n(day.body_fat_trend_pct)),
-      fitness_age: getFitnessAge(db),
+      fitness_age: getFitnessAge(db, i18n),
     },
-    last_run: lastRun ? summarizeActivity(db, Number(lastRun.activity_id)) : null,
+    last_run: lastRun ? summarizeActivity(db, Number(lastRun.activity_id), i18n.f) : null,
     data_freshness: getFreshness(db),
   };
 }
@@ -84,7 +85,7 @@ const ACTIVITY_SELECT = `
          m.speed_at_ref_hr_mps, m.ref_hr, m.is_treadmill
   FROM activities a LEFT JOIN activity_metrics m USING (activity_id)`;
 
-function activityRow(row: Row) {
+function activityRow(row: Row, f: Format = ENGLISH.f) {
   const zoneTotal = (n(row.low_s) ?? 0) + (n(row.moderate_s) ?? 0) + (n(row.high_s) ?? 0);
   return {
     activity_id: n(row.activity_id),
@@ -96,7 +97,7 @@ function activityRow(row: Row) {
     category: s(row.category),
     distance_km: km(n(row.distance_m)),
     duration: duration(n(row.duration_s)),
-    pace: pace(n(row.avg_speed_mps)),
+    pace: pace(n(row.avg_speed_mps), f),
     avg_hr: n(row.avg_hr),
     max_hr: n(row.max_hr),
     avg_power_w: n(row.avg_power_w),
@@ -106,7 +107,7 @@ function activityRow(row: Row) {
     garmin_te: s(row.te_label),
     intensity_pct: zoneTotal ? { low: percent(n(row.low_s), zoneTotal), moderate: percent(n(row.moderate_s), zoneTotal), high: percent(n(row.high_s), zoneTotal) } : null,
     m_per_beat: round(n(row.m_per_beat), 3),
-    pace_at_ref_hr: pace(n(row.speed_at_ref_hr_mps)),
+    pace_at_ref_hr: pace(n(row.speed_at_ref_hr_mps), f),
     decoupling_pct: round(n(row.decoupling_pct)),
     rpe: n(row.rpe),
     feel: n(row.feel),
@@ -118,9 +119,9 @@ function activityRow(row: Row) {
   };
 }
 
-function summarizeActivity(db: DatabaseSync, activityId: number) {
+function summarizeActivity(db: DatabaseSync, activityId: number, f: Format) {
   const row = db.prepare(`${ACTIVITY_SELECT} WHERE a.activity_id = ?`).get(activityId) as Row | undefined;
-  return row ? activityRow(row) : null;
+  return row ? activityRow(row, f) : null;
 }
 
 export interface ListFilters {
@@ -133,7 +134,7 @@ export interface ListFilters {
   offset?: number;
 }
 
-export function listActivities(db: DatabaseSync, filters: ListFilters) {
+export function listActivities(db: DatabaseSync, filters: ListFilters, { f }: I18n = ENGLISH) {
   // Each filter is "not set, or matches", so one fixed statement covers every combination.
   const rows = db
     .prepare(
@@ -153,10 +154,11 @@ export function listActivities(db: DatabaseSync, filters: ListFilters) {
       limit: Math.min(filters.limit ?? 20, 200),
       offset: filters.offset ?? 0,
     }) as Row[];
-  return rows.map(activityRow);
+  return rows.map((row) => activityRow(row, f));
 }
 
-export function getActivity(db: DatabaseSync, activityId?: number) {
+export function getActivity(db: DatabaseSync, activityId?: number, i18n: I18n = ENGLISH) {
+  const { f } = i18n;
   const id =
     activityId ??
     n((db.prepare('SELECT activity_id FROM activities ORDER BY start_time DESC LIMIT 1').get() as Row | undefined)?.activity_id);
@@ -169,7 +171,7 @@ export function getActivity(db: DatabaseSync, activityId?: number) {
     workout_step: n(lap.workout_step_index),
     distance_km: km(n(lap.distance_m)),
     time: duration(n(lap.timer_s)),
-    pace: pace(n(lap.avg_speed_mps)),
+    pace: pace(n(lap.avg_speed_mps), f),
     avg_hr: n(lap.avg_hr),
     max_hr: n(lap.max_hr),
     avg_power_w: n(lap.avg_power_w),
@@ -179,16 +181,16 @@ export function getActivity(db: DatabaseSync, activityId?: number) {
   }));
 
   const efforts = (db.prepare('SELECT distance_m, duration_s FROM activity_best_efforts WHERE activity_id = ? ORDER BY distance_m').all(id) as Row[]).map((e) => ({
-    distance: distanceLabel(n(e.distance_m)!),
+    distance: distanceLabel(n(e.distance_m)!, i18n),
     time: duration(n(e.duration_s)),
-    pace: pace(n(e.distance_m)! / n(e.duration_s)!),
+    pace: pace(n(e.distance_m)! / n(e.duration_s)!, f),
   }));
 
   return {
-    ...activityRow(row),
+    ...activityRow(row, f),
     details: {
       elevation_gain_m: n(row.elevation_gain_m),
-      avg_gap_pace: pace(n(row.avg_gap_speed_mps)),
+      avg_gap_pace: pace(n(row.avg_gap_speed_mps), f),
       norm_power_w: n(row.norm_power_w),
       avg_gct_ms: n(row.avg_gct_ms),
       avg_vertical_oscillation_mm: round(n(row.avg_vertical_oscillation_mm)),
@@ -202,9 +204,9 @@ export function getActivity(db: DatabaseSync, activityId?: number) {
       hr_zone_minutes: [1, 2, 3, 4, 5].map((z) => round((n(row[`hr_zone${z}_s`]) ?? 0) / 60)),
       power_zone_minutes: [1, 2, 3, 4, 5].map((z) => round((n(row[`power_zone${z}_s`]) ?? 0) / 60)),
     },
-    weather: runWeather(db, id!, n(row.avg_speed_mps)),
-    planned_steps: plannedSteps(db, id!),
-    executed_steps: executedSteps(db, id!),
+    weather: runWeather(db, id!, n(row.avg_speed_mps), f),
+    planned_steps: plannedSteps(db, id!, f),
+    executed_steps: executedSteps(db, id!, f),
     laps,
     best_efforts: efforts,
   };
@@ -214,7 +216,7 @@ export function getActivity(db: DatabaseSync, activityId?: number) {
  * Air temperature and dew point at the run (Open-Meteo, not the wrist sensor), the heat cost they imply and the pace
  * that effort would have been in cool weather. Null for treadmill runs and runs whose weather isn't synced yet.
  */
-function runWeather(db: DatabaseSync, activityId: number, speedMps: number | null) {
+function runWeather(db: DatabaseSync, activityId: number, speedMps: number | null, f: Format) {
   const w = db.prepare('SELECT temp_c, dew_point_c, humidity_pct, wind_kmh, source FROM activity_weather WHERE activity_id = ?').get(activityId) as Row | undefined;
   if (!w) return null;
   const heat = heatCost(Number(w.temp_c), Number(w.dew_point_c));
@@ -226,7 +228,7 @@ function runWeather(db: DatabaseSync, activityId: number, speedMps: number | nul
     wind_kmh: round(n(w.wind_kmh), 0),
     source: s(w.source),
     heat,
-    cool_pace: secPerKm && heat.pct > 0 ? pace(1000 / coolEquivalentPace(secPerKm, heat.pct)) : null,
+    cool_pace: secPerKm && heat.pct > 0 ? pace(1000 / coolEquivalentPace(secPerKm, heat.pct), f) : null,
   };
 }
 
@@ -243,7 +245,7 @@ function rawWorkoutSteps(db: DatabaseSync, activityId: number): Row[] | null {
  * (interval, recovery, interval) appears once per repetition. Laps under 10 seconds are the stop-button remainder and are skipped.
  * Pace is total distance over total time; heart rate is time-weighted.
  */
-function executedSteps(db: DatabaseSync, activityId: number) {
+function executedSteps(db: DatabaseSync, activityId: number, f: Format) {
   const planned = rawWorkoutSteps(db, activityId);
   if (!planned) return null;
   const byIndex = new Map(planned.map((step) => [n(step.stepIndex), step]));
@@ -279,13 +281,13 @@ function executedSteps(db: DatabaseSync, activityId: number) {
     return {
       step: group.step,
       intensity: group.intensity,
-      planned: plan ? stepDuration(plan) : null,
+      planned: plan ? stepDuration(plan, f) : null,
       /** Target as pace text, faster end first: "4:21/km – 4:41/km". */
-      target_pace: low && high ? `${pace(high)} – ${pace(low)}` : null,
+      target_pace: low && high ? `${pace(high, f)} – ${pace(low, f)}` : null,
       target_speed_mps: low && high ? [low, high] : null,
       distance_km: km(group.distance),
       time: duration(group.time),
-      pace: pace(speed),
+      pace: pace(speed, f),
       speed_mps: round(speed, 3),
       avg_hr: group.hrTime ? Math.round(group.hrWeighted / group.hrTime) : null,
       on_target: onTarget,
@@ -293,20 +295,20 @@ function executedSteps(db: DatabaseSync, activityId: number) {
   });
 }
 
-function stepDuration(step: Row): string | null {
+function stepDuration(step: Row, f: Format): string | null {
   const type = s(step.durationType);
-  return type === 'TIME' ? duration(n(step.durationValue)) : type === 'DISTANCE' ? `${km(n(step.durationValue))} km` : type === 'LAP_BUTTON' ? 'Lap button' : type;
+  return type === 'TIME' ? duration(n(step.durationValue)) : type === 'DISTANCE' ? f.distance((n(step.durationValue) ?? 0) / 1000, 2) : type === 'LAP_BUTTON' ? 'Lap button' : type;
 }
 
 /** The structured workout Garmin loaded on the watch, from the stored raw response. */
-function plannedSteps(db: DatabaseSync, activityId: number) {
+function plannedSteps(db: DatabaseSync, activityId: number, f: Format) {
   const steps = rawWorkoutSteps(db, activityId);
   if (!steps) return null;
   return steps.map((step) => {
     const isRepeat = s(step.durationType) === 'REPEAT_UNTIL_STEPS_CMPLT';
     const target =
       s(step.targetType) === 'SPEED' && n(step.targetValueLow) && n(step.targetValueHigh)
-        ? `${pace(n(step.targetValueHigh))} – ${pace(n(step.targetValueLow))}`
+        ? `${pace(n(step.targetValueHigh), f)} – ${pace(n(step.targetValueLow), f)}`
         : null;
     return {
       step: n(step.stepIndex),
@@ -314,21 +316,47 @@ function plannedSteps(db: DatabaseSync, activityId: number) {
       ...(isRepeat
         ? { repeat: `steps from ${n(step.durationValue)} onwards, ${n(step.targetValue)} times in total` }
         : {
-            duration: stepDuration(step),
+            duration: stepDuration(step, f),
             target_pace: target,
           }),
     };
   });
 }
 
-function distanceLabel(metres: number): string {
-  const labels: Record<string, string> = { '1609.344': '1 mile', '21097.5': 'half marathon', '42195': 'marathon' };
-  return labels[String(metres)] ?? (metres >= 1000 ? `${metres / 1000} km` : `${metres} m`);
+/** A best-effort distance's name, in the reader's language ("5 km", "Half marathon"). */
+function distanceLabel(metres: number, { m, f }: I18n): string {
+  return m.progress.distanceName[String(metres)] ?? (metres >= 1000 ? f.distance(metres / 1000, 2) : `${metres} m`);
+}
+
+interface StoredReason {
+  code: keyof I18n['m']['status'];
+  message: string;
+  values?: { value: number; normal?: number };
+}
+
+/** A status reason in the reader's language, from its stored numbers (older rows have only the English message). */
+function reasonText(reason: StoredReason, { m, f }: I18n): string {
+  const write = m.status[reason.code];
+  if (!reason.values || !write) return reason.message;
+  const { value, normal = 0 } = reason.values;
+  switch (reason.code) {
+    case 'hrv_low':
+      return m.status.hrv_low(f.number(value), f.number(normal));
+    case 'rhr_high':
+      return m.status.rhr_high(f.number(value, 1), f.number(normal, 1));
+    case 'short_sleep':
+      return m.status.short_sleep(f.number(value, 1), f.number(normal, 1));
+    case 'load_spike':
+      return m.status.load_spike(f.number(value, 1));
+    case 'deep_fatigue':
+      return m.status.deep_fatigue(f.number(value));
+  }
 }
 
 // Best efforts -----------------------------------------------------------------------------------------
 
-export function getBestEfforts(db: DatabaseSync, since?: string) {
+export function getBestEfforts(db: DatabaseSync, since?: string, i18n: I18n = ENGLISH) {
+  const { f } = i18n;
   const rows = db
     .prepare(
       `SELECT e.distance_m, e.duration_s, a.calendar_date, a.name, a.activity_id
@@ -340,9 +368,9 @@ export function getBestEfforts(db: DatabaseSync, since?: string) {
     )
     .all({ since: since ?? null }) as Row[];
   return rows.map((row) => ({
-    distance: distanceLabel(n(row.distance_m)!),
+    distance: distanceLabel(n(row.distance_m)!, i18n),
     time: duration(n(row.duration_s)),
-    pace: pace(n(row.distance_m)! / n(row.duration_s)!),
+    pace: pace(n(row.distance_m)! / n(row.duration_s)!, f),
     date: s(row.calendar_date),
     activity: s(row.name),
     activity_id: n(row.activity_id),
@@ -351,7 +379,7 @@ export function getBestEfforts(db: DatabaseSync, since?: string) {
 
 // Weeks and trends -----------------------------------------------------------------------------------------
 
-export function getWeeklySummary(db: DatabaseSync, weeks: number) {
+export function getWeeklySummary(db: DatabaseSync, weeks: number, { f }: I18n = ENGLISH) {
   const rows = db.prepare('SELECT * FROM weekly_summary ORDER BY week_start DESC LIMIT ?').all(Math.min(weeks, 260)) as Row[];
   return rows.reverse().map((row) => ({
     week_start: s(row.week_start),
@@ -362,7 +390,7 @@ export function getWeeklySummary(db: DatabaseSync, weeks: number) {
     load: n(row.load),
     intensity_pct: row.low_pct === null ? null : { low: n(row.low_pct), moderate: n(row.moderate_pct), high: n(row.high_pct) },
     easy_m_per_beat: n(row.easy_m_per_beat),
-    pace_at_ref_hr: pace(n(row.speed_at_ref_hr_mps)),
+    pace_at_ref_hr: pace(n(row.speed_at_ref_hr_mps), f),
     fitness_end: n(row.fitness),
     form_end: n(row.form),
     weight_trend_kg: n(row.weight_trend_kg),

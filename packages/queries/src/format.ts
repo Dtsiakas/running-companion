@@ -1,9 +1,11 @@
+import { ENGLISH, type Format } from '@companion/i18n';
+
 /** Formatting for tool output: what a runner reads, not what the database stores. */
 
-export function pace(speedMps: number | null | undefined): string | null {
+/** "5:22/km", or "8:38/mi" for a reader in miles. */
+export function pace(speedMps: number | null | undefined, f: Format = ENGLISH.f): string | null {
   if (!speedMps || speedMps <= 0) return null;
-  const secondsPerKm = Math.round(1000 / speedMps);
-  return `${Math.floor(secondsPerKm / 60)}:${String(secondsPerKm % 60).padStart(2, '0')}/km`;
+  return f.pace(speedMps);
 }
 
 export function duration(seconds: number | null | undefined): string | null {

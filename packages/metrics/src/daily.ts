@@ -15,7 +15,10 @@ export interface DailyInputs {
 
 export interface StatusReason {
   code: 'hrv_low' | 'rhr_high' | 'short_sleep' | 'load_spike' | 'deep_fatigue';
+  /** In English, for anything reading the database directly. The app writes it again from `values`, in the reader's language. */
   message: string;
+  /** The measured value and the normal it was compared with. */
+  values: { value: number; normal?: number };
 }
 
 export interface DailyMetrics {
@@ -165,19 +168,19 @@ export function assessStatus(day: DailyMetrics): Pick<DailyMetrics, 'status' | '
 
   const reasons: StatusReason[] = [];
   if (day.hrvZ !== null && day.hrvZ < HRV_Z_LOW) {
-    reasons.push({ code: 'hrv_low', message: `7-day HRV ${round(day.hrv7dMs)} ms is below your normal ${round(day.hrvBaselineMs)} ms` });
+    reasons.push({ code: 'hrv_low', message: `7-day HRV ${round(day.hrv7dMs)} ms is below your normal ${round(day.hrvBaselineMs)} ms`, values: { value: day.hrv7dMs ?? 0, normal: day.hrvBaselineMs ?? 0 } });
   }
   if (day.rhrZ !== null && day.rhr3d !== null && day.rhrBaseline !== null && day.rhrZ > RHR_Z_HIGH && day.rhr3d - day.rhrBaseline >= RHR_MIN_RISE) {
-    reasons.push({ code: 'rhr_high', message: `Resting HR ${round(day.rhr3d)} bpm is above your normal ${round(day.rhrBaseline)} bpm` });
+    reasons.push({ code: 'rhr_high', message: `Resting HR ${round(day.rhr3d)} bpm is above your normal ${round(day.rhrBaseline)} bpm`, values: { value: day.rhr3d, normal: day.rhrBaseline } });
   }
   if (day.sleepH !== null && day.sleepBaselineH !== null && day.sleepH <= day.sleepBaselineH - SHORT_SLEEP_DROP_H) {
-    reasons.push({ code: 'short_sleep', message: `Slept ${day.sleepH.toFixed(1)} h, well under your usual ${day.sleepBaselineH.toFixed(1)} h` });
+    reasons.push({ code: 'short_sleep', message: `Slept ${day.sleepH.toFixed(1)} h, well under your usual ${day.sleepBaselineH.toFixed(1)} h`, values: { value: day.sleepH, normal: day.sleepBaselineH } });
   }
   if (day.acwr !== null && day.acwr > ACWR_SPIKE && day.fitness > 10) {
-    reasons.push({ code: 'load_spike', message: `This week's load is ${day.acwr.toFixed(1)}× your 4-week average` });
+    reasons.push({ code: 'load_spike', message: `This week's load is ${day.acwr.toFixed(1)}× your 4-week average`, values: { value: day.acwr } });
   }
   if (day.form < FORM_DEEP_FATIGUE) {
-    reasons.push({ code: 'deep_fatigue', message: `Form is ${round(day.form)}: fatigue is well above fitness` });
+    reasons.push({ code: 'deep_fatigue', message: `Form is ${round(day.form)}: fatigue is well above fitness`, values: { value: day.form } });
   }
 
   const dimensions = new Set(reasons.map((reason) => DIMENSION[reason.code])).size;
