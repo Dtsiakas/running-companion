@@ -5,6 +5,7 @@ import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, T
 import { clock } from '../../lib/format.ts';
 import { useThemeColors } from '../../lib/useThemeColors.ts';
 import styles from './charts.module.css';
+import { roundTicks } from '../../lib/ticks.ts';
 
 type Point = ActivityRecordsResponse[number];
 interface Row extends Point {
@@ -85,7 +86,7 @@ export function RunCharts({ records }: { records: ActivityRecordsResponse }) {
           <>
             <CartesianGrid vertical={false} stroke={colors['--rule']} />
             <XAxis dataKey="x" type="number" domain={['dataMin', 'dataMax']} hide={!last} tickFormatter={(x: number) => xLabel(x)} tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={{ stroke: colors['--rule'] }} minTickGap={32} />
-            <YAxis domain={domain} allowDataOverflow reversed={panel.reversed} tickFormatter={(v: number) => (panel.key === 'pace_s' ? clock(v) : String(Math.round(v)))} tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={false} width={48} ticks={evenTicks(domain)} interval={0} />
+            <YAxis domain={domain} allowDataOverflow reversed={panel.reversed} tickFormatter={(v: number) => (panel.key === 'pace_s' ? clock(v) : String(Math.round(v)))} tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={false} width={48} ticks={roundTicks(domain, panel.key === 'pace_s')} interval={0} />
             {/* Cursor only: the readout above carries the values for every panel at once. */}
             <Tooltip content={() => null} cursor={{ stroke: colors['--ink-3'], strokeWidth: 1 }} />
           </>
@@ -128,9 +129,3 @@ function robustDomain(values: Array<number | null>): [number, number] | ['auto',
   return [Math.floor(low - pad), Math.ceil(high + pad)];
 }
 
-/** Three ticks: both ends of the range and the middle. Recharts' own "nice" ticks can fall outside a clipped range. */
-function evenTicks(domain: [number, number] | ['auto', 'auto']): number[] | undefined {
-  if (typeof domain[0] !== 'number' || typeof domain[1] !== 'number') return undefined;
-  const [low, high] = domain;
-  return [low, Math.round((low + high) / 2), high];
-}

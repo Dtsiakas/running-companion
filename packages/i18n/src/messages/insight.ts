@@ -9,7 +9,7 @@ export const insight = define(
       red: { label: 'Two signals off', title: 'Two signals are off. Consider an easier day than planned.', detail: 'Two independent recovery systems are outside your normal range at the same time.' },
       none: { label: 'No status yet', title: 'Not enough recovery data yet.', detail: 'Sync after a night with the watch on to get a status.' },
     },
-    measured: { hrv: 'HRV', restingHr: 'resting heart rate', sleep: 'sleep', load: 'training load' },
+    measured: { hrv: 'HRV', restingHr: 'resting heart rate', sleep: 'last night’s sleep', load: 'training load' },
     /** `list` is already joined ("HRV, sleep and training load"). */
     greenDetail: (list: string, count: number) => `${list.charAt(0).toUpperCase()}${list.slice(1)} ${count === 1 ? 'is' : count === 2 ? 'are' : 'are all'} within your normal range.`,
     relative: {
@@ -44,7 +44,7 @@ export const insight = define(
       red: { label: 'Δύο σήματα εκτός', title: 'Δύο σήματα είναι εκτός. Σκέψου μια πιο ελαφριά μέρα από το πλάνο.', detail: 'Δύο ανεξάρτητα συστήματα αποκατάστασης είναι ταυτόχρονα εκτός του συνηθισμένου σου εύρους.' },
       none: { label: 'Χωρίς κατάσταση ακόμα', title: 'Δεν υπάρχουν ακόμα αρκετά δεδομένα αποκατάστασης.', detail: 'Συγχρόνισε μετά από μια νύχτα με το ρολόι για να δεις κατάσταση.' },
     },
-    measured: { hrv: 'το HRV', restingHr: 'οι παλμοί ηρεμίας', sleep: 'ο ύπνος', load: 'το προπονητικό φορτίο' },
+    measured: { hrv: 'το HRV', restingHr: 'οι παλμοί ηρεμίας', sleep: 'ο χθεσινός ύπνος', load: 'το προπονητικό φορτίο' },
     greenDetail: (list: string, count: number) => `${list.charAt(0).toUpperCase()}${list.slice(1)} ${count === 1 ? 'είναι' : count === 2 ? 'είναι' : 'είναι όλα'} μέσα στο συνηθισμένο σου εύρος.`,
     relative: {
       noNormal: 'Δεν υπάρχουν ακόμα αρκετά δεδομένα για το συνηθισμένο σου',

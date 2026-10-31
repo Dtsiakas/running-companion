@@ -17,6 +17,7 @@ import { current, f, m } from '../lib/i18n.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Run.module.css';
 import { scrollRegion } from '../lib/a11y.ts';
+import { NONE } from '@companion/i18n';
 
 type Activity = ActivityResponse;
 
@@ -60,8 +61,8 @@ function RunBody({ run, children: charts }: { run: Activity; children: React.Rea
         <h1 className={blocks.title}>{run.name ?? m.run.run}</h1>
         <p className={styles.meta}>
           {run.date ? longDay(run.date) : ''}
-          {startTime ? ` ${m.run.at(startTime)}` : ''}, {kind}
-          {run.treadmill ? `, ${m.run.treadmill}` : ''}
+          {startTime ? ` ${m.run.at(startTime)}` : ''}. {kind}
+          {run.treadmill ? `, ${m.run.treadmill}` : ''}.
         </p>
       </header>
 
@@ -129,7 +130,7 @@ function RunBody({ run, children: charts }: { run: Activity; children: React.Rea
             facts={[
               [m.run.cadence, run.cadence_spm, 'spm'],
               [m.run.stepLength, f.number(d.avg_step_length_m, 2), 'm'],
-              [m.run.groundContact, f.number(d.avg_gct_ms, 1), 'ms'],
+              [m.run.groundContact, f.number(d.avg_gct_ms), 'ms'],
               [m.run.verticalRatio, f.number(d.avg_vertical_ratio_pct, 1), '%'],
               [m.run.verticalOscillation, d.avg_vertical_oscillation_mm === null ? null : f.number(d.avg_vertical_oscillation_mm / 10, 1), 'cm'],
             ]}
@@ -299,7 +300,8 @@ function Stat({ label, value, unit }: { label: string; value: string | number | 
 
 /** Label and value pairs; facts the watch didn't record are left out rather than shown as dashes. */
 function Facts({ facts }: { facts: Fact[] }) {
-  const present = facts.filter(([, value]) => value !== null && value !== undefined && value !== '');
+  // NONE ('–') is what a formatter returns for a missing number: no point showing a dash with a unit after it.
+  const present = facts.filter(([, value]) => value !== null && value !== undefined && value !== '' && value !== NONE);
   if (!present.length) return <p className={blocks.empty}>{m.run.notRecorded}</p>;
   return (
     <dl className={blocks.facts}>
@@ -382,7 +384,7 @@ function Laps({ laps }: { laps: Activity['laps'] }) {
           {laps.map((lap) => (
             <tr key={lap.lap}>
               <th scope="row">{lap.lap}</th>
-              <td>{f.distance(lap.distance_km, 2)}</td>
+              <td>{f.distance(lap.distance_km, 2, true)}</td>
               <td>{lap.time ?? '–'}</td>
               <td>{stripPace(lap.pace)}</td>
               <td>{lap.avg_hr ?? '–'}</td>

@@ -17,9 +17,11 @@ export function createFormat(locale: Locale) {
   const tag = INTL_TAG[locale.lang];
   const imperial = locale.units === 'imperial';
   const numberFormats = new Map<number, Intl.NumberFormat>();
-  const nf = (digits: number) => {
-    let format = numberFormats.get(digits);
-    if (!format) numberFormats.set(digits, (format = new Intl.NumberFormat(tag, { minimumFractionDigits: 0, maximumFractionDigits: digits })));
+  /** Up to `digits` decimals ("10 km", "10.5 km"); `fixed` always shows them, for columns that line up ("0.30 km"). */
+  const nf = (digits: number, fixed = false) => {
+    const key = fixed ? -1 - digits : digits;
+    let format = numberFormats.get(key);
+    if (!format) numberFormats.set(key, (format = new Intl.NumberFormat(tag, { minimumFractionDigits: fixed ? digits : 0, maximumFractionDigits: digits })));
     return format;
   };
   const missing = (value: number | null | undefined): value is null | undefined => value === null || value === undefined || !Number.isFinite(value);
@@ -70,7 +72,7 @@ export function createFormat(locale: Locale) {
     /** Kilometres in the reader's unit, as a number (for charts and sums). */
     distanceValue: (km: number | null | undefined): number | null => (missing(km) ? null : imperial ? km / KM_PER_MILE : km),
     /** "12.3 km" / "7.6 mi" */
-    distance: (km: number | null | undefined, digits = 1): string => (missing(km) ? NONE : `${nf(digits).format(round(imperial ? km / KM_PER_MILE : km, digits))} ${imperial ? 'mi' : 'km'}`),
+    distance: (km: number | null | undefined, digits = 1, fixed = false): string => (missing(km) ? NONE : `${nf(digits, fixed).format(round(imperial ? km / KM_PER_MILE : km, digits))} ${imperial ? 'mi' : 'km'}`),
     /** A distance in the reader's unit back to kilometres (milestones, targets). */
     toKm: (value: number): number => (imperial ? value * KM_PER_MILE : value),
     /** One unit of distance in metres: 1000 or 1609.344. */
