@@ -94,7 +94,7 @@ export function RunCharts({ records }: { records: ActivityRecordsResponse }) {
         return (
           <div key={panel.key} className={styles.panel}>
             <h3 className={styles.panelTitle}>{panel.title}</h3>
-            <div className={styles.plot} role="img" aria-label={`${panel.title} over the run`}>
+            <div className={styles.plot} role="img" aria-label={m.charts.described.overTheRun(panel.title)}>
               <ResponsiveContainer width="100%" height={last ? 118 : 96}>
                 {panel.area ? (
                   <AreaChart {...common}>

@@ -46,14 +46,14 @@ export function TrendChart({ points, view, smoothingLabel }: { points: TrendPoin
       {smoothed ? (
         <div className={styles.legend}>
           <span>
-            <i style={{ background: colors['--series-1'], height: 3 }} /> {smoothingLabel}
+            <i className={styles.keyLine} /> {smoothingLabel}
           </span>
           <span>
-            <i style={{ background: colors['--ink-3'], width: 6, height: 6, borderRadius: '50%' }} /> {m.trends.chart.eachWeek}
+            <i className={styles.keyDot} /> {m.trends.chart.eachWeek}
           </span>
         </div>
       ) : null}
-      <div className={styles.plot} role="img" aria-label={`${view.label}, ${points.length} periods`}>
+      <div className={styles.plot} role="img" aria-label={m.charts.described.trend(view.label, points.length)}>
         <ResponsiveContainer width="100%" height={240}>
           {view.kind === 'total' ? (
             <BarChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: -12 }} barCategoryGap={2}>

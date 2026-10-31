@@ -17,7 +17,7 @@ export interface WeekPoint {
 export function WeeklyBars({ weeks, selected }: { weeks: WeekPoint[]; selected: string }) {
   const colors = useThemeColors();
   return (
-    <div className={styles.plot} role="img" aria-label={`Kilometres per week, ${weeks.length} weeks`}>
+    <div className={styles.plot} role="img" aria-label={m.charts.described.perWeek(f.distanceUnit, weeks.length)}>
       <ResponsiveContainer width="100%" height={160}>
         <BarChart data={weeks.map((w) => ({ ...w, km: f.distanceValue(w.km) }))} margin={{ top: 8, right: 8, bottom: 0, left: -16 }} barCategoryGap={4}>
           <CartesianGrid vertical={false} stroke={colors['--rule']} />

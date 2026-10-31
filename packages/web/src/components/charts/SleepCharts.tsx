@@ -36,7 +36,7 @@ export function SleepDiary({ nights, target }: { nights: Night[]; target: string
         </span>
         {target ? (
           <span>
-            <i style={{ background: 'none', borderTop: `2px dashed ${colors['--ink-2']}`, height: 0 }} /> {m.sleep.charts.target(target)}
+            <i className={styles.keyDashed} /> {m.sleep.charts.target(target)}
           </span>
         ) : null}
       </div>
@@ -87,7 +87,7 @@ export function SleepVsNeed({ nights }: { nights: Night[] }) {
           <i style={{ background: colors['--series-1'] }} /> {m.sleep.charts.asleep}
         </span>
         <span>
-          <i style={{ background: colors['--ink-2'], height: 2 }} /> {m.sleep.charts.need}
+          <i className={styles.keyNeed} /> {m.sleep.charts.need}
         </span>
       </div>
       <div className={styles.plot} role="img" aria-label={m.sleep.charts.needLabel(nights.length)}>

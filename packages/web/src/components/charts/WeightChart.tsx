@@ -3,6 +3,7 @@ import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Too
 import { shortDay } from '../../lib/dates.ts';
 import { useThemeColors } from '../../lib/useThemeColors.ts';
 import styles from './charts.module.css';
+import { roundTicks } from '../../lib/ticks.ts';
 
 interface Point {
   date: string;
@@ -27,14 +28,14 @@ export function WeightChart({ series, weighIns, goal }: { series: Array<{ date: 
     <figure className={styles.figure}>
       <div className={styles.legend}>
         <span>
-          <i style={{ background: colors['--series-1'], height: 3 }} /> {m.body.chart.trend}
+          <i className={styles.keyLine} /> {m.body.chart.trend}
         </span>
         <span>
-          <i style={{ background: colors['--ink-3'], width: 6, height: 6, borderRadius: '50%' }} /> {m.body.chart.weighIns}
+          <i className={styles.keyDot} /> {m.body.chart.weighIns}
         </span>
         {goal !== null ? (
           <span>
-            <i style={{ background: 'none', borderTop: `2px dashed ${colors['--ink-2']}`, height: 0 }} /> {m.body.chart.goal(f.weight(goal))}
+            <i className={styles.keyDashed} /> {m.body.chart.goal(f.weight(goal))}
           </span>
         ) : null}
       </div>
@@ -43,7 +44,7 @@ export function WeightChart({ series, weighIns, goal }: { series: Array<{ date: 
           <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
             <CartesianGrid vertical={false} stroke={colors['--rule']} />
             <XAxis dataKey="date" tickFormatter={(d: string) => f.dayMonth(d)} interval="preserveStartEnd" minTickGap={40} tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={{ stroke: colors['--rule'] }} />
-            <YAxis domain={domain} tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={false} width={44} allowDecimals={false} />
+            <YAxis domain={domain} ticks={roundTicks(domain, false, 5)} interval={0} tick={{ fill: colors['--ink-3'], fontSize: 12 }} tickLine={false} axisLine={false} width={44} />
             {goalValue !== null ? <ReferenceLine y={goalValue} stroke={colors['--ink-2']} strokeDasharray="5 4" /> : null}
             <Tooltip content={(props: TooltipContentProps<TooltipValueType, string | number>) => <WeightTooltip {...props} />} cursor={{ stroke: colors['--ink-3'], strokeWidth: 1 }} />
             <Line dataKey="weighIn" stroke="none" dot={{ r: 2, fill: colors['--ink-3'], strokeWidth: 0 }} activeDot={false} isAnimationActive={false} />

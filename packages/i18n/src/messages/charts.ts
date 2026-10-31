@@ -23,6 +23,14 @@ export const charts = define(
       label: (fitness: string, fatigue: string, days: number) => `Fitness ${fitness} and fatigue ${fatigue} over the last ${days} days`,
     },
     stages: { deep: 'Deep', rem: 'REM', light: 'Light', awake: 'Awake' },
+    /** What a chart shows, for screen readers. `unit` is km or mi. */
+    described: {
+      trend: (label: string, periods: number) => `${label}, ${periods} periods`,
+      perWeek: (unit: string, weeks: number) => `Distance per week in ${unit}, ${weeks} weeks`,
+      perMonth: (unit: string, year: number) => `Distance per month in ${unit}, ${year}`,
+      form: (label: string, months: number) => `${label} by month at the same pace, ${months} months`,
+      overTheRun: (title: string) => `${title} over the run`,
+    },
   },
   {
     intensity: { low: 'Χαλαρά', moderate: 'Μέτρια', high: 'Έντονα', noData: 'Δεν υπάρχουν δεδομένα καρδιακού ρυθμού για αυτή την περίοδο.' },
@@ -45,5 +53,12 @@ export const charts = define(
       label: (fitness: string, fatigue: string, days: number) => `Φυσική κατάσταση ${fitness} και κούραση ${fatigue} τις τελευταίες ${days} ημέρες`,
     },
     stages: { deep: 'Βαθύς', rem: 'REM', light: 'Ελαφρύς', awake: 'Ξύπνιος' },
+    described: {
+      trend: (label: string, periods: number) => `${label}, ${periods} περίοδοι`,
+      perWeek: (unit: string, weeks: number) => `Απόσταση ανά εβδομάδα σε ${unit}, ${weeks} εβδομάδες`,
+      perMonth: (unit: string, year: number) => `Απόσταση ανά μήνα σε ${unit}, ${year}`,
+      form: (label: string, months: number) => `${label} ανά μήνα στον ίδιο ρυθμό, ${months} μήνες`,
+      overTheRun: (title: string) => `${title} σε όλο το τρέξιμο`,
+    },
   },
 );

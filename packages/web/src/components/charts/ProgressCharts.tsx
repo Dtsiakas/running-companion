@@ -20,12 +20,12 @@ export function FormChart({ series }: { series: FormSeries }) {
   const pad = spread * 0.15 || 1;
   const digits = series.unit === 'm' ? 2 : series.unit === '%' || series.unit === 'cm' ? 1 : 0;
   return (
-    <div className={styles.plot} role="img" aria-label={`${series.label} by month at the same pace, ${series.points.length} months`}>
+    <div className={styles.plot} role="img" aria-label={m.charts.described.form(series.label, series.points.length)}>
       <ResponsiveContainer width="100%" height={120}>
         <LineChart data={series.points} margin={{ top: 6, right: 8, bottom: 0, left: -8 }}>
           <CartesianGrid vertical={false} stroke={colors['--rule']} />
           <XAxis dataKey="month" tickFormatter={monthTick} interval="preserveStartEnd" minTickGap={40} tick={{ fill: colors['--ink-3'], fontSize: 11 }} tickLine={false} axisLine={{ stroke: colors['--rule'] }} />
-          <YAxis domain={[Math.min(...values) - pad, Math.max(...values) + pad]} tickFormatter={(v: number) => v.toFixed(digits)} tick={{ fill: colors['--ink-3'], fontSize: 11 }} tickLine={false} axisLine={false} width={44} tickCount={3} />
+          <YAxis domain={[Math.min(...values) - pad, Math.max(...values) + pad]} tickFormatter={(v: number) => f.number(v, digits)} tick={{ fill: colors['--ink-3'], fontSize: 11 }} tickLine={false} axisLine={false} width={44} tickCount={3} />
           <Tooltip content={(props: TooltipProps) => <FormTooltip {...props} unit={series.unit} digits={digits} />} cursor={{ stroke: colors['--ink-3'], strokeWidth: 1 }} />
           <Line type="monotone" dataKey="value" connectNulls={false} stroke={colors['--series-1']} strokeWidth={2} dot={{ r: 2.5, fill: colors['--series-1'], strokeWidth: 0 }} activeDot={{ r: 4, strokeWidth: 2, stroke: colors['--surface'] }} isAnimationActive={false} />
         </LineChart>
@@ -42,7 +42,7 @@ function FormTooltip({ active, payload, unit, digits }: TooltipProps & { unit: s
     <div className={styles.tooltip}>
       <strong>{monthTick(point.month)}</strong>
       <span>
-        {point.value.toFixed(digits)} {unit}
+        {f.number(point.value, digits)} {unit}
       </span>
       <span>{point.runs} easy runs</span>
     </div>
@@ -54,7 +54,7 @@ export function YearMonths({ review }: { review: YearReview }) {
   const colors = useThemeColors();
   const data = review.months.map((month) => ({ ...month, km: month.month > review.through.slice(0, 7) ? null : f.distanceValue(month.km) }));
   return (
-    <div className={styles.plot} role="img" aria-label={`Kilometres per month in ${review.year}`}>
+    <div className={styles.plot} role="img" aria-label={m.charts.described.perMonth(f.distanceUnit, review.year)}>
       <ResponsiveContainer width="100%" height={160}>
         <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }} barCategoryGap={4}>
           <CartesianGrid vertical={false} stroke={colors['--rule']} />

@@ -30,6 +30,30 @@
   border-radius: 3px;
 }
 
+/* Legend keys for line charts: a line, a dot, a dashed line. */
+.legend i.keyLine {
+  height: 3px;
+  background: var(--series-1);
+}
+
+.legend i.keyDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+
+.legend i.keyNeed {
+  height: 2px;
+  background: var(--ink-2);
+}
+
+.legend i.keyDashed {
+  height: 0;
+  border-top: 2px dashed var(--ink-2);
+  border-radius: 0;
+}
+
 .stack {
   display: flex;
   gap: 2px;
