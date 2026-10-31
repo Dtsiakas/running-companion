@@ -8,7 +8,9 @@ type Row = Record<string, unknown>;
 /**
  * "What works for you": comparisons between two kinds of days in your own history, each with a statistical test.
  *
- * - effect: a difference big enough to matter (Cohen's d ≥ 0.25) and unlikely to be chance (p < 0.05)
+ * - effect: a difference big enough to matter (Cohen's d ≥ 0.25) and unlikely to be chance. "Unlikely" holds across
+ *   all the comparisons together: two dozen tests at p < 0.05 would turn up one fluke on average, so p-values are
+ *   adjusted for that (Benjamini–Hochberg, a false discovery rate of 5%) before anything is called an effect
  * - no_effect: enough days on both sides, and no clear difference: also worth knowing
  * - not_enough: too few days on one side yet
  *
@@ -23,6 +25,10 @@ export interface PatternResult {
   a: { label: string; n: number; mean: number | null };
   b: { label: string; n: number; mean: number | null };
   p: number | null;
+  /** p adjusted for the number of comparisons made (Benjamini–Hochberg); what decides `effect`. */
+  q: number | null;
+  /** Cohen's d: the size of the difference in standard deviations. */
+  d: number | null;
 }
 
 export interface Pattern {
@@ -175,6 +181,7 @@ export function getPatterns(db: DatabaseSync, today: string, i18n: I18n = ENGLIS
 
   patterns.push(eveningRuns(db, today, byDate, evaluate, t));
   patterns.push(...runPatterns(db, today, byDate, i18n));
+  adjustForComparisons(patterns, t);
 
   const order = { effect: 0, no_effect: 1, not_enough: 2 };
   return patterns.filter((p) => p.results.length > 0).sort((a, b) => order[a.status] - order[b.status]);
@@ -261,7 +268,7 @@ function result(outcome: Outcome, aLabel: string, a: number[], bLabel: string, b
   const display = (m: number | null) => (m === null ? null : outcome.kind === 'percent' ? Math.round(Math.exp(m)) : Math.round(m * 1000) / 1000);
   const base = { outcome: t.outcome[outcome.label], a: { label: aLabel, n: a.length, mean: display(mean(a)) }, b: { label: bLabel, n: b.length, mean: display(mean(b)) } };
   if (a.length < minimum || b.length < minimum) {
-    return { ...base, status: 'not_enough', difference: t.needs(minimum, a.length, b.length), strength: null, p: null };
+    return { ...base, status: 'not_enough', difference: t.needs(minimum, a.length, b.length), strength: null, p: null, q: null, d: null };
   }
   const c = compare(a, b)!;
   const amount =
@@ -274,11 +281,34 @@ function result(outcome: Outcome, aLabel: string, a: number[], bLabel: string, b
           : t.points(Math.round(Math.abs(c.difference)));
   const stated = c.difference > 0 ? t.higher(amount) : t.lower(amount);
   if (c.p < 0.05 && Math.abs(c.d) >= 0.25) {
-    return { ...base, status: 'effect', difference: stated, strength: c.p < 0.01 && Math.abs(c.d) >= 0.4 ? 'strong' : 'moderate', p: c.p };
+    return { ...base, status: 'effect', difference: stated, strength: c.p < 0.01 && Math.abs(c.d) >= 0.4 ? 'strong' : 'moderate', p: c.p, q: c.p, d: Number.isFinite(c.d) ? c.d : null };
   }
   // Real but tiny (many days make even small differences detectable) is different from no difference at all.
   const difference = c.p < 0.05 ? t.tiny(stated) : t.noDifference;
-  return { ...base, status: 'no_effect', difference, strength: null, p: c.p };
+  return { ...base, status: 'no_effect', difference, strength: null, p: c.p, q: c.p, d: Number.isFinite(c.d) ? c.d : null };
+}
+
+/**
+ * Benjamini–Hochberg over every comparison made: each p-value becomes a q-value, and only q < 0.05 counts. A result
+ * that passed on its own but not among all the others says so, rather than being reported as a finding.
+ */
+export function adjustForComparisons(patterns: Pattern[], t: I18n['m']['patterns']): void {
+  const tested = patterns.flatMap((pattern) => pattern.results).filter((r) => r.p !== null);
+  const sorted = [...tested].sort((a, b) => a.p! - b.p!);
+  let running = 1;
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    running = Math.min(running, (sorted[i]!.p! * sorted.length) / (i + 1));
+    sorted[i]!.q = running;
+  }
+  for (const r of tested) {
+    if (r.status !== 'effect') continue;
+    if (r.q! >= 0.05) {
+      r.status = 'no_effect';
+      r.strength = null;
+      r.difference = t.couldBeChance(r.difference);
+    } else if (r.q! >= 0.01) r.strength = 'moderate';
+  }
+  for (const pattern of patterns) pattern.status = overall(pattern.results);
 }
 
 function overall(results: PatternResult[]): PatternResult['status'] {

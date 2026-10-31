@@ -29,6 +29,7 @@ export const patterns = define(
     lower: (amount: string) => `${amount} lower`,
     tiny: (difference: string) => `only ${difference}: real, but too small to matter`,
     noDifference: 'no clear difference',
+    couldBeChance: (difference: string) => `${difference}, but among this many comparisons that could still be chance`,
     needs: (min: number, a: number, b: number) => `needs at least ${min} days of each (now ${a} and ${b})`,
     points: (n: number) => `${n} points`,
     bedtime: {
@@ -105,6 +106,7 @@ export const patterns = define(
     lower: (amount: string) => `${amount} χαμηλότερα`,
     tiny: (difference: string) => `μόνο ${difference}: πραγματικό, αλλά πολύ μικρό για να μετράει`,
     noDifference: 'καμία σαφής διαφορά',
+    couldBeChance: (difference: string) => `${difference}, αλλά ανάμεσα σε τόσες συγκρίσεις μπορεί να είναι και τύχη`,
     needs: (min: number, a: number, b: number) => `χρειάζονται τουλάχιστον ${min} μέρες από το καθένα (τώρα ${a} και ${b})`,
     points: (n: number) => `${n} μονάδες`,
     bedtime: {

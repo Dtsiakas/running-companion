@@ -18,6 +18,9 @@ set up or configured, and its notes say what to do.
 
 ### Changed
 
+- "What works for you" corrects for the number of comparisons (Benjamini–Hochberg). It runs about two dozen tests, so
+  at p < 0.05 one fluke was expected; a result that only passed on its own now says it could still be chance. Claude
+  gets the raw and adjusted p-values and the effect size.
 - Claude's SQL queries run in a separate process with a 15-second limit, so a heavy or runaway query can't freeze the
   dashboard and API.
 - Accessibility: every page passes an axe audit in both themes, both languages and at phone width (contrast of

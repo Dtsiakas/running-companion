@@ -88,3 +88,19 @@ test('patterns leave out outcomes a watch never records', () => {
   assert.ok(outcomes.length > 0);
   assert.ok(!outcomes.some((o) => /HRV|recharge/i.test(o)), outcomes.join(', '));
 });
+
+test('one result at p = 0.04 among twenty comparisons is not called a finding', async () => {
+  const { adjustForComparisons } = await import('../src/patterns.ts');
+  const { ENGLISH } = await import('@companion/i18n');
+  const make = (p: number) => ({ outcome: 'x', status: p < 0.05 ? ('effect' as const) : ('no_effect' as const), difference: '5% lower', strength: p < 0.05 ? ('moderate' as const) : null, a: { label: 'a', n: 30, mean: 1 }, b: { label: 'b', n: 30, mean: 1 }, p, q: p, d: 0.5 });
+  const lone = [{ id: 'one', title: '', comparison: '', caveat: null, status: 'effect' as const, results: [make(0.04)] }, { id: 'rest', title: '', comparison: '', caveat: null, status: 'no_effect' as const, results: Array.from({ length: 19 }, () => make(0.5)) }];
+  adjustForComparisons(lone, ENGLISH.m.patterns);
+  assert.equal(lone[0]!.status, 'no_effect');
+  assert.match(lone[0]!.results[0]!.difference, /could still be chance/);
+  assert.equal(lone[0]!.results[0]!.q, 0.5); // 0.04 × 20 = 0.8, capped by the larger p-values' 0.5
+
+  const clear = [{ id: 'one', title: '', comparison: '', caveat: null, status: 'effect' as const, results: [make(0.0001), make(0.5)] }];
+  adjustForComparisons(clear, ENGLISH.m.patterns);
+  assert.equal(clear[0]!.status, 'effect');
+  assert.equal(clear[0]!.results[0]!.q, 0.0002);
+});

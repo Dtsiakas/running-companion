@@ -178,7 +178,7 @@ Thresholds come from the latest Garmin profile and are applied to all history so
 | `get_run_forecast` | Today's and tomorrow's hourly weather where you usually run, the heat cost of each hour, the best window and the hour to avoid |
 | `get_progress` | Totals, milestones, next milestones, records, streaks, personal bests; a year in review; running form by month |
 | `get_body_report` | Weight trend against the goal and whether the pace is healthy, composition, energy by day type, your sweat rate, daily protein and carbohydrate ranges |
-| `get_insights` | Today's signals and your personal patterns, with sample sizes and p-values |
+| `get_insights` | Today's signals and your personal patterns, with sample sizes, p-values adjusted for the number of comparisons, and effect sizes |
 | `sync_garmin` | Pulls new data from Garmin and recomputes metrics |
 
 Every tool reads through a read-only database connection (the weather forecast cache is the one write), so no tool
@@ -227,7 +227,8 @@ It gets its own icon and window, and the screens you opened recently stay readab
   long-run distance, easy runs drifting above the first threshold, intensity balance, sleep debt, irregular bedtimes,
   stress streaks, and strong recovery.
 - **What works for you** (on Trends): two years of your own data compared with a statistical test (Welch's t-test, effect
-  size): late bedtimes, short nights, evening runs, hard sessions, stressful days, running after a short night, on a low
+  size, and a Benjamini–Hochberg correction across all comparisons, so one fluke in two dozen tests isn't reported as a
+  finding): late bedtimes, short nights, evening runs, hard sessions, stressful days, running after a short night, on a low
   Body Battery or in the heat. Findings, "no clear effect" and "waiting for data" are kept apart, each with a caveat.
 - **Ask Claude**: buttons on Today, Week and each run open Claude with a ready request (train today?, health check,
   plan my week, fuel my long run, weekly review, run debrief). Claude works on your subscription through the connector.

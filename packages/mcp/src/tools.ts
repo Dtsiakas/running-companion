@@ -171,7 +171,7 @@ export function createMcpServer({ db, writeDb, sync, query = async (sql) => runQ
     {
       title: 'Insights',
       description:
-        "Signals for a day (warnings such as possible illness, overreaching, load spikes; watch items such as easy-run drift, sleep debt, irregular bedtimes, stress streaks; positives) and the user's personal patterns: comparisons from two years of their own data (late bedtimes, short nights, hard sessions, stressful days, evening runs, running after short nights or in heat), each with sample sizes, p-values and a caveat. Patterns are associations, not proof of cause; say so. Pass a date (defaults to the latest day with data).",
+        "Signals for a day (warnings such as possible illness, overreaching, load spikes; watch items such as easy-run drift, sleep debt, irregular bedtimes, stress streaks; positives) and the user's personal patterns: comparisons from two years of their own data (late bedtimes, short nights, hard sessions, stressful days, evening runs, running after short nights or in heat), each with sample sizes, p-values (p raw, q adjusted for the number of comparisons: q decides what counts as an effect), effect size d and a caveat. Patterns are associations, not proof of cause; say so. Pass a date (defaults to the latest day with data).",
       inputSchema: { date: date.optional(), include_patterns: z.boolean().default(true) },
       annotations: READ_ONLY,
     },
