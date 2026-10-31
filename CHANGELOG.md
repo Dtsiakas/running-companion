@@ -36,6 +36,8 @@ set up or configured, and its notes say what to do.
 
 ### Fixed
 
+- The Compose files in 0.1.0 were rejected by `docker compose` (the optional `.env` was written in a form it doesn't
+  accept). CI now validates them.
 - Login redirects refuse targets with control characters or backslashes, which browsers can turn into another site.
 - A badly encoded session cookie caused a server error on every request instead of a login prompt.
 - The weekly report tool for Claude used the UTC date as "today", a day behind after midnight in Europe.
