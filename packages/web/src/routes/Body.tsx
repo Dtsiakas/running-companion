@@ -8,6 +8,7 @@ import { todayLocal } from '../lib/dates.ts';
 import { f, m } from '../lib/i18n.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Body.module.css';
+import { scrollRegion } from '../lib/a11y.ts';
 
 const MARK = { good: '✓', concern: '▲', neutral: '' } as const;
 const kcal = (value: number) => `${f.number(value)} kcal`;
@@ -169,7 +170,7 @@ export function Body() {
               </dd>
             </div>
           </dl>
-          <div className={blocks.tableWrap}>
+          <div className={blocks.tableWrap} {...scrollRegion(m.body.whatToEat)}>
             <table className={blocks.table}>
               <thead>
                 <tr>

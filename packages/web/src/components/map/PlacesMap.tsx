@@ -34,5 +34,5 @@ export default function PlacesMap({ places, config }: { places: PlacesResponse; 
     };
   }, [places, colors, navigate, config]);
 
-  return <div ref={element} className={`${styles.map} ${styles.tall}`} role="img" aria-label={m.charts.map.places} />;
+  return <div ref={element} className={`${styles.map} ${styles.tall}`} role="region" aria-label={m.charts.map.places} />;
 }

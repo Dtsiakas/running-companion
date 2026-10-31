@@ -13,6 +13,7 @@ import { f, m } from '../lib/i18n.ts';
 import { progressRequests } from '../lib/prompts.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Progress.module.css';
+import { scrollRegion } from '../lib/a11y.ts';
 
 const FORM_ORDER: FormMeasure[] = ['cadence', 'gct', 'vertical_ratio', 'step_length', 'vertical_oscillation', 'power'];
 const monthName = (month: string) => f.monthYear(`${month}-15`);
@@ -146,7 +147,7 @@ function Bests({ bests }: { bests: ProgressData['bests'] }) {
   if (!bests.length) return null;
   return (
     <Section title={m.progress.bests}>
-      <div className={blocks.tableWrap}>
+      <div className={blocks.tableWrap} {...scrollRegion(m.progress.bests)}>
         <table className={blocks.table}>
           <thead>
             <tr>

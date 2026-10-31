@@ -16,6 +16,7 @@ import { paceGap, stripPace } from '../lib/format.ts';
 import { current, f, m } from '../lib/i18n.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Run.module.css';
+import { scrollRegion } from '../lib/a11y.ts';
 
 type Activity = ActivityResponse;
 
@@ -317,7 +318,7 @@ function Facts({ facts }: { facts: Fact[] }) {
 
 function PlannedVsActual({ steps }: { steps: NonNullable<Activity['executed_steps']> }) {
   return (
-    <div className={blocks.tableWrap}>
+    <div className={blocks.tableWrap} {...scrollRegion(m.run.plannedVsActual)}>
       <table className={blocks.table}>
         <thead>
           <tr>
@@ -364,7 +365,7 @@ function Laps({ laps }: { laps: Activity['laps'] }) {
   if (!laps.length) return <p className={blocks.empty}>{m.run.noLaps}</p>;
   const hasPower = laps.some((lap) => lap.avg_power_w !== null);
   return (
-    <div className={blocks.tableWrap}>
+    <div className={blocks.tableWrap} {...scrollRegion(m.run.laps)}>
       <table className={blocks.table}>
         <thead>
           <tr>

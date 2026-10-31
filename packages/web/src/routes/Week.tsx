@@ -13,6 +13,7 @@ import { ErrorState, Loading } from '../components/States.tsx';
 import { addDays, hoursMinutes, todayLocal, weekday, weekRange, weekStartOf } from '../lib/dates.ts';
 import { f, m } from '../lib/i18n.ts';
 import styles from '../styles/blocks.module.css';
+import { scrollRegion } from '../lib/a11y.ts';
 
 type Summary = NonNullable<WeekResponse['summary']>;
 
@@ -112,7 +113,7 @@ function DayTable({ week }: { week: WeekResponse }) {
   for (const run of week.runs) if (run.date) kmByDay.set(run.date, (kmByDay.get(run.date) ?? 0) + (run.distance_km ?? 0));
 
   return (
-    <div className={styles.tableWrap}>
+    <div className={styles.tableWrap} {...scrollRegion(m.week.dayByDay)}>
       <table className={styles.table}>
         <thead>
           <tr>
@@ -166,7 +167,9 @@ function Comparison({ summary, previous }: { summary: Summary; previous: WeekRes
     <table className={styles.table}>
       <thead>
         <tr>
-          <th scope="col" />
+          <th scope="col">
+            <span className="visually-hidden">{m.week.measure}</span>
+          </th>
           <th scope="col">{m.week.thisWeek}</th>
           <th scope="col">{m.week.lastWeek}</th>
         </tr>

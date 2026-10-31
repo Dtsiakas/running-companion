@@ -66,8 +66,21 @@
 }
 
 .new {
-  color: var(--good);
+  color: var(--ink);
   font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The green is a marker beside the words, not their colour: green text on this background is too faint to read. */
+.new::before {
+  content: '';
+  display: inline-block;
+  width: 0.5em;
+  height: 0.5em;
+  margin-right: 0.4em;
+  border-radius: 50%;
+  background: var(--good);
+  vertical-align: 0.1em;
 }
 
 .milestones {

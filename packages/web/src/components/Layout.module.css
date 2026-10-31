@@ -34,7 +34,8 @@
   letter-spacing: 0;
   padding: 2px var(--space-2);
   border-radius: 999px;
-  color: var(--accent);
+  /* A touch of ink in the blue: the plain accent on its own tint falls just short of 4.5:1 in the light theme. */
+  color: color-mix(in srgb, var(--accent) 75%, var(--ink));
   background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 

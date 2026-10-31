@@ -20,8 +20,9 @@ function layout(title: string, body: string, t: T, width = 380): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)} · Running Companion</title>
 <style>
-  :root { color-scheme: light dark; --bg: #f6f6f3; --card: #fff; --text: #1d1d1b; --muted: #6b6b66; --accent: #2f6f4f; --border: #ddddd6; --error: #a33; }
-  @media (prefers-color-scheme: dark) { :root { --bg: #151614; --card: #1e201d; --text: #ecece6; --muted: #9c9d95; --accent: #6fbf8f; --border: #33352f; --error: #e88; } }
+  /* The dashboard's colours (packages/web/src/styles/tokens.css), so signing in looks like the same app. */
+  :root { color-scheme: light dark; --bg: #eef1ef; --card: #fff; --text: #14212b; --muted: #44535d; --accent: #2463a6; --on-accent: #fff; --border: #d3dbd9; --error: #b3261e; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0e171d; --card: #15222a; --text: #e7edef; --muted: #aab7be; --accent: #7aaee8; --on-accent: #0e171d; --border: #233139; --error: #e66767; } }
   * { box-sizing: border-box; }
   body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
   main { width: 100%; max-width: ${width}px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 28px; }
@@ -30,7 +31,8 @@ function layout(title: string, body: string, t: T, width = 380): string {
   label { display: block; font-size: 14px; margin-bottom: 6px; }
   input[type=password], input[type=text], input[type=date] { width: 100%; padding: 10px 12px; font: inherit; color: inherit; background: transparent; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
   .actions { display: flex; gap: 8px; }
-  button { flex: 1; padding: 10px; font: inherit; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
+  button { flex: 1; padding: 10px; font: inherit; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent); cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   button.secondary { background: transparent; color: var(--text); border-color: var(--border); }
   .error { color: var(--error); margin-bottom: 16px; }
   h2 { font-size: 16px; margin: 24px 0 4px; }

@@ -12,6 +12,7 @@ import { sleepRequests } from '../lib/prompts.ts';
 import { hoursText, spanText } from '../lib/sleep.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Sleep.module.css';
+import { scrollRegion } from '../lib/a11y.ts';
 
 /** The patterns that are about sleep and recharge, from "What works for you". */
 const SLEEP_PATTERNS = new Set(['bedtime', 'sleep-length', 'evening-runs', 'stress']);
@@ -250,7 +251,7 @@ function Sources({ sources }: { sources: NonNullable<StressReport['sources']> })
   ];
   return (
     <Section title={m.sleep.sources.title}>
-      <div className={blocks.tableWrap}>
+      <div className={blocks.tableWrap} {...scrollRegion(m.sleep.sources.title)}>
         <table className={blocks.table}>
           <thead>
             <tr>
