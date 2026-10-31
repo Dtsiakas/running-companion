@@ -50,3 +50,7 @@ jobs:
             VERSION=${{ steps.meta.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # A software bill of materials and build provenance travel with the image, for anyone checking what's in it
+          # and that it was built here.
+          sbom: true
+          provenance: mode=max
