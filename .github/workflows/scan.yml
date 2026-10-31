@@ -25,7 +25,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/running-companion:edge
+          image-ref: ghcr.io/dtsiakas/running-companion:edge  # registry paths are lower case
           format: sarif
           output: trivy.sarif
           severity: HIGH,CRITICAL
