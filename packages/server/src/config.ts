@@ -20,6 +20,8 @@ export interface ServerConfig {
    * Anyone who can reach the server sees everything, so use it only for data that isn't anyone's.
    */
   demo: boolean;
+  /** How many daily automatic backups to keep (BACKUP_KEEP); 0 turns them off. */
+  backupKeep: number;
   /** Optional CARTO basemaps key (free for personal use): nicer light and dark maps. Without it, OpenStreetMap tiles. */
   cartoKey: string | null;
 }
@@ -34,12 +36,16 @@ export function loadServerConfig(env: NodeJS.ProcessEnv = process.env): ServerCo
   const syncHours = env.SYNC_HOURS ? env.SYNC_HOURS.split(',').map((hour) => Number(hour.trim())) : DEFAULT_SYNC_HOURS;
   if (syncHours.some((hour) => !Number.isInteger(hour) || hour < 0 || hour > 23)) throw new Error(`SYNC_HOURS must be hours 0–23, got "${env.SYNC_HOURS}"`);
 
+  const backupKeep = Number(env.BACKUP_KEEP ?? 7);
+  if (!Number.isInteger(backupKeep) || backupKeep < 0) throw new Error(`BACKUP_KEEP must be a whole number (0 turns automatic backups off), got "${env.BACKUP_KEEP}"`);
+
   return {
     publicUrl,
     port,
     host: env.HOST ?? '127.0.0.1',
     trustProxy: env.TRUST_PROXY === 'true',
     syncHours,
+    backupKeep,
     cartoKey: env.CARTO_API_KEY?.trim() || null,
     demo: env.DEMO_MODE === 'true',
   };

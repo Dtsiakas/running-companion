@@ -29,7 +29,7 @@ before(async () => {
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   base = `http://localhost:${(server.address() as AddressInfo).port}`;
   built = createApp({
-    config: { publicUrl: new URL(base), port: 0, host: '127.0.0.1', trustProxy: false, syncHours: [6], cartoKey: null, demo: false },
+    config: { publicUrl: new URL(base), port: 0, host: '127.0.0.1', trustProxy: false, syncHours: [6], backupKeep: 0, cartoKey: null, demo: false },
     settings,
     checkGarminKey: async (key) => (key === 'good-key' || key === 'newer-key' ? 'ok' : 'rejected'),
     readDb,
@@ -149,7 +149,7 @@ test('demo mode: no setup, no login, and settings are read-only', async () => {
   await new Promise<void>((resolve) => demoServer.listen(0, '127.0.0.1', resolve));
   const demoBase = `http://localhost:${(demoServer.address() as AddressInfo).port}`;
   const demo = createApp({
-    config: { publicUrl: new URL(demoBase), port: 0, host: '127.0.0.1', trustProxy: false, syncHours: [6], cartoKey: null, demo: true },
+    config: { publicUrl: new URL(demoBase), port: 0, host: '127.0.0.1', trustProxy: false, syncHours: [6], backupKeep: 0, cartoKey: null, demo: true },
     settings: memorySettings({ sessionSecret: 'y'.repeat(40) }),
     checkGarminKey: async () => 'ok',
     readDb,

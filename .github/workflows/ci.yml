@@ -72,6 +72,11 @@ jobs:
           for i in $(seq 1 120); do curl -fsS http://localhost:8788/healthz >/dev/null 2>&1 && break; sleep 1; done
           curl -fsS http://localhost:8788/api/today | grep -q '"date"'
           curl -fsS 'http://localhost:8788/api/activities?lang=el' >/dev/null
+      - name: Backup from the container works
+        run: |
+          docker exec -e COMPANION_DATA_DIR=/data/demo/full demo node --disable-warning=ExperimentalWarning packages/cli/src/backup.ts --out - > backup.tar.gz
+          tar -tzf backup.tar.gz | tee /dev/stderr | grep -qx companion.db
+          tar -xzOf backup.tar.gz manifest.json
       - name: Logs
         if: always()
         run: |

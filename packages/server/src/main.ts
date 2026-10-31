@@ -4,9 +4,9 @@
  *   npm start
  */
 import { join } from 'node:path';
-import { DB_FILE, loadEnv, ROOT, settings as settingsStore } from '@companion/config';
+import { APP_VERSION, BACKUP_DIR, DATA_DIR, DB_FILE, loadEnv, ROOT, SETTINGS_FILE, settings as settingsStore } from '@companion/config';
 import { openDatabase } from '@companion/db';
-import { isSyncRunning, openReadOnly, prepareDatabase, syncNow } from '@companion/jobs';
+import { automaticBackup, isSyncRunning, openReadOnly, prepareDatabase, syncNow } from '@companion/jobs';
 import { createApp } from './app.ts';
 import { loadServerConfig, prepareSettings } from './config.ts';
 import { checkGarminKey } from './garmin-key.ts';
@@ -25,11 +25,24 @@ const sync = config.demo ? () => Promise.reject(new Error('This is a demo with g
 
 const { app, oauth, needsSetup, setupCode } = createApp({ config, settings, checkGarminKey, readDb, writeDb, sync, isSyncRunning, webRoot: join(ROOT, 'packages', 'web', 'dist') });
 
+// The day's first scheduled run (or the start, when the app was off) also makes the daily backup. Kept apart from the
+// sync: a failed backup is logged and never stops a sync, and the other way round.
+const dailyBackup = async () => {
+  if (config.demo || needsSetup()) return;
+  try {
+    const made = await automaticBackup(BACKUP_DIR, { dataDir: DATA_DIR, dbFile: DB_FILE, settingsFile: SETTINGS_FILE }, { version: APP_VERSION, keep: config.backupKeep, today: new Date().toLocaleDateString('en-CA') });
+    if (made) log(`Backup saved: ${made.file} (${(made.bytes / 1024 / 1024).toFixed(1)} MB)`);
+  } catch (error) {
+    log(`Backup failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+};
+
 const scheduler = startScheduler({
   hours: config.syncHours,
   run: async () => {
     if (!config.demo && !needsSetup()) await sync();
     oauth.pruneExpired();
+    await dailyBackup();
   },
   log,
 });
@@ -47,6 +60,7 @@ const server = app.listen(config.port, config.host, () => {
     log(`  (setup code: ${setupCode})`);
     return;
   }
+  void dailyBackup();
   // `npm run up` sets this: when the app only runs now and then, the scheduled hours may all have passed while it was off.
   if (process.env.SYNC_ON_START === 'true') {
     log('Syncing with Garmin (on start)');

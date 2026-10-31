@@ -18,6 +18,8 @@
     "dev:web": "npm run dev -w @companion/web",
     "build": "npm run build -w @companion/web",
     "sync": "node packages/cli/src/sync.ts",
+    "backup": "node --disable-warning=ExperimentalWarning packages/cli/src/backup.ts",
+    "restore": "node --disable-warning=ExperimentalWarning packages/cli/src/restore.ts",
     "metrics": "node packages/cli/src/metrics.ts",
     "discover": "node packages/cli/src/discover.ts",
     "auth:check": "node packages/cli/src/auth-check.ts",

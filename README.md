@@ -40,6 +40,7 @@ packages/
 data/              your data (gitignored)
   companion.db       the database
   settings.json      password hash, session secret, Garmin key (owner-only; written by the setup page and Settings)
+  backups/         daily automatic backups, and npm run backup's
   fit/             original FIT file of every activity
 .cache/            bearer token cache (gitignored)
 ```
@@ -108,6 +109,8 @@ takes two).
 | `npm run sync -- --only sleep,hrv` | Sync some streams only: `activities`, `daily_wellness`, `sleep`, `hrv`, `weigh_ins` |
 | `npm run sync -- --max-chunks 5` | Limit backfill per stream in this run; the next run continues |
 | `npm run sync -- --delay 500` | Milliseconds between API requests (default 250) |
+| `npm run backup` | Backs up the database, settings and FIT files into `data/backups/` (see [Backups](#backups)) |
+| `npm run restore -- <file>` | Restores a backup, with the app stopped; what was there moves aside, nothing is deleted |
 | `npm run metrics` | Recomputes metrics (sync already does this at the end) |
 | `npm run metrics -- --full` | Recomputes every activity, e.g. after changing a formula |
 | `npm run mcp:install` | Registers the MCP server with Claude Desktop (backs up the existing config) |
@@ -247,6 +250,33 @@ Data requests go to the network first and fall back to the last answer only when
 
 Types run end to end: the dashboard imports the response types of `packages/queries` (type-only, erased at build), so a change
 in what the server returns fails `npm run typecheck` instead of breaking a screen.
+
+## Backups
+
+The app backs itself up once a day: the first scheduled sync of the day (or the start, if it was off) writes
+`data/backups/running-companion-auto-<date>.tar.gz` with the database and settings, and keeps the newest 7
+(`BACKUP_KEEP`; 0 turns it off). Those leave out the original FIT files, which are large and whose contents are all in the
+database. `npm run backup` makes a full one by hand, FIT files included, and those are never removed automatically.
+
+A backup is an ordinary `.tar.gz` (`tar -tzf` lists it): a `manifest.json` saying which version made it, a consistent
+snapshot of the database (taken safely while the app runs), `settings.json` and the FIT files. **It holds your password
+hash and Garmin key**, so it's written owner-only. A backup on the same disk doesn't survive that disk: copy them
+somewhere else now and then.
+
+To restore, stop the app (`npm run down`), then `npm run restore -- data/backups/<file>`. The current database, settings
+and FIT files move into `data/before-restore-<time>/` first, so nothing is lost if it was the wrong file. A backup from an
+older version is fine (the app updates the database when it starts); one from a newer version is refused until you
+update. Claude's connection is in the database too, so it comes back as it was when the backup was made; if Claude was
+connected after that, connect it again.
+
+In Docker, the automatic backups are in the volume. By hand:
+
+```sh
+docker exec companion node packages/cli/src/backup.ts --out - > companion-backup.tar.gz
+docker compose stop app
+docker compose run --rm -T app node packages/cli/src/restore.ts - < companion-backup.tar.gz
+docker compose start app
+```
 
 ## Docker
 

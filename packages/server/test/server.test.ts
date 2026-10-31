@@ -41,7 +41,7 @@ before(async () => {
   base = `http://localhost:${(server.address() as AddressInfo).port}`;
 
   const { app } = createApp({
-    config: { publicUrl: new URL(base), port: 0, host: '127.0.0.1', trustProxy: false, syncHours: [6], cartoKey: null, demo: false },
+    config: { publicUrl: new URL(base), port: 0, host: '127.0.0.1', trustProxy: false, syncHours: [6], backupKeep: 0, cartoKey: null, demo: false },
     settings: memorySettings({ passwordHash, sessionSecret: 'x'.repeat(40) }),
     checkGarminKey: async () => 'ok',
     readDb,

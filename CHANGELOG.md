@@ -6,6 +6,16 @@ set up or configured, and its notes say what to do.
 
 ## [Unreleased]
 
+### Added
+
+- Backups: a daily automatic one (database and settings, the newest 7 kept, `BACKUP_KEEP`), `npm run backup` for a full
+  one with the FIT files, and `npm run restore`, which moves what was there aside instead of deleting it. Both work from
+  Docker through standard input and output.
+
+### Changed
+
+- TypeScript 7, and newer GitHub Actions for the image builds.
+
 ## [0.1.0] - 2026-10-31
 
 The first release.

@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileSettings, moveSecretsFromEnvFile, settingsFileIn, type SettingsStore } from './settings.ts';
 
@@ -13,6 +13,10 @@ export const ROOT = resolve(import.meta.dirname, '..', '..', '..');
 export const DATA_DIR = process.env.COMPANION_DATA_DIR ? resolve(process.env.COMPANION_DATA_DIR) : join(ROOT, 'data');
 export const DB_FILE = join(DATA_DIR, 'companion.db');
 export const SETTINGS_FILE = settingsFileIn(DATA_DIR);
+/** Where `npm run backup` and the daily automatic backups go, unless BACKUP_DIR says otherwise. */
+export const BACKUP_DIR = process.env.BACKUP_DIR ? resolve(process.env.BACKUP_DIR) : join(DATA_DIR, 'backups');
+/** This release (root package.json). */
+export const APP_VERSION = (JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string }).version;
 export const TOKEN_CACHE_FILE = process.env.COMPANION_DATA_DIR ? join(DATA_DIR, '.cache', 'garmin-token.json') : join(ROOT, '.cache', 'garmin-token.json');
 
 /**

@@ -4,6 +4,18 @@ import type { DatabaseSync } from 'node:sqlite';
 
 const MIGRATIONS_DIR = join(import.meta.dirname, '..', 'migrations');
 
+/** The newest schema version this code knows (the highest migration number). */
+export function latestSchemaVersion(dir: string = MIGRATIONS_DIR): number {
+  return Math.max(0, ...readdirSync(dir).filter((file) => /^\d+_.+\.sql$/.test(file)).map((file) => Number.parseInt(file, 10)));
+}
+
+/** The schema version a database is at (0 for an empty one). */
+export function schemaVersion(db: DatabaseSync): number {
+  const table = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'schema_migrations'").get();
+  if (!table) return 0;
+  return Number(db.prepare('SELECT COALESCE(MAX(version), 0) AS v FROM schema_migrations').get()?.v ?? 0);
+}
+
 /**
  * Applies every migrations/NNN_name.sql file not yet recorded in schema_migrations, in order.
  * Each file runs in its own transaction, so a failing migration leaves the schema unchanged.

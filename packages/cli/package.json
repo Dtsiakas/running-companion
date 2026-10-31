@@ -9,6 +9,7 @@
     "@companion/db": "*",
     "@companion/demo": "*",
     "@companion/garmin-client": "*",
+    "@companion/jobs": "*",
     "@companion/metrics": "*",
     "@companion/sync": "*"
   }
