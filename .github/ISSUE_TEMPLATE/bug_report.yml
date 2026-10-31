@@ -1,0 +1,55 @@
+name: Something isn't working
+description: A bug, a wrong number, or text that doesn't make sense.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting it. Please don't paste your Garmin key, password hash, settings.json or a backup here: this page is public.
+        Found a security problem? Don't open an issue: see [SECURITY.md](https://github.com/Dtsiakas/running-companion/blob/main/SECURITY.md).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+      description: Screenshots help. Blur anything you'd rather keep private.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen
+      description: Can you make it happen in the demo (npm run demo)? Then it's much easier to fix.
+      placeholder: |
+        1. Open Sleep
+        2. …
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Settings → About, or /healthz.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: running
+    attributes:
+      label: How you run it
+      options:
+        - npm (npm start or npm run up)
+        - Docker
+        - The demo
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: watch
+    attributes:
+      label: Watch and accessories
+      description: Which data the app has depends on them.
+      placeholder: Forerunner 965, HRM-Pro Plus, Index S2 scale
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server log
+      description: The lines around the problem (npm start's output, or docker logs). Check them for anything private first.
+      render: text

@@ -1,0 +1,20 @@
+name: An idea
+description: Something the app could show, explain or do.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The app works only from what the watch records, with nothing to type in, and leaves coaching, races and plans to Garmin Connect. Ideas that fit that go furthest.
+  - type: textarea
+    id: need
+    attributes:
+      label: What you'd like to know or do
+      description: The question you're trying to answer matters more than a particular screen or chart.
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: Which data it would use
+      description: For example HRV, sleep stages, running dynamics, weigh-ins. Mention any accessory it needs.

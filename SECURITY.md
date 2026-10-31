@@ -1,25 +1,33 @@
 # Security
 
-Running Companion holds health data: sleep, heart rate, HRV, weight and the routes you run. Security reports are
-taken seriously.
+Running Companion holds health data and a Garmin key, and it's meant to be reachable from the internet. Security
+problems matter, and reports are welcome.
 
-## Reporting a vulnerability
+## Reporting a problem
 
-Please report vulnerabilities privately through GitHub: on the repository page, open **Security** → **Report a
-vulnerability**. Don't open a public issue for a security problem.
+Please don't open a public issue. Report it privately through
+[GitHub's security advisories](https://github.com/Dtsiakas/running-companion/security/advisories/new), with what you
+found, how to reproduce it, and what someone could do with it. You'll get an answer within a week. Once it's fixed
+and released, the advisory is published, with credit to you unless you'd rather not.
 
-Include what you found, how to reproduce it, and what an attacker could do with it. You'll get an answer within a week.
+## Supported versions
+
+Only the latest release gets fixes. Updating is `docker compose pull && docker compose up -d`, or `git pull` and a
+restart (`npm run up` does both).
 
 ## What's in scope
 
-- Getting into someone's instance without their password, or past the sign-in that protects the AI connector (`/mcp`).
-- Reading or changing data through the dashboard API or the connector tools in ways they shouldn't allow.
-- The Garmin API key or session secrets leaking (to logs, the browser, or the network).
+The server and dashboard in this repository: login and sessions, the setup page, the OAuth flow and `/mcp` endpoint
+for Claude, the API, backups, and the Docker image and Compose files.
 
-## How the app is meant to be run
+Not in scope: Garmin's API and Claude themselves, and setups that remove the protections the README describes (an
+exposed `HOST=0.0.0.0` without a proxy, a shared `.env`, demo mode on real data).
 
-Each person runs their own copy for their own data. The server listens on `127.0.0.1` and should be reached only
-through HTTPS (Tailscale Funnel or a reverse proxy). The login password and the session secret protect everything;
-both live in `data/settings.json` (readable by its owner only, with the Garmin key), so keep the data folder private, and
-use a long password. Until the setup page is filled in, it asks for a code printed in the server's log, so whoever
-finds a fresh install's address first can't claim it.
+## How the app protects your data
+
+- Nothing is reachable before setup except the setup page, and setup needs a one-time code printed in the server's log.
+- Passwords are stored as scrypt hashes. Login and setup are rate-limited.
+- The Garmin key is never sent to the browser. Settings and backups are written readable by their owner only.
+- Claude connects through OAuth with its own tokens. Its database access is read-only; the one thing it can start is a
+  Garmin sync.
+- The Docker image runs as an unprivileged user and writes only to its data volume.

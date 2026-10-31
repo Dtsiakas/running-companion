@@ -5,6 +5,18 @@ Everything runs locally: the API key and the database stay on this machine. The 
 It runs only on what the watch records: there is nothing to type in. Races, race predictions and training plans stay in
 Garmin Connect, which remains the coach.
 
+![Today: a train-or-rest status with its reasons, things worth knowing, recovery and training](docs/screenshots/today.png)
+
+<p align="center"><img src="docs/screenshots/phone.png" width="560" alt="Today on a phone, in the dark theme and in Greek"></p>
+
+| Week | Trends |
+|---|---|
+| ![The week in short, with intensity and distance per week](docs/screenshots/week.png) | ![Pace at a reference heart rate over a year, and personal patterns](docs/screenshots/trends.png) |
+| **Sleep** | **Progress** |
+| ![Tonight's bedtime and sleep against Garmin's need](docs/screenshots/sleep.png) | ![Milestones, totals and personal bests](docs/screenshots/progress.png) |
+
+All screenshots are from the [demo](#demo), with generated data.
+
 ## Stack
 
 | Part | Tech | Status |
