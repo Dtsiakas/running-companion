@@ -62,7 +62,7 @@ test('backup and restore: a round trip brings back the database, settings and FI
   const source = dataFolder();
   const file = join(source.dataDir, 'backups', 'b.tar.gz');
   const summary = await writeBackupFile(file, source, { version: '9.9.9' });
-  assert.equal(statSync(file).mode & 0o777, 0o600);
+  if (process.platform !== 'win32') assert.equal(statSync(file).mode & 0o777, 0o600); // Windows has no Unix modes
   assert.equal(summary.manifest.fitFiles, 1);
   assert.equal(summary.manifest.schema, latestSchemaVersion());
   assert.deepEqual(execFileSync('tar', ['-tzf', file], { encoding: 'utf8' }).trim().split('\n'), ['manifest.json', 'companion.db', 'settings.json', 'fit/123.fit']);
@@ -83,7 +83,7 @@ test('backup and restore: a round trip brings back the database, settings and FI
   assert.deepEqual(probe(target.dbFile), ['first']);
   assert.deepEqual(JSON.parse(readFileSync(target.settingsFile, 'utf8')), { passwordHash: 'hash', garminKey: 'key' });
   assert.deepEqual([...readFileSync(join(target.dataDir, 'fit', '123.fit'))], [1, 2, 3]);
-  assert.equal(statSync(target.settingsFile).mode & 0o777, 0o600);
+  if (process.platform !== 'win32') assert.equal(statSync(target.settingsFile).mode & 0o777, 0o600);
   assert.ok(movedTo?.endsWith('before-restore-2026-10-31T18-30-00'));
   assert.deepEqual(probe(join(movedTo!, 'companion.db')), ['target']);
   assert.ok(existsSync(join(movedTo!, 'garmin-token.json')));
