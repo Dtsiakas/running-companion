@@ -31,7 +31,9 @@ services:
     init: true
     # Share the Tailscale container's network: Funnel reaches the app on 127.0.0.1, and nothing else can.
     network_mode: service:tailscale
-    env_file: { path: .env, required: false }
+    env_file:
+      - path: .env
+        required: false
     environment:
       PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL in .env, e.g. https://companion.your-tailnet.ts.net}
       HOST: 127.0.0.1

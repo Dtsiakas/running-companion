@@ -11,7 +11,9 @@ services:
     image: ghcr.io/dtsiakas/running-companion:${COMPANION_TAG:-latest}
     restart: unless-stopped
     init: true
-    env_file: { path: .env, required: false }
+    env_file:
+      - path: .env
+        required: false
     environment:
       PUBLIC_URL: https://${DOMAIN:?Set DOMAIN in .env}
       # Caddy sits in front: trust its X-Forwarded-* headers for client addresses and HTTPS.

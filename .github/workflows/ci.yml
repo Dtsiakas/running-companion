@@ -32,6 +32,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Compose files are valid
+        working-directory: deploy/docker
+        env:
+          DOMAIN: running.example.com
+          TS_AUTHKEY: tskey-auth-example
+          PUBLIC_URL: https://companion.example.ts.net
+        run: for file in compose*.yaml; do docker compose -f "$file" config --quiet && echo "$file ok"; done
       - uses: docker/setup-buildx-action@v4
       - uses: docker/build-push-action@v7
         with:

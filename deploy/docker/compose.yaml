@@ -9,7 +9,9 @@ services:
     image: ghcr.io/dtsiakas/running-companion:${COMPANION_TAG:-latest}
     restart: unless-stopped
     init: true
-    env_file: { path: .env, required: false }
+    env_file:
+      - path: .env
+        required: false
     environment:
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8787}
       TZ: ${TZ:-UTC}
