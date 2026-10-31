@@ -17,6 +17,22 @@ Garmin Connect, which remains the coach.
 
 All screenshots are from the [demo](#demo), with generated data.
 
+## Quick start
+
+**Look around first**, on made-up data (no Garmin account, nothing of yours):
+
+```sh
+docker run --rm -p 127.0.0.1:8788:8788 ghcr.io/dtsiakas/running-companion \
+  node --disable-warning=ExperimentalWarning packages/cli/src/demo.ts --port 8788
+```
+
+Then open http://localhost:8788. Without Docker: `npm ci && npm run build && npm run demo`.
+
+**Run your own** with [Docker](#docker) (the simplest, with HTTPS through Tailscale or Caddy) or [Node](#setup). On first
+start the log prints a setup link: choose a password and paste a
+[Garmin Personal API key](https://connect.garmin.com/app/settings/personalApiToken). To ask Claude about your data, add
+the connector address from Settings → Claude as a custom connector in Claude.
+
 ## Stack
 
 | Part | Tech |
