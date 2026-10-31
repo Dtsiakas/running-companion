@@ -1,4 +1,4 @@
-import { locale } from '../lib/i18n.ts';
+import { locale, m } from '../lib/i18n.ts';
 
 /** Thrown for any non-2xx answer except 401 (which redirects to the login page instead). */
 export class ApiError extends Error {
@@ -32,7 +32,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   if (response.status === 401) goToLogin();
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new ApiError(response.status, body?.error ?? `Request failed (${response.status})`);
+    throw new ApiError(response.status, body?.error ?? m.app.states.requestFailed(response.status));
   }
   // 204 No Content (a delete) has no body to parse.
   return (response.status === 204 ? undefined : await response.json()) as T;
