@@ -30,7 +30,8 @@ Nothing to change when updating from 0.1.0, except for Docker: take the Compose 
 - Claude's SQL queries run in a separate process with a 15-second limit, so a heavy or runaway query can't freeze the
   dashboard and API.
 - Accessibility: every page passes an axe audit in both themes, both languages and at phone width (contrast of
-  secondary text, keyboard access to wide tables, map and chart descriptions for screen readers, in Greek too).
+  secondary text, keyboard access to wide tables, map and chart descriptions for screen readers, in Greek too). CI
+  runs that audit on every push (`npm run test:a11y`).
 - The login, setup and consent pages use the dashboard's colours.
 - The image no longer ships npm and corepack (unused at runtime), which removes all of its high and critical scan
   findings.
