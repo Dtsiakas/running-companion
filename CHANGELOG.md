@@ -12,9 +12,27 @@ set up or configured, and its notes say what to do.
   one with the FIT files, and `npm run restore`, which moves what was there aside instead of deleting it. Both work from
   Docker through standard input and output.
 
+- Settings shows whether Claude is connected (and when it last signed in), the connector address to copy, and a
+  button that signs Claude out everywhere. It also shows the last backup.
+- README screenshots, `SECURITY.md`, `CONTRIBUTING.md` and issue templates.
+
 ### Changed
 
+- Claude's SQL queries run in a separate process with a 15-second limit, so a heavy or runaway query can't freeze the
+  dashboard and API.
+- Accessibility: every page passes an axe audit in both themes, both languages and at phone width (contrast of
+  secondary text, keyboard access to wide tables, map and chart descriptions for screen readers, in Greek too).
+- The login, setup and consent pages use the dashboard's colours.
+- Durations under an hour read "47 min", not "0h 47"; chart axes tick at round values; clearer labels on the run page
+  ("Watch temperature") and Today ("last night's sleep").
 - TypeScript 7, and newer GitHub Actions for the image builds.
+
+### Fixed
+
+- A badly encoded session cookie caused a server error on every request instead of a login prompt.
+- The weekly report tool for Claude used the UTC date as "today", a day behind after midnight in Europe.
+- OAuth clients from abandoned connection attempts were never cleaned up.
+- The connector reported version 0.1.0 whatever the release.
 
 ## [0.1.0] - 2026-10-31
 

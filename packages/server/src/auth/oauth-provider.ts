@@ -137,6 +137,25 @@ export class CompanionOAuthProvider implements OAuthServerProvider {
   }
 
   /**
+   * Whether Claude (or another client) holds a working sign-in, and when it last got a token. Access tokens last an
+   * hour and are renewed as they're used, so that's roughly when Claude last used the connector.
+   */
+  connection(): { connected: boolean; lastActive: string | null } {
+    const row = this.#db.prepare("SELECT COUNT(*) AS n, MAX(created_at) AS last FROM oauth_tokens WHERE kind = 'refresh' AND expires_at > ?").get(Date.now());
+    const connected = Number(row?.n ?? 0) > 0;
+    return { connected, lastActive: connected && row?.last ? new Date(Number(row.last)).toISOString() : null };
+  }
+
+  /**
+   * Signs every client out: tokens, codes and registrations go, so the next request from Claude gets 401 and it asks
+   * to connect again. For a lost device or a connector you no longer use.
+   */
+  disconnectAll(): void {
+    this.#db.exec('DELETE FROM oauth_tokens; DELETE FROM oauth_codes; DELETE FROM oauth_clients;');
+    this.#pending.clear();
+  }
+
+  /**
    * Removes expired codes and tokens, and clients that haven't held a token for a month. Registration is open (that's
    * how Claude connects), so without this every abandoned or repeated connection attempt would stay forever.
    * Called by the scheduler.

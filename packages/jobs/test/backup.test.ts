@@ -7,7 +7,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 import { gzipSync } from 'node:zlib';
 import { latestSchemaVersion, openDatabase } from '@companion/db';
-import { automaticBackup, readBackup, restoreBackup, writeBackupFile } from '../src/backup.ts';
+import { automaticBackup, backupStatus, readBackup, restoreBackup, writeBackupFile } from '../src/backup.ts';
 import { readTar, tarChunks } from '../src/tar.ts';
 
 async function tarOf(entries: Array<{ name: string; data: Uint8Array }>): Promise<Buffer> {
@@ -134,6 +134,13 @@ test('automatic backups: one a day, the newest few kept, hand-made ones left alo
     'running-companion-auto-2026-10-31.tar.gz',
   ]);
   assert.equal(readBackup(readFileSync(join(dir, 'running-companion-auto-2026-10-31.tar.gz'))).fit.length, 0);
+
+  writeFileSync(join(dir, 'notes.txt'), 'not a backup');
+  const status = backupStatus(dir);
+  assert.equal(status.automatic, 2);
+  assert.equal(status.byHand, 1);
+  assert.ok(status.latest && Date.now() - Date.parse(status.latest) < 60_000);
+  assert.deepEqual(backupStatus(join(dir, 'missing')), { latest: null, automatic: 0, byHand: 0 });
 });
 
 test('backup: a consistent snapshot while another connection holds a write transaction', async () => {

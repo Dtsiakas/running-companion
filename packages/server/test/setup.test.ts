@@ -106,6 +106,24 @@ test('settings never send the key back, and a new key is checked before it repla
   assert.equal((await put('/garmin-key/expiry', { expiresOn: '2026-02-30' })).status, 422);
 });
 
+test('Settings shows Claude’s connection and can sign it out everywhere', async () => {
+  const now = Date.now();
+  writeDb.prepare('INSERT INTO oauth_clients (client_id, client_json, created_at) VALUES (?, ?, ?)').run('claude', '{"client_id":"claude","redirect_uris":[]}', now);
+  writeDb.prepare("INSERT INTO oauth_tokens (token_hash, kind, client_id, scopes, resource, expires_at, created_at) VALUES ('h', 'refresh', 'claude', 'companion', NULL, ?, ?)").run(now + 86_400_000, now);
+
+  const before = await (await fetch(`${base}/api/settings`, { headers: { cookie } })).json();
+  assert.equal(before.claude.connected, true);
+  assert.equal(before.claude.connectorUrl, `${base}/mcp`);
+  assert.equal(before.backups, null, 'no backup folder wired into this app');
+
+  const out = await fetch(`${base}/api/settings/claude`, { method: 'DELETE', headers: { cookie } });
+  assert.equal(out.status, 200);
+  assert.equal((await out.json()).claude.connected, false);
+  assert.equal(writeDb.prepare('SELECT COUNT(*) AS n FROM oauth_tokens').get()?.n, 0);
+  assert.equal(writeDb.prepare('SELECT COUNT(*) AS n FROM oauth_clients').get()?.n, 0);
+  assert.equal((await fetch(`${base}/api/settings/claude`, { method: 'DELETE' })).status, 401, 'needs the login');
+});
+
 test('changing the password needs the current one and logs out other browsers', async () => {
   const put = (data: unknown, withCookie = cookie) => fetch(`${base}/api/settings/password`, { method: 'PUT', headers: { cookie: withCookie, 'content-type': 'application/json' }, body: JSON.stringify(data) });
   assert.equal((await put({ current: 'wrong password!!', next: 'another long password' })).status, 422);
@@ -165,6 +183,7 @@ test('demo mode: no setup, no login, and settings are read-only', async () => {
     assert.equal((await read.json()).demo, true);
     const write = await fetch(`${demoBase}/api/settings/garmin-key/expiry`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: '{"expiresOn":null}' });
     assert.equal(write.status, 403);
+    assert.equal((await fetch(`${demoBase}/api/settings/claude`, { method: 'DELETE' })).status, 403);
     assert.equal((await fetch(`${demoBase}/api/sync`, { method: 'POST' })).status, 502);
   } finally {
     demoServer.close();

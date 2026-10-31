@@ -206,6 +206,22 @@ export function restoreBackup(backup: Backup, paths: DataPaths & { tokenCacheFil
 
 const AUTO_PREFIX = 'running-companion-auto-';
 
+export interface BackupStatus {
+  /** When the newest backup in the folder was written (ISO), automatic or by hand. */
+  latest: string | null;
+  automatic: number;
+  byHand: number;
+}
+
+/** What's in the backup folder, for Settings. Only names this app writes count; anything else there is left alone. */
+export function backupStatus(dir: string): BackupStatus {
+  if (!existsSync(dir)) return { latest: null, automatic: 0, byHand: 0 };
+  const names = readdirSync(dir).filter((name) => name.startsWith('running-companion-') && name.endsWith('.tar.gz'));
+  const latest = names.map((name) => statSync(join(dir, name)).mtimeMs).reduce((a, b) => Math.max(a, b), 0);
+  const automatic = names.filter((name) => name.startsWith(AUTO_PREFIX)).length;
+  return { latest: latest ? new Date(latest).toISOString() : null, automatic, byHand: names.length - automatic };
+}
+
 /** File name for a backup made by hand. */
 export const backupFileName = (now = new Date()) => `running-companion-${now.toISOString().replace(/[:.]/g, '-').slice(0, 19)}.tar.gz`;
 

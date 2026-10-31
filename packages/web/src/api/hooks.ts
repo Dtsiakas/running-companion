@@ -168,10 +168,22 @@ export interface SettingsResponse {
     rejectedAt: string | null;
   };
   locked: { password: boolean; garminKey: boolean };
+  /** Null in demo mode. */
+  claude: { connected: boolean; lastActive: string | null; connectorUrl: string | null } | null;
+  backups: { latest: string | null; automatic: number; byHand: number; keep: number } | null;
 }
 
 export function useSettings() {
   return useQuery({ queryKey: ['settings'], queryFn: () => api<SettingsResponse>('/api/settings') });
+}
+
+/** Signs Claude out of the connector. */
+export function useDisconnectClaude() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<SettingsResponse>('/api/settings/claude', { method: 'DELETE' }),
+    onSuccess: (settings) => client.setQueryData(['settings'], settings),
+  });
 }
 
 /** PUTs one setting; the answer is the new settings, which replaces the cached copy. */

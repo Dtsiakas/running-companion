@@ -112,6 +112,11 @@
   border-radius: 50%;
 }
 
+/* No status: an empty ring, so "not connected" doesn't look like a fault. */
+.status:not([data-status]) i {
+  border: 1.5px solid var(--ink-3);
+}
+
 .status[data-status='green'] i {
   background: var(--good);
 }

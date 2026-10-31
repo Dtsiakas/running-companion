@@ -1,6 +1,6 @@
 import { LANG_NAMES, LANGS } from '@companion/i18n';
 import { useState, type FormEvent } from 'react';
-import { useSettings, useSaveSetting, type SettingsResponse } from '../api/hooks.ts';
+import { useDisconnectClaude, useSettings, useSaveSetting, type SettingsResponse } from '../api/hooks.ts';
 import { Appearance } from '../components/Appearance.tsx';
 import { Choice } from '../components/Choice.tsx';
 import { useChangeLocale } from '../components/LocaleGate.tsx';
@@ -54,9 +54,21 @@ export function Settings() {
         </div>
       </Section>
 
+      {s.claude ? (
+        <Section title={t.claude.title}>
+          <ClaudeConnection claude={s.claude} />
+        </Section>
+      ) : null}
+
       {s.demo ? null : (
         <Section title={t.passwordTitle}>{s.locked.password ? <p className={blocks.explain}>{t.passwordLocked}</p> : <ChangePassword />}</Section>
       )}
+
+      {s.backups ? (
+        <Section title={t.backups.title}>
+          <Backups backups={s.backups} />
+        </Section>
+      ) : null}
 
       <Section title={t.aboutTitle}>
         <p className={blocks.explain}>
@@ -66,6 +78,94 @@ export function Settings() {
           </a>
         </p>
       </Section>
+    </div>
+  );
+}
+
+function ClaudeConnection({ claude }: { claude: NonNullable<SettingsResponse['claude']> }) {
+  const t = m.settings.claude;
+  const disconnect = useDisconnectClaude();
+  const [confirming, setConfirming] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    if (!claude.connectorUrl) return;
+    void navigator.clipboard?.writeText(claude.connectorUrl).then(() => setCopied(true));
+  };
+  return (
+    <div className={styles.keyState}>
+      <p className={blocks.status} data-status={claude.connected ? 'green' : undefined}>
+        <i aria-hidden="true" />
+        {claude.connected ? t.connected : t.notConnected}
+      </p>
+      <p className={blocks.explain}>{claude.connected && claude.lastActive ? t.lastActive(f.dayMonthYear(new Date(claude.lastActive).toLocaleDateString('en-CA'))) : t.howTo}</p>
+      {claude.connectorUrl ? (
+        <div className={styles.form}>
+          <label>
+            <span>{t.address}</span>
+            <input type="text" value={claude.connectorUrl} readOnly onFocus={(event) => event.currentTarget.select()} spellCheck={false} />
+          </label>
+          <div className={styles.actions}>
+            <button type="button" className={blocks.button} onClick={copy}>
+              {t.copy}
+            </button>
+            {copied ? (
+              <p className={styles.done} role="status">
+                {t.copied}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+      {claude.connected ? (
+        <div className={styles.form}>
+          {confirming ? (
+            <>
+              <p className={styles.small}>{t.confirm}</p>
+              <div className={styles.actions}>
+                <button type="button" className={blocks.button} disabled={disconnect.isPending} onClick={() => disconnect.mutate(undefined, { onSettled: () => setConfirming(false) })}>
+                  {t.confirmButton}
+                </button>
+                <button type="button" className={blocks.button} onClick={() => setConfirming(false)}>
+                  {t.cancel}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className={styles.actions}>
+              <button type="button" className={blocks.button} onClick={() => setConfirming(true)}>
+                {t.disconnect}
+              </button>
+            </div>
+          )}
+        </div>
+      ) : null}
+      {disconnect.isSuccess && !claude.connected ? (
+        <p className={styles.done} role="status">
+          {t.disconnected}
+        </p>
+      ) : null}
+      {disconnect.isError ? (
+        <p className={styles.error} role="alert">
+          {disconnect.error.message}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function Backups({ backups }: { backups: NonNullable<SettingsResponse['backups']> }) {
+  const t = m.settings.backups;
+  return (
+    <div className={styles.keyState}>
+      <p className={blocks.explain}>
+        {[
+          backups.latest ? t.latest(f.dayMonthYear(new Date(backups.latest).toLocaleDateString('en-CA'))) : backups.keep ? t.none : null,
+          !backups.keep ? t.off : backups.automatic ? t.kept(backups.automatic, backups.keep) : null,
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      </p>
+      <p className={styles.small}>{t.byHand}</p>
     </div>
   );
 }

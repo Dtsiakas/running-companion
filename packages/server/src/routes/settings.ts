@@ -8,6 +8,8 @@ import { hashPassword, MIN_PASSWORD_LENGTH, verifyPassword } from '../auth/passw
 import type { Sessions } from '../auth/session.ts';
 import { requestI18n } from '../locale.ts';
 import { isCalendarDate, keyStatus, type KeyCheck } from '../garmin-key.ts';
+import type { CompanionOAuthProvider } from '../auth/oauth-provider.ts';
+import type { BackupStatus } from '@companion/jobs';
 
 export interface SettingsRouteOptions {
   settings: SettingsStore;
@@ -21,6 +23,13 @@ export interface SettingsRouteOptions {
   demo?: boolean;
   /** The server's local date, YYYY-MM-DD. */
   today?: () => string;
+  /** Claude's sign-in: its state, and signing it out. */
+  oauth?: Pick<CompanionOAuthProvider, 'connection' | 'disconnectAll'>;
+  /** The address Claude's connector is added with (PUBLIC_URL/mcp). */
+  connectorUrl?: string;
+  /** The backup folder's contents, and how many automatic backups are kept (0: off). */
+  backups?: () => BackupStatus;
+  backupKeep?: number;
 }
 
 const localToday = () => new Date().toLocaleDateString('en-CA');
@@ -119,6 +128,8 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
       demo: options.demo ?? false,
       garmin: keyStatus(current, today(), { fromEnv: locked.has('garminKey') }),
       locked: { password: locked.has('passwordHash'), garminKey: locked.has('garminKey') },
+      claude: options.demo ? null : { ...(options.oauth?.connection() ?? { connected: false, lastActive: null }), connectorUrl: options.connectorUrl ?? null },
+      backups: options.demo || !options.backups ? null : { ...options.backups(), keep: options.backupKeep ?? 0 },
     };
   };
 
@@ -167,6 +178,14 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
       sessions.start(res);
     }),
   );
+
+  // Signs Claude out everywhere. A DELETE, so the read-only check above (PUT only in demo) doesn't apply: demo has
+  // no OAuth to clear, and refuses it below.
+  api.delete('/claude', (req, res) => {
+    if (options.demo) return res.status(403).json({ error: requestI18n(req).m.settings.errors.demo });
+    options.oauth?.disconnectAll();
+    res.json(describe());
+  });
 
   router.use('/api/settings', api);
   return router;
