@@ -35,6 +35,7 @@ packages/
   web/             dashboard PWA (React); `npm run build` writes packages/web/dist, which the server serves
   config/          project paths, .env loading, the settings file
   demo/            generated demo runner, written into the same tables a sync fills
+  i18n/            messages in English and Greek, units, number and date formatting (shared by server and app)
   cli/             command line entry points: sync, metrics, discover, auth:check, demo
 data/              your data (gitignored)
   companion.db       the database
@@ -76,6 +77,20 @@ npm run demo -- --days 42                       # six weeks in
 
 Streams that can be left out: `dynamics`, `power`, `hrv`, `scale`, `battery-events`, `sleep`, `gps`, `fitness-age`.
 Each variant lives in its own folder under `.demo/` (gitignored) and is made again when the day changes.
+
+## Languages and units
+
+The app is in English and Greek, in kilometres or miles (with °C/°F and kg/lb to match). Both follow the device:
+a Greek phone gets Greek, a US one gets miles. Settings → Language and units changes either one on that device. The
+login and setup pages follow the browser's language. Requests to Claude stay in English, the language the connector's
+tools are documented in, and ask Claude to answer in yours.
+
+All text lives in `packages/i18n/src/messages/`, one file per area, English and Greek side by side. The Greek has to
+match the English exactly, key for key and parameter for parameter, or the typecheck fails; a test also checks
+nothing is missing or empty. Numbers, units and dates go through `packages/i18n/src/format.ts` (`f.distance`,
+`f.pace`, `f.longDay`…), never `toFixed` or a hard-coded "km". To add a language: add its code to `LANGS` in
+`locale.ts`, its name to `LANG_NAMES`, and a third object to each `define(...)` once `define` takes it (today it
+takes two).
 
 ## Commands
 

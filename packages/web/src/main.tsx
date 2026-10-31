@@ -3,6 +3,12 @@ import '@fontsource/barlow/500.css';
 import '@fontsource/barlow/600.css';
 import '@fontsource/barlow-condensed/600.css';
 import '@fontsource/barlow-condensed/700.css';
+// Greek letters only (each file covers just the Greek range, so English pages never download them).
+import '@fontsource/fira-sans/greek-400.css';
+import '@fontsource/fira-sans/greek-500.css';
+import '@fontsource/fira-sans/greek-600.css';
+import '@fontsource/fira-sans-condensed/greek-600.css';
+import '@fontsource/fira-sans-condensed/greek-700.css';
 import './styles/tokens.css';
 import './styles/global.css';
 

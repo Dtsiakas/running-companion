@@ -49,7 +49,7 @@ export function TrendChart({ points, view, smoothingLabel }: { points: TrendPoin
             <i style={{ background: colors['--series-1'], height: 3 }} /> {smoothingLabel}
           </span>
           <span>
-            <i style={{ background: colors['--ink-3'], width: 6, height: 6, borderRadius: '50%' }} /> Each week
+            <i style={{ background: colors['--ink-3'], width: 6, height: 6, borderRadius: '50%' }} /> {m.trends.chart.eachWeek}
           </span>
         </div>
       ) : null}

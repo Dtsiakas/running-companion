@@ -32,8 +32,9 @@
   --intensity-moderate: #2a78d6;
   --intensity-high: #104281;
 
-  --font-body: 'Barlow', system-ui, sans-serif;
-  --font-display: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+  /* Barlow has no Greek letters; Fira Sans (Greek subset only) fills them in, letter by letter. */
+  --font-body: 'Barlow', 'Fira Sans', system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Fira Sans Condensed', 'Barlow', system-ui, sans-serif;
 
   /* Type scale: a modular scale (ratio ~1.25) from a 16px base. */
   --text-xs: 0.8125rem; /* 13 */
