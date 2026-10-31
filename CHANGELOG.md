@@ -11,7 +11,6 @@ set up or configured, and its notes say what to do.
 - Backups: a daily automatic one (database and settings, the newest 7 kept, `BACKUP_KEEP`), `npm run backup` for a full
   one with the FIT files, and `npm run restore`, which moves what was there aside instead of deleting it. Both work from
   Docker through standard input and output.
-
 - Settings shows whether Claude is connected (and when it last signed in), the connector address to copy, and a
   button that signs Claude out everywhere. It also shows the last backup.
 - Security scanning: CodeQL on every push and pull request, and a weekly Trivy scan of the published image.
