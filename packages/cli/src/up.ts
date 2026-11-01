@@ -113,7 +113,8 @@ if (read(INSTALLED_FOR) !== hash(lockfile)) {
 const commit = git('rev-parse', 'HEAD').stdout.trim();
 if (!existsSync(join(ROOT, 'packages', 'web', 'dist', 'index.html')) || (commit && read(BUILT_FOR) !== commit)) {
   say('Building the dashboard…');
-  if (!run(npm, ['run', '--silent', 'build'])) fail('The build failed (see above).');
+  // Warnings and errors only: the list of every built file says nothing when starting the app.
+  if (!run(npm, ['run', '--silent', 'build', '-w', '@companion/web', '--', '--logLevel', 'warn'])) fail('The build failed (see above).');
   if (commit) writeFileSync(BUILT_FOR, commit);
 }
 
