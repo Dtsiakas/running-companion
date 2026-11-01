@@ -8,6 +8,7 @@
  * If the window was killed in a way that skipped the clean-up (Task Manager, a crash), `npm run down` does it.
  */
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnv, ROOT } from '@companion/config';
@@ -18,6 +19,7 @@ const ENV_FILE = join(ROOT, '.env');
 const PID_FILE = join(ROOT, 'data', 'up.pid');
 const npm = 'npm';
 
+const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 const say = (text: string) => console.log(`\n${text}`);
 const fail = (text: string): never => {
   console.error(`\n✗ ${text}`);
@@ -90,17 +92,29 @@ if (git('fetch', '--quiet').status === 0) {
   }
   if (behind > 0 && !changed.length) {
     say(`Updating to the latest version (${behind} new commit${behind === 1 ? '' : 's'})…`);
-    // npm ci installs exactly what the lockfile says and never rewrites it, so updating can't create local changes.
-    if (!run('git', ['pull', '--ff-only', '--quiet']) || !run(npm, ['ci', '--no-audit', '--no-fund', '--loglevel=error']) || !run(npm, ['run', '--silent', 'build'])) {
-      fail('The update failed (see above). Nothing was started.');
-    }
+    // Installing and building follow below: the lockfile and commit no longer match what was installed and built.
+    if (!run('git', ['pull', '--ff-only', '--quiet'])) fail('The update failed (see above). Nothing was started.');
   } else if (behind > 0) {
     say(`There are ${behind} new commits on GitHub, but these files were changed on this computer, so this version stays: ${changed.join(', ')}. Undo the changes (git checkout -- <file>) or commit them to update.`);
   }
 }
-if (!existsSync(join(ROOT, 'packages', 'web', 'dist', 'index.html'))) {
+// The code can also change without this script pulling it (a `git pull` by hand, switching branches). Dependencies and
+// the dashboard are checked against what's here now, not against whether this run updated anything.
+const INSTALLED_FOR = join(ROOT, 'node_modules', '.companion-lockfile');
+const BUILT_FOR = join(ROOT, 'packages', 'web', 'dist', '.companion-commit');
+const read = (file: string) => (existsSync(file) ? readFileSync(file, 'utf8').trim() : '');
+const lockfile = read(join(ROOT, LOCKFILE));
+if (read(INSTALLED_FOR) !== hash(lockfile)) {
+  say('Installing dependencies…');
+  // npm ci installs exactly what the lockfile says and never rewrites it, so this can't create local changes.
+  if (!run(npm, ['ci', '--no-audit', '--no-fund', '--loglevel=error'])) fail('Installing dependencies failed (see above).');
+  writeFileSync(INSTALLED_FOR, hash(lockfile));
+}
+const commit = git('rev-parse', 'HEAD').stdout.trim();
+if (!existsSync(join(ROOT, 'packages', 'web', 'dist', 'index.html')) || (commit && read(BUILT_FOR) !== commit)) {
   say('Building the dashboard…');
   if (!run(npm, ['run', '--silent', 'build'])) fail('The build failed (see above).');
+  if (commit) writeFileSync(BUILT_FOR, commit);
 }
 
 // 3. Server and public address ------------------------------------------------------------------------------------------

@@ -6,6 +6,12 @@ set up or configured, and its notes say what to do.
 
 ## [Unreleased]
 
+### Fixed
+
+- `npm run up` failed to start after the code was updated with a `git pull` by hand ("Cannot find package
+  '@companion/dates'"): it only installed dependencies when it pulled the update itself. It now installs and builds
+  whenever the lockfile or the commit differs from what was installed and built last.
+
 ## [0.2.0] - 2026-10-31
 
 Nothing to change when updating from 0.1.0, except for Docker: take the Compose files from this release (the ones in
