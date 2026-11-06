@@ -128,4 +128,9 @@ jobs:
         run: |
           # The release workflow creates the release; it may still be on its way.
           for i in $(seq 1 30); do gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 && break; sleep 10; done
-          gh release upload "$GITHUB_REF_NAME" dist-desktop/Running-Companion-Setup-*.exe --clobber
+          # GitHub's upload server sometimes answers 500: try a few times before failing the release.
+          for i in 1 2 3 4 5; do
+            gh release upload "$GITHUB_REF_NAME" dist-desktop/Running-Companion-Setup-*.exe --clobber && exit 0
+            echo "Upload failed (try $i of 5); retrying in 20 s"; sleep 20
+          done
+          exit 1
