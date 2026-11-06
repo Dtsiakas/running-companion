@@ -1,0 +1,121 @@
+name: Desktop app
+
+# The Windows installer: built and tested on every push and pull request, and attached to every release.
+# The files are staged on Linux (deploy/windows/stage.sh: nothing in the app is native code), then Windows adds Node's
+# own node.exe, builds the installer with Inno Setup, installs it silently, starts the app, checks it answers, and
+# uninstalls it.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: bash deploy/windows/stage.sh dist-desktop
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop-app
+          path: dist-desktop/app
+          retention-days: 7
+
+  windows:
+    needs: stage
+    runs-on: windows-latest
+    permissions:
+      contents: write # attaching the installer to a release
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: desktop-app
+          path: dist-desktop/app
+      - name: Node for Windows, checked against nodejs.org's checksums
+        shell: pwsh
+        run: |
+          $v = (Get-Content .nvmrc).Trim()
+          $zip = "node-v$v-win-x64.zip"
+          Invoke-WebRequest "https://nodejs.org/dist/v$v/$zip" -OutFile $zip
+          Invoke-WebRequest "https://nodejs.org/dist/v$v/SHASUMS256.txt" -OutFile SHASUMS256.txt
+          $expected = ((Get-Content SHASUMS256.txt | Where-Object { $_ -match " $([regex]::Escape($zip))$" }) -split '\s+')[0]
+          $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($expected -ne $actual) { throw "Checksum mismatch for $zip" }
+          Expand-Archive $zip -DestinationPath node-zip
+          New-Item -ItemType Directory -Force dist-desktop/node | Out-Null
+          Copy-Item "node-zip/node-v$v-win-x64/node.exe" dist-desktop/node/
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          if (-not (Get-Command iscc -ErrorAction SilentlyContinue)) {
+            $default = "${env:ProgramFiles(x86)}\Inno Setup 6"
+            if (-not (Test-Path "$default\ISCC.exe")) { choco install innosetup -y --no-progress | Out-Null }
+            $env:PATH = "$default;$env:PATH"
+          }
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          iscc /Q "/DAppVersion=$version" deploy\windows\running-companion.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup failed' }
+          Get-ChildItem dist-desktop\*.exe | ForEach-Object { "{0} {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
+      - name: Install, start, check, uninstall
+        shell: pwsh
+        run: |
+          $installer = (Get-ChildItem dist-desktop\Running-Companion-Setup-*.exe).FullName
+          Start-Process $installer -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/CURRENTUSER' -Wait
+          $app = Join-Path $env:LOCALAPPDATA 'Programs\Running Companion'
+          if (-not (Test-Path "$app\node\node.exe")) { throw "Not installed in $app" }
+          if (-not (Test-Path "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Running Companion.lnk")) { throw 'No Start Menu shortcut' }
+
+          # Start it the way the shortcut does, without a browser.
+          $env:COMPANION_NO_BROWSER = '1'
+          $p = Start-Process "$app\node\node.exe" -ArgumentList '--disable-warning=ExperimentalWarning',"`"$app\app\packages\cli\src\desktop.ts`"" `
+            -WorkingDirectory "$app\app" -PassThru -RedirectStandardOutput desktop.log -RedirectStandardError desktop.err
+          $ok = $false
+          for ($i = 0; $i -lt 60 -and -not $ok; $i++) {
+            Start-Sleep 1
+            try { $ok = (Invoke-RestMethod http://127.0.0.1:8787/healthz).ok } catch {}
+          }
+          Get-Content desktop.log, desktop.err -ErrorAction SilentlyContinue
+          if (-not $ok) { throw 'The app did not answer' }
+          $setup = Invoke-WebRequest http://127.0.0.1:8787/setup -UseBasicParsing
+          if ($setup.StatusCode -ne 200) { throw 'No setup page' }
+          if (-not (Test-Path "$env:LOCALAPPDATA\Running Companion\data\settings.json")) { throw 'Data is not in the app-data folder' }
+          if (-not (Test-Path "$app\app\node_modules\@companion\server")) { throw 'The package links were not made' }
+          if (-not (Select-String -Path desktop.log -Pattern 'setup\?code=' -Quiet)) { throw 'No setup link in the log' }
+
+          # Stop it (the whole process tree, as closing the window does), then uninstall.
+          taskkill /T /F /PID $p.Id | Out-Null
+          Start-Sleep 2
+          Start-Process "$app\unins000.exe" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait
+          Start-Sleep 2
+          if (Test-Path "$app\app") { throw 'Uninstall left the app behind' }
+          if (-not (Test-Path "$env:LOCALAPPDATA\Running Companion\data\settings.json")) { throw 'Uninstall removed the data' }
+          Write-Output 'Installed, started, answered, uninstalled; data kept.'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-installer
+          path: dist-desktop/Running-Companion-Setup-*.exe
+          retention-days: 14
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The release workflow creates the release; it may still be on its way.
+          for i in $(seq 1 30); do gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 && break; sleep 10; done
+          gh release upload "$GITHUB_REF_NAME" dist-desktop/Running-Companion-Setup-*.exe --clobber

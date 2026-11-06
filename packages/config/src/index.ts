@@ -9,7 +9,11 @@ export * from './settings.ts';
  * That matters for the MCP server: Claude Desktop starts it from its own folder, not from the project.
  * DATA_DIR can be moved with COMPANION_DATA_DIR (a Docker volume, say).
  */
-export const ROOT = resolve(import.meta.dirname, '..', '..', '..');
+/**
+ * The project folder (package.json, the built dashboard, .env). The desktop app sets COMPANION_ROOT: installed, the
+ * packages live under node_modules, so this file's own location doesn't lead back to it.
+ */
+export const ROOT = process.env.COMPANION_ROOT ? resolve(process.env.COMPANION_ROOT) : resolve(import.meta.dirname, '..', '..', '..');
 export const DATA_DIR = process.env.COMPANION_DATA_DIR ? resolve(process.env.COMPANION_DATA_DIR) : join(ROOT, 'data');
 export const DB_FILE = join(DATA_DIR, 'companion.db');
 export const SETTINGS_FILE = settingsFileIn(DATA_DIR);
