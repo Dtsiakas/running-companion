@@ -10,10 +10,11 @@
  * It works from a clone too:  node packages/cli/src/desktop.ts
  */
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
+import { pathToFileURL } from 'node:url';
 import { clearFunnel, status, TAILSCALE } from './tailscale.ts';
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -50,26 +51,9 @@ interface Prefs {
   publicAddress?: boolean;
 }
 
-/**
- * Links node_modules/@companion/* to the app's packages, as npm's workspaces do in a clone. An installer can't carry
- * links, and the packages can't be copied into node_modules instead: Node won't run TypeScript from there. Junctions on
- * Windows need no administrator rights. Only adds what's missing, so it's instant after the first start.
- */
-function linkPackages(root: string): void {
-  const packages = join(root, 'packages');
-  for (const dir of readdirSync(packages)) {
-    const manifest = join(packages, dir, 'package.json');
-    if (!existsSync(manifest)) continue; // packages/web: only its built files ship
-    const name = (JSON.parse(readFileSync(manifest, 'utf8')) as { name: string }).name;
-    const link = join(root, 'node_modules', ...name.split('/'));
-    if (existsSync(link)) continue;
-    mkdirSync(dirname(link), { recursive: true });
-    symlinkSync(join(packages, dir), link, process.platform === 'win32' ? 'junction' : 'dir');
-  }
-}
-
 const ROOT = findRoot();
-linkPackages(ROOT);
+// How the server (and every process it starts) finds the app's own packages: see resolve-packages.ts.
+const RESOLVE_HOOK = pathToFileURL(join(import.meta.dirname, 'resolve-packages.ts')).href;
 const HOME = appHome();
 const DATA_DIR = process.env.COMPANION_DATA_DIR ?? join(HOME, 'data');
 const PREFS_FILE = join(HOME, 'desktop.json');
@@ -147,6 +131,8 @@ const server = spawn(process.execPath, ['--disable-warning=ExperimentalWarning',
   stdio: ['ignore', 'pipe', 'inherit'],
   env: {
     ...process.env,
+    // A file URL has no spaces ("Running Companion" becomes Running%20Companion), so it needs no quoting here.
+    NODE_OPTIONS: [process.env.NODE_OPTIONS, `--import=${RESOLVE_HOOK}`].filter(Boolean).join(' '),
     COMPANION_ROOT: ROOT,
     COMPANION_DATA_DIR: DATA_DIR,
     COMPANION_INSTALL: 'desktop',

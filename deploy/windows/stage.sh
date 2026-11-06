@@ -6,9 +6,9 @@
 #   packages/<name>            the app's own packages (sources, migrations), without tests
 #   node_modules               what the server needs at runtime, third-party packages only
 #
-# The app's packages can't live inside node_modules: Node refuses to run TypeScript from there. Their links
-# (node_modules/@companion/* → packages/*) are made by the launcher on first start, because an installer can't carry
-# links. The dashboard is shipped built, so its own dependencies (React, charts, maps, fonts) aren't: the runtime
+# The app's packages can't live inside node_modules: Node refuses to run TypeScript from there. Instead of links
+# (node_modules/@companion/* → packages/*), which an installer can't carry, the launcher loads a resolve hook
+# (packages/cli/src/resolve-packages.ts). The dashboard is shipped built, so its own dependencies (React, charts, maps, fonts) aren't: the runtime
 # install leaves the web workspace out. The launcher is packages/cli/src/desktop.ts.
 #
 # Run from the repository root, on any OS with bash (CI uses Linux): nothing in the app is native code, so the same

@@ -61,5 +61,5 @@ Filename: "{app}\node\node.exe"; Parameters: "--disable-warning=ExperimentalWarn
   WorkingDir: "{app}\app"; Description: "Start Running Companion"; Flags: postinstall nowait skipifsilent
 
 [UninstallDelete]
-; The links the app makes on first start (node_modules\@companion), which the uninstaller didn't install itself.
+; Anything in the app folder the uninstaller didn't install itself (0.3.0 made links in node_modules on first start).
 Type: filesandordirs; Name: "{app}\app"
