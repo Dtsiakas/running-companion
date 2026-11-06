@@ -1,0 +1,42 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Dtsiakas/running-companion",
+  "title": "Running Companion",
+  "description": "Your own Garmin running and health data: readiness, runs, sleep, trends and patterns. Self-hosted.",
+  "repository": {
+    "url": "https://github.com/Dtsiakas/running-companion",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/Dtsiakas/running-companion#quick-start",
+  "version": "0.2.1",
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/dtsiakas/running-companion:0.2.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "--mount",
+          "description": "The Docker volume of your Running Companion install, where its database and settings are. Set it up first (see the README): this server reads that data, it doesn't create it.",
+          "value": "type=volume,src={volume},dst=/data",
+          "isRequired": true,
+          "variables": {
+            "volume": {
+              "description": "Name of the volume (companion-data with the README's docker run; <folder>_data with Docker Compose)",
+              "isRequired": true,
+              "default": "companion-data"
+            }
+          }
+        }
+      ],
+      "packageArguments": [
+        { "type": "positional", "valueHint": "command", "value": "node" },
+        { "type": "positional", "valueHint": "node_option", "value": "--disable-warning=ExperimentalWarning" },
+        { "type": "positional", "valueHint": "script", "value": "packages/mcp/src/server.ts" }
+      ]
+    }
+  ]
+}

@@ -115,6 +115,25 @@ jobs:
           for i in $(seq 1 120); do curl -fsS http://localhost:8788/healthz >/dev/null 2>&1 && break; sleep 1; done
           curl -fsS http://localhost:8788/api/today | grep -q '"date"'
           curl -fsS 'http://localhost:8788/api/activities?lang=el' >/dev/null
+      - name: The MCP server answers over stdio, as the MCP Registry runs it
+        run: |
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | timeout 60 docker run -i --rm --mount type=volume,src=registry-test,dst=/data running-companion:test \
+                node --disable-warning=ExperimentalWarning packages/mcp/src/server.ts > mcp.out || true
+          head -c 600 mcp.out; echo
+          grep -q '"get_today"' mcp.out && grep -q '"describe_data"' mcp.out
+      - name: server.json is valid for the MCP Registry
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/v1.8.8/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher validate server.json
+          # The listing and the image must name the same server and version as package.json.
+          test "$(jq -r .name server.json)" = "$(docker inspect -f '{{ index .Config.Labels "io.modelcontextprotocol.server.name" }}' running-companion:test)"
+          version=$(node -p 'require("./package.json").version')
+          test "$(jq -r .version server.json)" = "$version"
+          test "$(jq -r '.packages[0].identifier' server.json)" = "ghcr.io/dtsiakas/running-companion:$version"
       - name: Backup from the container works
         run: |
           docker exec -e COMPANION_DATA_DIR=/data/demo/full demo node --disable-warning=ExperimentalWarning packages/cli/src/backup.ts --out - > backup.tar.gz

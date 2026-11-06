@@ -207,6 +207,15 @@ so a heavy one can't hold up the dashboard. Claude's answers stay in the Claude 
 Settings → Claude (`<PUBLIC_URL>/mcp`), and approve it with your password. The same place shows whether Claude is
 connected and has a button that signs it out everywhere.
 
+**Other agents (Claude Code, Cursor, VS Code…)** can use the same tools. Two extras help:
+
+- **A skill**, `skills/running-companion/SKILL.md`: which tool answers which question, and how to answer from the data
+  (Garmin stays the coach, patterns are associations, honest limits). Copy the `running-companion` folder into your
+  agent's skills folder (for Claude Code, `~/.claude/skills/`).
+- **The MCP Registry** lists the connector as `io.github.Dtsiakas/running-companion`. That entry runs the Docker image
+  over stdio against the volume of an install you've already set up (`companion-data` with the `docker run` below), so
+  set up and sync first; the listing doesn't create any data.
+
 ## Web server
 
 `npm run build`, then `npm start`, then open the setup link from its log (first time) or http://localhost:8787.
@@ -317,7 +326,7 @@ docker compose start app
 ## Docker
 
 Every release is published as an image for amd64 and arm64 (a Raspberry Pi 4 or 5 works):
-`ghcr.io/dtsiakas/running-companion`. `latest` is the newest release, `0.2.0` (or `0.2`) pins one, and `edge` follows
+`ghcr.io/dtsiakas/running-companion`. `latest` is the newest release, `0.2.1` (or `0.2`) pins one, and `edge` follows
 `main`. Everything the app keeps (database, settings, Garmin token, FIT files) is in `/data`, so mount a volume there and
 updating is just pulling a newer image.
 

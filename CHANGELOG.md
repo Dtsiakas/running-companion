@@ -6,11 +6,24 @@ set up or configured, and its notes say what to do.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-06
+
+### Added
+
+- Listed in the [MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.Dtsiakas/running-companion`: the
+  Docker image can run the connector over stdio against an existing install's volume. Each release updates the listing.
+- A skill (`skills/running-companion/SKILL.md`) for Claude Code and other agents: which tool answers which question,
+  and how to answer from the data.
+
 ### Fixed
 
 - `npm run up` failed to start after the code was updated with a `git pull` by hand ("Cannot find package
   '@companion/dates'"): it only installed dependencies when it pulled the update itself. It now installs and builds
-  whenever the lockfile or the commit differs from what was installed and built last.
+  whenever the lockfile or the commit differs from what was installed and built last, and builds quietly.
+- The connector's data guide described the author's own data (sleep gap, training breaks, database size) as facts about
+  every user; its caveats are now general.
+- `deploy/setup.sh` asked for a deploy key on the repo, which only the owner can add, so it stopped on anyone else's
+  server. The repo is public: it now clones over HTTPS. It also asks for the time zone instead of assuming Athens.
 
 ## [0.2.0] - 2026-10-31
 
@@ -82,6 +95,7 @@ The first release.
 - Docker image for amd64 and arm64 at `ghcr.io/dtsiakas/running-companion`, with Compose files for local use,
   Tailscale Funnel and Caddy.
 
-[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/Dtsiakas/running-companion/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Dtsiakas/running-companion/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Dtsiakas/running-companion/releases/tag/v0.1.0

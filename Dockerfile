@@ -41,11 +41,13 @@ RUN npm run build \
 # 2. The image that runs ---------------------------------------------------------------------------------------------
 FROM node:${NODE_VERSION}-bookworm-slim
 ARG VERSION=dev
+# The last label proves to the MCP Registry that this image belongs to the server listed there (see server.json).
 LABEL org.opencontainers.image.title="Running Companion" \
       org.opencontainers.image.description="Your Garmin running and health data, explained, with a connector for Claude." \
       org.opencontainers.image.source="https://github.com/Dtsiakas/running-companion" \
       org.opencontainers.image.licenses="AGPL-3.0-or-later" \
-      org.opencontainers.image.version="${VERSION}"
+      org.opencontainers.image.version="${VERSION}" \
+      io.modelcontextprotocol.server.name="io.github.Dtsiakas/running-companion"
 ENV NODE_ENV=production \
     COMPANION_DATA_DIR=/data \
     COMPANION_DEMO_DIR=/data/demo \
