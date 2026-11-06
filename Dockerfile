@@ -49,6 +49,7 @@ LABEL org.opencontainers.image.title="Running Companion" \
       org.opencontainers.image.version="${VERSION}" \
       io.modelcontextprotocol.server.name="io.github.Dtsiakas/running-companion"
 ENV NODE_ENV=production \
+    COMPANION_INSTALL=docker \
     COMPANION_DATA_DIR=/data \
     COMPANION_DEMO_DIR=/data/demo \
     HOST=0.0.0.0 \

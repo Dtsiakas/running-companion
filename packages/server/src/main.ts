@@ -6,6 +6,7 @@
 import { join } from 'node:path';
 import { APP_VERSION, BACKUP_DIR, DATA_DIR, DB_FILE, loadEnv, ROOT, SETTINGS_FILE, settings as settingsStore } from '@companion/config';
 import { openDatabase } from '@companion/db';
+import { updateChecker } from './updates.ts';
 import { automaticBackup, backupStatus, isSyncRunning, openReadOnly, prepareDatabase, runQueryIsolated, syncNow } from '@companion/jobs';
 import { createApp } from './app.ts';
 import { loadServerConfig, prepareSettings } from './config.ts';
@@ -23,7 +24,9 @@ const readDb = openReadOnly(DB_FILE);
 const writeDb = openDatabase(DB_FILE);
 const sync = config.demo ? () => Promise.reject(new Error('This is a demo with generated data: there is nothing to sync.')) : () => syncNow(DB_FILE);
 
-const { app, oauth, needsSetup, setupCode } = createApp({ config, settings, checkGarminKey, readDb, writeDb, sync, isSyncRunning, query: (sql) => runQueryIsolated(DB_FILE, sql), backups: () => backupStatus(BACKUP_DIR), webRoot: join(ROOT, 'packages', 'web', 'dist') });
+// Off unless turned on in Settings; never in demo mode.
+const updates = updateChecker({ enabled: () => !config.demo && settings.read().checkForUpdates === true, current: APP_VERSION });
+const { app, oauth, needsSetup, setupCode } = createApp({ config, settings, checkGarminKey, readDb, writeDb, sync, isSyncRunning, query: (sql) => runQueryIsolated(DB_FILE, sql), backups: () => backupStatus(BACKUP_DIR), updates, webRoot: join(ROOT, 'packages', 'web', 'dist') });
 
 // The day's first scheduled run (or the start, when the app was off) also makes the daily backup. Kept apart from the
 // sync: a failed backup is logged and never stops a sync, and the other way round.
@@ -61,6 +64,7 @@ const server = app.listen(config.port, config.host, () => {
     return;
   }
   void dailyBackup();
+  updates.start();
   // `npm run up` sets this: when the app only runs now and then, the scheduled hours may all have passed while it was off.
   if (process.env.SYNC_ON_START === 'true') {
     log('Syncing with Garmin (on start)');

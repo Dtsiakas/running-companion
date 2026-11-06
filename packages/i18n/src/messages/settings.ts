@@ -80,6 +80,19 @@ export const settings = define(
       cancel: 'Cancel',
       disconnected: 'Disconnected.',
     },
+    updates: {
+      toggle: 'Tell me when a new version is out',
+      explain: 'Asks GitHub once a day for the newest version number. Nothing about you or your data is sent.',
+      upToDate: (date: string) => `You have the newest version (checked ${date}).`,
+      available: (version: string) => `Version ${version} is out.`,
+      whatsNew: 'What’s new',
+      how: {
+        desktop: 'Download the installer from the release page and run it. Your data stays as it is.',
+        docker: 'Pull the new image and restart: docker compose pull, then docker compose up -d.',
+        source: 'npm run up updates it the next time you start it (or: git pull, npm ci, npm run build).',
+      },
+      failed: (reason: string) => `Couldn’t check: ${reason}. It tries again tomorrow.`,
+    },
     backups: {
       title: 'Backups',
       latest: (date: string) => `Last backup on ${date}.`,
@@ -176,6 +189,19 @@ export const settings = define(
       confirmButton: 'Αποσύνδεση',
       cancel: 'Άκυρο',
       disconnected: 'Αποσυνδέθηκε.',
+    },
+    updates: {
+      toggle: 'Ειδοποίησέ με όταν βγαίνει νέα έκδοση',
+      explain: 'Ρωτάει το GitHub μία φορά τη μέρα ποιος είναι ο αριθμός της νεότερης έκδοσης. Δεν στέλνεται τίποτα για σένα ή τα δεδομένα σου.',
+      upToDate: (date: string) => `Έχεις τη νεότερη έκδοση (έλεγχος στις ${date}).`,
+      available: (version: string) => `Βγήκε η έκδοση ${version}.`,
+      whatsNew: 'Τι αλλάζει',
+      how: {
+        desktop: 'Κατέβασε το πρόγραμμα εγκατάστασης από τη σελίδα της έκδοσης και τρέξε το. Τα δεδομένα σου μένουν ως έχουν.',
+        docker: 'Κατέβασε τη νέα εικόνα και κάνε επανεκκίνηση: docker compose pull και μετά docker compose up -d.',
+        source: 'Το npm run up την εγκαθιστά την επόμενη φορά που θα το ξεκινήσεις (ή: git pull, npm ci, npm run build).',
+      },
+      failed: (reason: string) => `Ο έλεγχος δεν έγινε: ${reason}. Θα ξαναδοκιμάσει αύριο.`,
     },
     backups: {
       title: 'Αντίγραφα ασφαλείας',

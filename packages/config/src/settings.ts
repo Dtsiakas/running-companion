@@ -25,6 +25,8 @@ export interface Settings {
   garminKeyExpiresOn?: string;
   /** Set by a sync when Garmin refuses the key (wrong, expired or deleted); cleared by a working sync or a new key. */
   garminKeyRejectedAt?: string;
+  /** The opt-in "a new version is out" notice: the server asks GitHub for the newest release once a day. */
+  checkForUpdates?: boolean;
 }
 
 

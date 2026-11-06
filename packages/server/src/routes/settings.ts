@@ -10,6 +10,7 @@ import { requestI18n } from '../locale.ts';
 import { isCalendarDate, keyStatus, type KeyCheck } from '../garmin-key.ts';
 import type { CompanionOAuthProvider } from '../auth/oauth-provider.ts';
 import type { BackupStatus } from '@companion/jobs';
+import type { UpdateChecker } from '../updates.ts';
 import { today } from '@companion/dates';
 
 export interface SettingsRouteOptions {
@@ -31,6 +32,11 @@ export interface SettingsRouteOptions {
   /** The backup folder's contents, and how many automatic backups are kept (0: off). */
   backups?: () => BackupStatus;
   backupKeep?: number;
+  /** The optional new-version check (see updates.ts), with this release's version and how it was installed. */
+  updates?: UpdateChecker;
+  version?: string;
+  /** desktop (the installer), docker or source (a clone): decides how Settings says to update. */
+  install?: string;
 }
 
 const localToday = () => today();
@@ -131,6 +137,16 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
       locked: { password: locked.has('passwordHash'), garminKey: locked.has('garminKey') },
       claude: options.demo ? null : { ...(options.oauth?.connection() ?? { connected: false, lastActive: null }), connectorUrl: options.connectorUrl ?? null },
       backups: options.demo || !options.backups ? null : { ...options.backups(), keep: options.backupKeep ?? 0 },
+      updates:
+        options.demo || !options.updates
+          ? null
+          : {
+              enabled: current.checkForUpdates === true,
+              current: options.version ?? null,
+              available: options.updates.available(),
+              install: options.install ?? 'source',
+              ...options.updates.state(),
+            },
     };
   };
 
@@ -177,6 +193,15 @@ export function settingsRoutes(options: SettingsRouteOptions): Router {
       // gets a fresh session below. Claude's connector keeps working: it has its own tokens.
       settings.update({ passwordHash: await hashPassword(String(next)), ...(settings.locked().has('sessionSecret') ? {} : { sessionSecret: randomBytes(32).toString('base64url') }) });
       sessions.start(res);
+    }),
+  );
+
+  api.put('/updates', json, (req, res) =>
+    save(res, async () => {
+      const enabled = (req.body as { enabled?: unknown } | undefined)?.enabled;
+      if (typeof enabled !== 'boolean') throw new InputError('enabled: true or false');
+      settings.update({ checkForUpdates: enabled || null });
+      if (enabled) await options.updates?.check();
     }),
   );
 

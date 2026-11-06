@@ -77,6 +77,7 @@ export function Settings() {
             {t.sourceCode}
           </a>
         </p>
+        {s.updates ? <Updates updates={s.updates} /> : null}
       </Section>
     </div>
   );
@@ -147,6 +148,43 @@ function ClaudeConnection({ claude }: { claude: NonNullable<SettingsResponse['cl
       {disconnect.isError ? (
         <p className={styles.error} role="alert">
           {disconnect.error.message}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function Updates({ updates }: { updates: NonNullable<SettingsResponse['updates']> }) {
+  const t = m.settings.updates;
+  const save = useSaveSetting<{ enabled: boolean }>('/updates');
+  const how = t.how[updates.install as keyof typeof t.how] ?? t.how.source;
+  return (
+    <div className={styles.updates}>
+      <label className={styles.toggle}>
+        <input type="checkbox" checked={updates.enabled} disabled={save.isPending} onChange={(event) => save.mutate({ enabled: event.target.checked })} />
+        <span>{t.toggle}</span>
+      </label>
+      <p className={styles.small}>{t.explain}</p>
+      {updates.enabled && updates.available && updates.latest ? (
+        <div className={styles.available} role="status">
+          <p>
+            <strong>{t.available(updates.latest)}</strong>{' '}
+            {updates.url ? (
+              <a href={updates.url} target="_blank" rel="noreferrer">
+                {t.whatsNew}
+              </a>
+            ) : null}
+          </p>
+          <p className={styles.small}>{how}</p>
+        </div>
+      ) : updates.enabled && updates.error && updates.checkedAt ? (
+        <p className={styles.small}>{t.failed(updates.error)}</p>
+      ) : updates.enabled && updates.checkedAt ? (
+        <p className={styles.small}>{t.upToDate(f.dayMonthYear(new Date(updates.checkedAt).toLocaleDateString('en-CA')))}</p>
+      ) : null}
+      {save.isError ? (
+        <p className={styles.error} role="alert">
+          {save.error.message}
         </p>
       ) : null}
     </div>
