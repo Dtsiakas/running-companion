@@ -361,7 +361,7 @@ To update: `docker compose -f <file> pull && docker compose -f <file> up -d`. To
 
 ## Deploying to a server
 
-Docker (above) is the simplest way. The alternative: `deploy/` puts the app on a fresh Ubuntu 24.04 server (an OVHcloud VPS-1 here), reachable at a free
+Docker (above) is the simplest way. The alternative: `deploy/` puts the app on a fresh Ubuntu 24.04 server (a small VPS is plenty), reachable at a free
 `https://<name>.<tailnet>.ts.net` address through Tailscale Funnel. From the project folder on the laptop:
 
 ```sh
@@ -372,9 +372,10 @@ ssh -t ubuntu@<server IP> "sudo bash setup.sh"
 The script is safe to run again, and every step checks what's already done. In order:
 
 1. SSH accepts keys only, with passwords and root login off.
-2. System updates, automatic security updates (reboot at 04:00 when one needs it), and a firewall with only SSH open.
+2. System updates, automatic security updates (reboot at 04:00 when one needs it), a firewall with only SSH open, and
+   your time zone (asked, or given up front: `sudo TIMEZONE=Europe/Athens bash setup.sh`).
 3. An unprivileged `companion` user that runs the app.
-4. A read-only GitHub deploy key, added once by hand.
+4. A check that GitHub is reachable (the repo is public, so no key is needed).
 5. The code in `/opt/running-companion`.
 6. Node from `.nvmrc`, then install, typecheck, tests and build.
 7. Tailscale and Funnel: the public HTTPS address, with no web port opened on the server.

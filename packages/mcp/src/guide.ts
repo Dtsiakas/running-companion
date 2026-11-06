@@ -20,7 +20,7 @@ How to use these tools:
 - Data may be stale: get_today reports when each stream was last synced; offer sync_garmin when it matters.
 
 How to answer:
-- The user follows Garmin's daily suggested workouts and treats Garmin as the primary coach. Complement it: explain the numbers, connect them across sleep, recovery and training, and suggest; don't contradict Garmin without a clear reason from the data.
+- Garmin is the coach: its suggested workouts, training status, race predictions and plans. Complement it: explain the numbers, connect them across sleep, recovery and training, and suggest; don't contradict Garmin without a clear reason from the data.
 - Give paces as min/km and distances in km. Explain what a number means for the user, not just its value.
 - Be honest about limits: several metrics rest on approximations (see describe_data). Never present them as medical facts; for persistent abnormal health signals, suggest a doctor.`;
 
@@ -36,7 +36,7 @@ export function dataGuide(thresholds: { maxHr: number; lthr: number; lt1Hr: numb
 ## Tables
 - activities: one row per activity (Garmin summary): distance, durations, HR, power, cadence, running dynamics, Garmin training effect (aerobic_te, anaerobic_te, te_label) and load (training_load), rpe (1–10), feel (0–100), compliance_score, workout_name (Garmin's planned workout, e.g. Base, Threshold, Sprint, Long Run).
 - activity_laps: per lap; intensity ('warmup', 'interval', 'recovery', 'cooldown', 'active') and workout_step_index link laps to the planned workout. The watch auto-laps every km, so one step is often several laps; get_activity's executed_steps merges them back (one row per step as run, repeats included).
-- activity_records: one row per recorded second: hr, speed_mps, power_w, cadence_spm, gct_ms, vertical_oscillation_mm, step_length_mm, lat/lon, altitude_m. ~725k rows: always filter by activity_id.
+- activity_records: one row per recorded second: hr, speed_mps, power_w, cadence_spm, gct_ms, vertical_oscillation_mm, step_length_mm, lat/lon, altitude_m. Hundreds of thousands of rows: always filter by activity_id.
 - daily_wellness: steps, resting_hr, stress (0–100; stress_avg is the whole day, so use yesterday for a complete value), body battery (body_battery_max ≈ the morning level after the night's recharge), intensity minutes (moderate + 2 × vigorous, weekly goal 150), calories (total, active, resting), respiration, SpO2.
 - sleep: duration and stages, score (0–100), need_actual_min (Garmin's adjusted sleep need), SpO2, respiration (avg_respiration: overnight breaths per minute, very stable per person; a rise of 1–2 together with higher resting HR and lower HRV is an early sign of illness), start/end time (UTC ms; the user's time zone is in profile_snapshots.time_zone), score_feedback and score_insight (Garmin's codes for the night).
 - fitness age: get_today.body.fitness_age (Garmin's fitness age, its components and the biggest lever); profile_snapshots.weight_goal_kg is the weight goal the user set in Garmin.
@@ -67,9 +67,9 @@ daily_metrics (every day, including rest days):
 weekly_summary: Monday-based weeks: runs, km, hours, longest run, load, intensity split %, easy efficiency, pace at reference HR, end-of-week fitness/form/weight, average sleep/HRV/resting HR, red days.
 
 ## Known caveats
-- LT1 is estimated, so "low %" shifts if the true LT1 differs. Almost no running registers above LTHR ${thresholds.lthr}, even in threshold sessions: Garmin's LTHR may be set high.
-- Garmin's sleep need (~8 h) is well above the user's typical sleep (~6.5 h): a chronic gap, tracked as sleep_debt_7d_h rather than in the daily status.
-- 2022 and 2024 contain long training breaks; fitness curves dip accordingly.
+- LT1 is estimated, so "low %" shifts if the true LT1 differs. If almost no running registers above LTHR ${thresholds.lthr}, even in threshold sessions, Garmin's LTHR may be set high.
+- Garmin's sleep need is often well above what someone actually sleeps: a chronic gap shows as sleep_debt_7d_h, not in the daily status.
+- Long training breaks show as dips in the fitness curves; check the dates before reading a dip as a decline.
 - Treadmill speed comes from the wrist and is unreliable; exclude treadmill runs (activity_metrics.is_treadmill) from pace and efficiency analysis.
 `;
 }

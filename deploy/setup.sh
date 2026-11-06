@@ -9,12 +9,11 @@
 
 set -euo pipefail
 
-REPO=git@github.com:Dtsiakas/running-companion.git
+REPO=https://github.com/Dtsiakas/running-companion.git
 REPO_PAGE=https://github.com/Dtsiakas/running-companion
-# GitHub's published SSH host key fingerprint (docs.github.com, "GitHub's SSH key fingerprints"). Checked before the
-# first connection, so the server can't be tricked into trusting an impostor pretending to be github.com.
-GITHUB_ED25519=SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU
-TIMEZONE=Europe/Athens
+# Your time zone: the scheduled syncs and "today" follow it. Run with TIMEZONE=America/New_York (any IANA name) to
+# skip the question.
+TIMEZONE=${TIMEZONE:-}
 
 # These match deploy/common.sh, which is only available after the repo is cloned (step 5).
 APP_DIR=/opt/running-companion
@@ -88,6 +87,10 @@ ufw default allow outgoing >/dev/null
 ufw allow OpenSSH >/dev/null
 ufw --force enable >/dev/null
 ok 'Firewall on: only SSH can come in'
+while [ -z "$TIMEZONE" ] || ! timedatectl list-timezones | grep -qx "$TIMEZONE"; do
+  if [ -n "$TIMEZONE" ]; then echo "  \"$TIMEZONE\" isn't a time zone name."; fi
+  read -rp '  Your time zone, e.g. Europe/Athens or America/New_York: ' TIMEZONE
+done
 timedatectl set-timezone "$TIMEZONE"
 ok "Time zone $TIMEZONE"
 
@@ -98,33 +101,15 @@ if ! id "$APP_USER" >/dev/null 2>&1; then
 fi
 ok "The app runs as '$APP_USER': no password, no login, no admin rights"
 
-# 4. Read access to the GitHub repo ------------------------------------------------------------------------------------
-log '4/9  Read access to the GitHub repo'
-DEPLOY_KEY=$APP_HOME/.ssh/id_ed25519
-install -d -m 700 -o "$APP_USER" -g "$APP_USER" "$APP_HOME/.ssh"
-if [ ! -f "$DEPLOY_KEY" ]; then
-  sudo -u "$APP_USER" ssh-keygen -q -t ed25519 -N '' -C "running-companion server" -f "$DEPLOY_KEY"
-fi
-KNOWN=$APP_HOME/.ssh/known_hosts
-if ! grep -q '^github.com ssh-ed25519' "$KNOWN" 2>/dev/null; then
-  SCAN=$(ssh-keyscan -t ed25519 github.com 2>/dev/null)
-  [ "$(ssh-keygen -lf - <<<"$SCAN" | awk '{print $2}')" = "$GITHUB_ED25519" ] || fail "github.com's key doesn't match GitHub's published fingerprint. Not connecting."
-  echo "$SCAN" >>"$KNOWN"
-  chown "$APP_USER:$APP_USER" "$KNOWN"
-fi
+# 4. Reaching GitHub -----------------------------------------------------------------------------------------------------
+# The repo is public, so cloning and updating need no key, only a connection.
+log '4/9  Reaching GitHub'
 until sudo -u "$APP_USER" -H git ls-remote "$REPO" HEAD >/dev/null 2>&1; do
   echo
-  echo '  The server needs read-only access to your private repo. Add this key on GitHub:'
-  echo "    1. Open $REPO_PAGE/settings/keys/new"
-  echo '    2. Title: running-companion server'
-  echo '    3. Key: paste this line'
-  echo
-  echo "       $(cat "$DEPLOY_KEY.pub")"
-  echo
-  echo '    4. Leave "Allow write access" unticked, then click "Add key".'
-  pause 'Press Enter once it is added.'
+  echo "  Can't reach $REPO_PAGE. Check the server's internet connection (or a firewall blocking HTTPS)."
+  pause 'Press Enter to try again.'
 done
-ok 'The server can read the repo (and only read it)'
+ok 'GitHub is reachable'
 
 # 5. Code ---------------------------------------------------------------------------------------------------------------
 log '5/9  Code'
