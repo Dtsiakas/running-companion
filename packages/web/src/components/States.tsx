@@ -18,10 +18,12 @@ export function ErrorState({ error, retry }: { error: unknown; retry?: () => voi
     : error instanceof ApiError
       ? error.message
       : m.app.states.serverNoAnswer;
+  // Something that isn't there won't appear by asking again.
+  const retryable = retry && !(error instanceof ApiError && error.status === 404);
   return (
     <div className={styles.error} role="alert">
       <p>{message}</p>
-      {retry ? (
+      {retryable ? (
         <button type="button" onClick={retry}>
           {m.app.states.tryAgain}
         </button>

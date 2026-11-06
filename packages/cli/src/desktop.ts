@@ -8,8 +8,10 @@
  *   web. It asks once; the answer is kept in desktop.json next to the data.
  *
  * It works from a clone too:  node packages/cli/src/desktop.ts
+ *
+ *   --set-password    sets a new login password instead of starting (the Start Menu has a shortcut for it)
  */
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -95,6 +97,34 @@ async function healthy(): Promise<boolean> {
   }
 }
 
+/** What every process of the app needs to find its files and this user's data. */
+const appEnv = (): NodeJS.ProcessEnv => ({
+  ...process.env,
+  // A file URL has no spaces ("Running Companion" becomes Running%20Companion), so it needs no quoting here.
+  NODE_OPTIONS: [process.env.NODE_OPTIONS, `--import=${RESOLVE_HOOK}`].filter(Boolean).join(' '),
+  COMPANION_ROOT: ROOT,
+  COMPANION_DATA_DIR: DATA_DIR,
+  COMPANION_INSTALL: 'desktop',
+});
+
+// Forgot the password: the way back in, from this computer only. Works whether the app is on or not.
+if (process.argv.includes('--set-password')) {
+  process.stdout.write('\x1b]0;Running Companion: new password\x07');
+  say('Running Companion: set a new password\n');
+  const result = spawnSync(process.execPath, ['--disable-warning=ExperimentalWarning', join(import.meta.dirname, '..', '..', 'server', 'src', 'set-password.ts')], {
+    cwd: ROOT,
+    stdio: 'inherit',
+    env: appEnv(),
+  });
+  // Keep the window open on success too, so the result can be read.
+  if (process.stdin.isTTY) {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    await rl.question('\nPress Enter to close this window.');
+    rl.close();
+  }
+  process.exit(result.status ?? 1);
+}
+
 process.title = 'Running Companion';
 process.stdout.write('\x1b]0;Running Companion\x07'); // the window's title
 say('Running Companion\n');
@@ -130,12 +160,7 @@ const server = spawn(process.execPath, ['--disable-warning=ExperimentalWarning',
   cwd: ROOT,
   stdio: ['ignore', 'pipe', 'inherit'],
   env: {
-    ...process.env,
-    // A file URL has no spaces ("Running Companion" becomes Running%20Companion), so it needs no quoting here.
-    NODE_OPTIONS: [process.env.NODE_OPTIONS, `--import=${RESOLVE_HOOK}`].filter(Boolean).join(' '),
-    COMPANION_ROOT: ROOT,
-    COMPANION_DATA_DIR: DATA_DIR,
-    COMPANION_INSTALL: 'desktop',
+    ...appEnv(),
     PORT: String(PORT),
     HOST: '127.0.0.1',
     PUBLIC_URL: publicUrl ?? LOCAL,

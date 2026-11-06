@@ -28,6 +28,7 @@ it brings its own Node, needs no administrator rights, and adds Running Companio
 - **Closing that window** turns it off. Nothing keeps running in the background.
 - **Your data** is in `%LOCALAPPDATA%\Running Companion`, apart from the app: updating (run the new installer) or
   uninstalling (Settings → Apps) never touches it.
+- **Forgot the password?** Start Menu → "Running Companion (new password)" sets a new one, from that computer only.
 - **Phone and Claude on the web:** if [Tailscale](https://tailscale.com) is installed and connected, the window asks
   once whether to give the app a private HTTPS address through Tailscale Funnel, there only while the window is open.
   The answer is kept in `desktop.json` in the data folder. Without it, the app works on that computer, and so does
@@ -346,7 +347,7 @@ docker compose start app
 ## Docker
 
 Every release is published as an image for amd64 and arm64 (a Raspberry Pi 4 or 5 works):
-`ghcr.io/dtsiakas/running-companion`. `latest` is the newest release, `0.3.1` (or `0.3`) pins one, and `edge` follows
+`ghcr.io/dtsiakas/running-companion`. `latest` is the newest release, `0.3.2` (or `0.3`) pins one, and `edge` follows
 `main`. Everything the app keeps (database, settings, Garmin token, FIT files) is in `/data`, so mount a volume there and
 updating is just pulling a newer image.
 

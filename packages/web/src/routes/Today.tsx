@@ -5,6 +5,8 @@ import { Signals } from '../components/Signals.tsx';
 import { AskClaude } from '../components/AskClaude.tsx';
 import { LoadChart } from '../components/charts/LoadChart.tsx';
 import { SleepStages } from '../components/charts/SleepStages.tsx';
+import { ApiError } from '../api/client.ts';
+import { NoData } from '../components/NoData.tsx';
 import { KeyNotice } from '../components/KeyNotice.tsx';
 import { Lane } from '../components/Lane.tsx';
 import { Note } from '../components/Note.tsx';
@@ -30,6 +32,9 @@ export function Today() {
   const signals = useSignals(date);
 
   if (today.isPending) return <Loading />;
+  // Nothing synced yet (a fresh install): the next step, not an error.
+  if (today.isError && today.error instanceof ApiError && today.error.status === 404)
+    return <NoData />;
   if (today.isError) return <ErrorState error={today.error} retry={() => void today.refetch()} />;
 
   const t = today.data;

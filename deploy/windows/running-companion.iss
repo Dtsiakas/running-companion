@@ -52,6 +52,10 @@ Name: "{autoprograms}\Running Companion"; Filename: "{app}\node\node.exe"; \
   Parameters: "--disable-warning=ExperimentalWarning ""{app}\app\packages\cli\src\desktop.ts"""; \
   WorkingDir: "{app}\app"; IconFilename: "{app}\running-companion.ico"; \
   Comment: "Your Garmin running and health data. Close its window to turn it off."
+Name: "{autoprograms}\Running Companion (new password)"; Filename: "{app}\node\node.exe"; \
+  Parameters: "--disable-warning=ExperimentalWarning ""{app}\app\packages\cli\src\desktop.ts"" --set-password"; \
+  WorkingDir: "{app}\app"; IconFilename: "{app}\running-companion.ico"; \
+  Comment: "Forgot your password? Set a new one."
 Name: "{autodesktop}\Running Companion"; Filename: "{app}\node\node.exe"; \
   Parameters: "--disable-warning=ExperimentalWarning ""{app}\app\packages\cli\src\desktop.ts"""; \
   WorkingDir: "{app}\app"; IconFilename: "{app}\running-companion.ico"; Tasks: desktopicon

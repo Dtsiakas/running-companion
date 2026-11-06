@@ -38,13 +38,20 @@ const CATEGORIES = ['easy', 'long', 'recovery', 'tempo', 'threshold', 'intervals
  * JSON for the dashboard. Same query functions as the MCP tools, so both always agree.
  * Query strings are validated with zod: bad input gets a 400 explaining what's wrong instead of a confusing SQL error.
  */
+const isNotFound = (value: unknown): value is { error: string } =>
+  !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 1 && typeof (value as { error?: unknown }).error === 'string';
+
 export function apiRoutes({ db, writeDb, sync, isSyncRunning, cartoKey = null }: ApiRouteOptions): Router {
   const router = Router();
 
   const handle = <T extends z.ZodType>(schema: T, run: (input: z.infer<T>, req: Request) => unknown) => (req: Request, res: Response) => {
     const parsed = schema.safeParse({ ...req.query, ...req.params });
     if (!parsed.success) return res.status(400).json({ error: 'Invalid parameters', issues: z.flattenError(parsed.error).fieldErrors });
-    res.json(run(parsed.data, req));
+    const result = run(parsed.data, req);
+    // The queries answer "nothing here" with { error } (the MCP tools pass that sentence on as it is). Over HTTP it's a 404,
+    // so the app can tell it apart from data.
+    if (isNotFound(result)) return res.status(404).json(result);
+    res.json(result);
   };
 
   router.get('/session', (_req, res) => res.json({ loggedIn: true }));

@@ -5,7 +5,8 @@ type T = I18n['m']['pages'];
 /**
  * The server-rendered pages: login (dashboard), first-start setup and consent (Claude connector), in the browser's
  * language (Accept-Language), since they come before the app and its language setting.
- * Plain HTML with no scripts, so they work before the dashboard exists and can't be broken by it.
+ * Plain HTML, so they work before the dashboard exists and can't be broken by it. The one script, /reveal.js, only
+ * adds Show/Hide buttons to password fields; without it they're ordinary fields.
  * Every interpolated value goes through escapeHtml.
  */
 export function escapeHtml(value: string): string {
@@ -14,11 +15,12 @@ export function escapeHtml(value: string): string {
 
 function layout(title: string, body: string, t: T, width = 380): string {
   return `<!doctype html>
-<html lang="${t.lang}">
+<html lang="${t.lang}" data-show="${escapeHtml(t.reveal.show)}" data-hide="${escapeHtml(t.reveal.hide)}" data-show-label="${escapeHtml(t.reveal.showLabel)}" data-hide-label="${escapeHtml(t.reveal.hideLabel)}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)} · Running Companion</title>
+<script src="/reveal.js" defer></script>
 <style>
   /* The dashboard's colours (packages/web/src/styles/tokens.css), so signing in looks like the same app. */
   :root { color-scheme: light dark; --bg: #eef1ef; --card: #fff; --text: #14212b; --muted: #44535d; --accent: #2463a6; --on-accent: #fff; --border: #d3dbd9; --error: #b3261e; }
@@ -42,6 +44,10 @@ function layout(title: string, body: string, t: T, width = 380): string {
   fieldset label { display: flex; align-items: center; gap: 6px; font-size: 16px; margin: 0; }
   a { color: var(--accent); }
   strong { color: var(--text); }
+  .reveal-field { position: relative; display: block; margin-bottom: 16px; }
+  .reveal-field input { margin-bottom: 0; padding-right: 6.5rem; }
+  button.reveal { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); flex: none; width: auto; min-height: 36px; padding: 0 10px; font-size: 14px; background: none; border: 0; color: var(--accent); }
+  button.reveal:hover { text-decoration: underline; }
 </style>
 </head>
 <body><main>${body}</main></body>

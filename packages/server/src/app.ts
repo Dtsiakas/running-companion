@@ -17,6 +17,7 @@ import { apiRoutes } from './routes/api.ts';
 import { authRoutes } from './routes/auth.ts';
 import { mcpRoutes } from './routes/mcp.ts';
 import { needsSetup, newSetupCode, settingsRoutes } from './routes/settings.ts';
+import { REVEAL_SCRIPT } from './auth/reveal.ts';
 
 
 export interface AppDependencies {
@@ -79,6 +80,11 @@ export function createApp(deps: AppDependencies): App {
   // Behind Tailscale/Caddy the real client IP is in X-Forwarded-For; trusting it keeps rate limits per client.
   if (config.trustProxy) app.set('trust proxy', 1);
   app.use(securityHeaders);
+
+  // Show/Hide buttons for the server-rendered pages' password fields (see auth/reveal.ts).
+  app.get('/reveal.js', (_req, res) => {
+    res.type('text/javascript').set('Cache-Control', 'public, max-age=3600').send(REVEAL_SCRIPT);
+  });
 
   app.get('/healthz', (_req, res) => {
     res.json({ ok: true, version: APP_VERSION, lastSync: getFreshness(deps.readDb).last_sync, syncRunning: deps.isSyncRunning() });

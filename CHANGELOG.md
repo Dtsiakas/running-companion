@@ -6,6 +6,22 @@ set up or configured, and its notes say what to do.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-07
+
+### Added
+
+- Password and key fields have a Show button, so you can check what you typed: on the setup, login and new-password
+  pages, and for the password and Garmin key in Settings. Fields go back to hidden when the form is sent.
+- Forgot the password? The Windows app's Start Menu has a "Running Companion (new password)" shortcut that sets a new
+  one. It works on that computer only, whether the app is on or not, and signs out every other device. From a clone:
+  `node packages/cli/src/desktop.ts --set-password`.
+
+### Fixed
+
+- A fresh install crashed on Today before the first sync, since there was no data yet. Today now says what to do next:
+  add the Garmin key in Settings, or run the first sync. The API answers "nothing here" with 404 instead of 200 with
+  an error, and the app no longer offers "Try again" for something that isn't there.
+
 ## [0.3.1] - 2026-11-07
 
 ### Fixed
@@ -118,7 +134,8 @@ The first release.
 - Docker image for amd64 and arm64 at `ghcr.io/dtsiakas/running-companion`, with Compose files for local use,
   Tailscale Funnel and Caddy.
 
-[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/Dtsiakas/running-companion/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/Dtsiakas/running-companion/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Dtsiakas/running-companion/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Dtsiakas/running-companion/compare/v0.2.0...v0.2.1

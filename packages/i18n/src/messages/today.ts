@@ -2,6 +2,14 @@ import { define, plural } from '../define.ts';
 
 export const today = define(
   {
+    empty: {
+      title: 'No data yet',
+      needKey: 'Running Companion gets your data from Garmin Connect, so it needs your Garmin key first. Add it in Settings, then come back here and sync.',
+      addKey: 'Add your Garmin key',
+      syncNow: 'Your Garmin key is in place. The first sync brings in the last months of data and can take a few minutes.',
+      syncing: 'Syncing with Garmin. The first sync can take a few minutes; this screen fills in when it’s done.',
+      demo: 'The demo has no data for this day.',
+    },
     worthKnowing: 'Worth knowing',
     recovery: 'Recovery',
     hrv7d: 'HRV, 7-day average',
@@ -51,6 +59,14 @@ export const today = define(
     laneLabel: (value: string, low: string, high: string) => `Today ${value}; your normal range is ${low} to ${high}`,
   },
   {
+    empty: {
+      title: 'Δεν υπάρχουν δεδομένα ακόμη',
+      needKey: 'Το Running Companion παίρνει τα δεδομένα σου από το Garmin Connect, οπότε χρειάζεται πρώτα το κλειδί Garmin. Πρόσθεσέ το στις Ρυθμίσεις και μετά γύρνα εδώ για συγχρονισμό.',
+      addKey: 'Πρόσθεσε το κλειδί Garmin',
+      syncNow: 'Το κλειδί Garmin είναι στη θέση του. Ο πρώτος συγχρονισμός φέρνει τους τελευταίους μήνες και μπορεί να πάρει λίγα λεπτά.',
+      syncing: 'Συγχρονισμός με το Garmin. Ο πρώτος μπορεί να πάρει λίγα λεπτά· η οθόνη γεμίζει όταν τελειώσει.',
+      demo: 'Η επίδειξη δεν έχει δεδομένα για αυτή τη μέρα.',
+    },
     worthKnowing: 'Αξίζει να ξέρεις',
     recovery: 'Αποκατάσταση',
     hrv7d: 'HRV, μέσος όρος 7 ημερών',

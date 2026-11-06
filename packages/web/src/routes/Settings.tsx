@@ -11,6 +11,7 @@ import { f, languageChoice, m, unitsChoice, type LangChoice, type UnitsChoice } 
 import { SOURCE_URL, VERSION } from '../lib/source.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Settings.module.css';
+import { SecretInput } from '../components/SecretInput.tsx';
 
 const GARMIN_KEY_PAGE = 'https://connect.garmin.com/app/settings/personalApiToken';
 
@@ -269,7 +270,7 @@ function ReplaceKey({ hasKey }: { hasKey: boolean }) {
       </p>
       <label>
         <span>{m.settings.apiKey}</span>
-        <input type="password" value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" spellCheck={false} required />
+        <SecretInput value={key} onChange={(e) => setKey(e.target.value)} autoComplete="off" spellCheck={false} required />
       </label>
       <label>
         <span>{m.settings.expiresOptional}</span>
@@ -326,16 +327,15 @@ function ChangePassword() {
       <p className={styles.small}>{m.settings.passwordNote}</p>
       <label>
         <span>{m.settings.currentPassword}</span>
-        <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" required />
+        <SecretInput value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" required />
       </label>
       <label>
         <span>{m.settings.newPassword}</span>
-        <input type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" minLength={12} required />
+        <SecretInput value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" minLength={12} required />
       </label>
       <label>
         <span>{m.settings.repeat}</span>
-        <input
-          type="password"
+        <SecretInput
           value={repeat}
           onChange={(e) => setRepeat(e.target.value)}
           autoComplete="new-password"

@@ -201,7 +201,10 @@ test('demo mode: no setup, no login, and settings are read-only', async () => {
   demoServer.on('request', demo.app);
   try {
     assert.equal(demo.needsSetup(), false);
-    assert.equal((await fetch(`${demoBase}/api/today`)).status, 200);
+    // No login needed. The database here is empty, so "no data yet" is the answer: a 404 with a sentence, not a 401.
+    const today = await fetch(`${demoBase}/api/today`);
+    assert.equal(today.status, 404);
+    assert.match((await today.json()).error, /No metrics yet/);
     const read = await fetch(`${demoBase}/api/settings`);
     assert.equal((await read.json()).demo, true);
     const write = await fetch(`${demoBase}/api/settings/garmin-key/expiry`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: '{"expiresOn":null}' });
@@ -215,7 +218,8 @@ test('demo mode: no setup, no login, and settings are read-only', async () => {
 
 test('server pages follow the browser’s language', async () => {
   const greek = await (await fetch(`${base}/login`, { headers: { 'accept-language': 'el-GR,el;q=0.9' } })).text();
-  assert.match(greek, /<html lang="el">/);
+  assert.match(greek, /<html lang="el"/);
+  assert.match(greek, /data-show="Εμφάνιση"/);
   assert.match(greek, /Σύνδεση/);
   const english = await (await fetch(`${base}/login`, { headers: { 'accept-language': 'fr-FR' } })).text();
   assert.match(english, /Log in/);

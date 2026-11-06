@@ -93,6 +93,10 @@ test('logging in gives an HttpOnly session cookie that opens the API', async () 
 
   const invalid = await fetch(`${base}/api/trend?metric=nonsense`, { headers: { cookie } });
   assert.equal(invalid.status, 400);
+  // Nothing there is a 404 with the sentence, so the app can tell "no data yet" apart from data.
+  const missing = await fetch(`${base}/api/activities/999999`, { headers: { cookie } });
+  assert.equal(missing.status, 404);
+  assert.match((await missing.json()).error, /not found/);
 
   assert.deepEqual(await (await fetch(`${base}/api/sync`, { method: 'POST', headers: { cookie } })).json(), { synced: 1 });
   // No CARTO key configured: the maps fall back to OpenStreetMap, and the security policy allows its tiles.

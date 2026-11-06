@@ -50,6 +50,8 @@ export const app = define(
       opened: (label: string) => `Opened Claude with “${label}”.`,
       openedPaste: (label: string) => `Opened Claude with “${label}”. If the message box is empty, paste: it’s on your clipboard.`,
     },
+    /** The button beside a password or key field. */
+    reveal: { show: 'Show', hide: 'Hide', showLabel: 'Show what you typed', hideLabel: 'Hide what you typed' },
   },
   {
     nav: {
@@ -99,5 +101,6 @@ export const app = define(
       opened: (label: string) => `Άνοιξε το Claude με το «${label}».`,
       openedPaste: (label: string) => `Άνοιξε το Claude με το «${label}». Αν το πλαίσιο μηνύματος είναι άδειο, κάνε επικόλληση: το κείμενο είναι στο πρόχειρο.`,
     },
+    reveal: { show: 'Εμφάνιση', hide: 'Απόκρυψη', showLabel: 'Εμφάνιση όσων έγραψες', hideLabel: 'Απόκρυψη όσων έγραψες' },
   },
 );
