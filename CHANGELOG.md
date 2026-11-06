@@ -6,6 +6,20 @@ set up or configured, and its notes say what to do.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-07
+
+### Added
+
+- A Windows installer (`Running-Companion-Setup-<version>.exe`, about 28 MB) on every release. It brings its own Node
+  and needs no administrator rights. The Start Menu shortcut opens one window and the browser; the first start goes
+  straight to setup with the code filled in, and closing the window turns everything off. Data goes in
+  `%LOCALAPPDATA%\Running Companion`, so updating or uninstalling never touches it. With Tailscale connected, it asks
+  once whether to use Funnel for the phone and Claude on the web. Built and tested (installed, started, uninstalled)
+  in CI. Not code-signed yet.
+- `node packages/cli/src/desktop.ts` runs the same launcher from a clone, on any OS.
+- An opt-in notice in Settings → About when a new version is out, with how to update for the installer, Docker or a
+  clone. When on, the app asks GitHub for the newest version number once a day and sends nothing about you.
+
 ## [0.2.1] - 2026-11-06
 
 ### Added
@@ -95,7 +109,8 @@ The first release.
 - Docker image for amd64 and arm64 at `ghcr.io/dtsiakas/running-companion`, with Compose files for local use,
   Tailscale Funnel and Caddy.
 
-[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Dtsiakas/running-companion/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Dtsiakas/running-companion/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Dtsiakas/running-companion/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Dtsiakas/running-companion/releases/tag/v0.1.0

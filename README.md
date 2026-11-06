@@ -19,6 +19,24 @@ All screenshots are from the [demo](#demo), with generated data.
 
 ## Quick start
 
+**On Windows, install it like any app.** Download `Running-Companion-Setup-<version>.exe` from the
+[latest release](https://github.com/Dtsiakas/running-companion/releases/latest) and run it. Nothing else to install:
+it brings its own Node, needs no administrator rights, and adds Running Companion to the Start Menu.
+
+- **Starting** it opens a small window and your browser. The first time, that's the setup page: choose a password and
+  paste a [Garmin Personal API key](https://connect.garmin.com/app/settings/personalApiToken).
+- **Closing that window** turns it off. Nothing keeps running in the background.
+- **Your data** is in `%LOCALAPPDATA%\Running Companion`, apart from the app: updating (run the new installer) or
+  uninstalling (Settings → Apps) never touches it.
+- **Phone and Claude on the web:** if [Tailscale](https://tailscale.com) is installed and connected, the window asks
+  once whether to give the app a private HTTPS address through Tailscale Funnel, there only while the window is open.
+  The answer is kept in `desktop.json` in the data folder. Without it, the app works on that computer, and so does
+  Claude Desktop's local connector.
+
+The installer isn't code-signed yet, so Windows shows "Windows protected your PC" the first time: choose More info →
+Run anyway. It's built by GitHub Actions from this repository for every release, and tested there (installed, started
+and uninstalled) before it's published.
+
 **Look around first**, on made-up data (no Garmin account, nothing of yours):
 
 ```sh
@@ -28,10 +46,12 @@ docker run --rm -p 127.0.0.1:8788:8788 ghcr.io/dtsiakas/running-companion \
 
 Then open http://localhost:8788. Without Docker: `npm ci && npm run build && npm run demo`.
 
-**Run your own** with [Docker](#docker) (the simplest, with HTTPS through Tailscale or Caddy) or [Node](#setup). On first
-start the log prints a setup link: choose a password and paste a
-[Garmin Personal API key](https://connect.garmin.com/app/settings/personalApiToken). To ask Claude about your data, add
-the connector address from Settings → Claude as a custom connector in Claude.
+**On a server, or on macOS and Linux,** use [Docker](#docker) (the simplest, with HTTPS through Tailscale or Caddy) or
+[Node](#setup). On first start the log prints a setup link. To ask Claude about your data, add the connector address
+from Settings → Claude as a custom connector in Claude.
+
+**Updates:** Settings → About can tell you when a new version is out. It's off until you turn it on; when on, the app
+asks GitHub for the newest version number once a day and sends nothing about you.
 
 ## Stack
 
@@ -224,7 +244,7 @@ connected and has a button that signs it out everywhere.
 |---|---|---|
 | `/healthz` | public | Up or not, version, last sync time |
 | `/setup` | setup code | First start only: password and Garmin key; every other page waits for it |
-| `/api/settings` | session | Garmin key status and replacement, key expiry date, password change (the key is never sent back), Claude's connection and signing it out, backups |
+| `/api/settings` | session | Garmin key status and replacement, key expiry date, password change (the key is never sent back), Claude's connection and signing it out, backups, the opt-in update notice |
 | `/login`, `/logout` | public | Dashboard login (password, 10 attempts per 15 min) |
 | `/.well-known/*`, `/authorize`, `/token`, `/register`, `/revoke` | public | OAuth 2.1 for Claude's connector (MCP SDK) |
 | `/oauth/consent` | password | Login + "Allow" step of the OAuth flow |
@@ -326,7 +346,7 @@ docker compose start app
 ## Docker
 
 Every release is published as an image for amd64 and arm64 (a Raspberry Pi 4 or 5 works):
-`ghcr.io/dtsiakas/running-companion`. `latest` is the newest release, `0.2.1` (or `0.2`) pins one, and `edge` follows
+`ghcr.io/dtsiakas/running-companion`. `latest` is the newest release, `0.3.0` (or `0.3`) pins one, and `edge` follows
 `main`. Everything the app keeps (database, settings, Garmin token, FIT files) is in `/data`, so mount a volume there and
 updating is just pulling a newer image.
 

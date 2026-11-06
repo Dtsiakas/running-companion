@@ -27,7 +27,7 @@ body:
     attributes:
       label: Version
       description: Settings → About, or /healthz.
-      placeholder: 0.2.0
+      placeholder: 0.3.0
     validations:
       required: true
   - type: dropdown
@@ -35,6 +35,7 @@ body:
     attributes:
       label: How you run it
       options:
+        - The Windows app (installer)
         - npm (npm start or npm run up)
         - Docker
         - The demo
