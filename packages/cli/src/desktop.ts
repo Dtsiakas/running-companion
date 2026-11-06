@@ -140,6 +140,7 @@ if (await healthy()) {
 // A public address, if Tailscale is there and the user wants one ---------------------------------------------------
 const prefs = readPrefs();
 const tailnet = status();
+let askedNow = false;
 const dnsName = tailnet?.BackendState === 'Running' ? tailnet.Self?.DNSName?.replace(/\.$/, '') : undefined;
 if (dnsName && prefs.publicAddress === undefined && process.stdin.isTTY) {
   say('Tailscale is connected on this computer. Running Companion can use it for a private HTTPS address on the');
@@ -149,11 +150,15 @@ if (dnsName && prefs.publicAddress === undefined && process.stdin.isTTY) {
   const answer = await rl.question('Turn it on? [y/N] ');
   rl.close();
   prefs.publicAddress = /^y/i.test(answer.trim());
+  askedNow = true;
   savePrefs(prefs);
   say(`Saved. To change it later, edit "publicAddress" in ${PREFS_FILE}.\n`);
 }
 const publicUrl = prefs.publicAddress && dnsName ? `https://${dnsName}` : null;
+// Say where Tailscale stands, so a missing phone address is never a mystery.
 if (prefs.publicAddress && !dnsName) say(`Tailscale isn't connected, so this time the app is on this computer only. Open Tailscale and start Running Companion again to use it from your phone.\n`);
+else if (prefs.publicAddress === false && dnsName && !askedNow) say(`Phone and Claude on the web: off (you chose this). To be asked again, delete ${PREFS_FILE} and start the app again.\n`);
+else if (prefs.publicAddress === undefined && tailnet && !dnsName) say(`Tailscale is installed but not connected (${tailnet.BackendState}). Connect it and start the app again to use it from your phone too.\n`);
 
 // The server -----------------------------------------------------------------------------------------------------------
 const server = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', join(import.meta.dirname, '..', '..', 'server', 'src', 'main.ts')], {

@@ -23,10 +23,13 @@ export interface TailscaleStatus {
 
 /** null when the Tailscale service isn't reachable at all (not installed, or the app isn't running). */
 export function status(): TailscaleStatus | null {
-  const result = tailscale(['status', '--json']);
-  // `status` exits non-zero while disconnected but still prints the JSON, so parse whatever came back.
+  const result = spawnSync(TAILSCALE, ['status', '--json'], { encoding: 'utf8', stdio: 'pipe' });
+  if (result.error) return null;
+  // `status` exits non-zero while disconnected but still prints the JSON. Only stdout holds it: a warning on stderr
+  // (a version mismatch between the app and its service, say) would make the whole text unreadable as JSON.
+  const json = (result.stdout ?? '').slice((result.stdout ?? '').indexOf('{'));
   try {
-    return JSON.parse(result.output.slice(result.output.indexOf('{'))) as TailscaleStatus;
+    return JSON.parse(json) as TailscaleStatus;
   } catch {
     return null;
   }

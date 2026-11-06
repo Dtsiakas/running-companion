@@ -6,6 +6,16 @@ set up or configured, and its notes say what to do.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-07
+
+### Fixed
+
+- The Windows app never asked about Tailscale on some computers, even with Tailscale connected. When Tailscale printed
+  a warning (for example that its app and its service are different versions), the app couldn't read its status and
+  assumed there was no Tailscale. It now reads only the status itself.
+- The window now says where Tailscale stands instead of saying nothing: installed but not connected, or turned off by
+  your earlier answer (and how to be asked again).
+
 ## [0.3.2] - 2026-11-07
 
 ### Added
@@ -134,7 +144,8 @@ The first release.
 - Docker image for amd64 and arm64 at `ghcr.io/dtsiakas/running-companion`, with Compose files for local use,
   Tailscale Funnel and Caddy.
 
-[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/Dtsiakas/running-companion/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/Dtsiakas/running-companion/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/Dtsiakas/running-companion/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Dtsiakas/running-companion/compare/v0.2.1...v0.3.0
