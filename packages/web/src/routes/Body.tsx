@@ -1,5 +1,6 @@
 import { useBody } from '../api/hooks.ts';
 import { WeightChart } from '../components/charts/WeightChart.tsx';
+import { FoodHistory } from '../components/Food.tsx';
 import { FuelPlanner } from '../components/FuelPlanner.tsx';
 import { Note } from '../components/Note.tsx';
 import { Section } from '../components/Section.tsx';
@@ -153,6 +154,8 @@ export function Body() {
           </Note>
         </Section>
       </div>
+
+      <FoodHistory date={body.data.date} />
 
       {nutrition ? (
         <Section title={m.body.whatToEat}>

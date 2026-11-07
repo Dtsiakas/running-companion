@@ -15,7 +15,7 @@ import {
   listActivities,
   TREND_METRICS,
 } from '@companion/queries';
-import { getBodyReport, getFormTrend, getPatterns, getProgress, getSignals, getSleepReport, getStressReport, getWeeklyReport, getYearReview } from '@companion/insights';
+import { deleteMeal, getBodyReport, getFormTrend, getNutrition, getPatterns, getProgress, getSignals, getSleepReport, getStressReport, getWeeklyReport, getYearReview } from '@companion/insights';
 import { getRunForecast } from '@companion/weather';
 import { requestI18n } from '../locale.ts';
 import { Router, type Request, type Response } from 'express';
@@ -23,7 +23,7 @@ import { z } from 'zod';
 
 export interface ApiRouteOptions {
   db: DatabaseSync;
-  /** Only for caching the weather forecast: everything else the dashboard does is reading. */
+  /** For the weather forecast cache and removing food-log entries: everything else the dashboard does is reading. */
   writeDb: DatabaseSync;
   /** CARTO basemaps key, sent to the browser for the map tiles (it's a public tile key, like any web map's). */
   cartoKey?: string | null;
@@ -119,6 +119,15 @@ export function apiRoutes({ db, writeDb, sync, isSyncRunning, cartoKey = null }:
   router.get('/progress', handle(z.object({ date }), ({ date: day }, req) => getProgress(db, day, requestI18n(req))));
   router.get('/year', handle(z.object({ year: z.coerce.number().int().min(2000).max(2100), today: date }), ({ year, today }, req) => getYearReview(db, year, today, requestI18n(req))));
   router.get('/form', handle(z.object({ date }), ({ date: day }, req) => getFormTrend(db, day, requestI18n(req))));
+
+  router.get('/nutrition', handle(z.object({ date }), ({ date: day }, req) => getNutrition(db, day, requestI18n(req))));
+  // Meals are logged by Claude (the log_meal tool); the dashboard can only remove one.
+  router.delete('/meals/:id', (req, res) => {
+    const id = z.coerce.number().int().positive().safeParse(req.params.id);
+    if (!id.success) return res.status(400).json({ error: 'Invalid meal id' });
+    if (!deleteMeal(writeDb, id.data)) return res.status(404).json({ error: `No meal ${id.data}.` });
+    res.status(204).end();
+  });
 
   router.get('/sync', (_req, res) => res.json({ running: isSyncRunning() }));
 

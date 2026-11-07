@@ -6,6 +6,19 @@ set up or configured, and its notes say what to do.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-07
+
+### Added
+
+- A food log, kept by Claude. Ask Claude to log a meal (a photo, an order screenshot or a description) and it saves its
+  estimate of calories, protein, carbohydrate and fat. It logs only when asked: questions about a food or choosing
+  between options are never logged. New tools: `log_meal`, `delete_meal`, `get_nutrition`.
+- Today shows the day's meals and totals against the day's protein and carbohydrate targets; entries can be removed
+  there (two taps).
+- Body shows the last 14 days, eaten next to Garmin's calories burned, and feedback on the last week: protein,
+  carbohydrate on hard days and the day before long runs, and big gaps between eaten and burned on training days.
+  Days with under 1,200 kcal logged count as partly logged and stay out of the feedback.
+
 ## [0.4.0] - 2026-11-07
 
 A personal app from here on: Windows only, for one person. Everything that existed only for other people is gone.
@@ -166,7 +179,8 @@ The first release.
 - Docker image for amd64 and arm64 at `ghcr.io/dtsiakas/running-companion`, with Compose files for local use,
   Tailscale Funnel and Caddy.
 
-[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Dtsiakas/running-companion/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Dtsiakas/running-companion/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/Dtsiakas/running-companion/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/Dtsiakas/running-companion/compare/v0.3.1...v0.3.2

@@ -2,6 +2,7 @@ import type { BaselineBandsResponse, TodayResponse } from '@companion/queries';
 import { Link } from 'react-router';
 import { useBaselines, useDaily, useSignals, useToday } from '../api/hooks.ts';
 import { Signals } from '../components/Signals.tsx';
+import { FoodToday } from '../components/Food.tsx';
 import { AskClaude } from '../components/AskClaude.tsx';
 import { LoadChart } from '../components/charts/LoadChart.tsx';
 import { SleepStages } from '../components/charts/SleepStages.tsx';
@@ -170,6 +171,8 @@ export function Today() {
       </div>
 
       <WhenToRun />
+
+      <FoodToday date={t.date} />
 
       <Section title={m.today.askClaude}>
         <AskClaude requests={todayRequests(t.date)} />

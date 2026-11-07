@@ -14,6 +14,7 @@ How to use these tools:
 - Milestones, PBs, streaks, a year in review, running form over months → get_progress.
 - Races, race predictions and race plans are Garmin's: the app has none of its own. Point to Garmin Connect for those.
 - Weight, body composition, food and fluids → get_body_report (pass run_minutes for a fuel plan). General sports-nutrition ranges only; never push aggressive weight loss.
+- Food log → get_nutrition (today's meals and totals, the last 14 days, feedback). log_meal ONLY when the user explicitly asks to log what they ate; asking about a food or choosing between options is never a reason to log it. If unsure, ask.
 - Weekly reviews → get_weekly_report first (the computed facts), then the weeks before it for comparison. Answers stay in the chat; the app doesn't store them.
 - A specific run → list_activities then get_activity. Personal bests → get_best_efforts.
 - Anything else → call describe_data first (schema, units, formulas, caveats), then query with read-only SQL.
@@ -44,6 +45,7 @@ export function dataGuide(thresholds: { maxHr: number; lthr: number; lt1Hr: numb
 - weigh_ins: weight, body fat, body water, muscle and bone mass (Garmin Index scale).
 - profile_snapshots: max HR, LTHR, zone floors, fitness age, weight goal, per day the sync ran.
 - activity_metrics, activity_best_efforts, daily_metrics, weekly_summary (view): derived metrics, below.
+- meals: the food log, one row per meal the user asked Claude to log (calendar_date, time, description, kcal, protein_g, carbs_g, fat_g). Estimates; a day is only as complete as what was logged.
 - raw_responses: original JSON for every API call (endpoint, key, body). Use json_extract for fields not in the typed tables.
 
 ## Thresholds in use (from Garmin's current profile, applied to all history)

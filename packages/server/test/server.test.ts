@@ -195,7 +195,7 @@ test('full OAuth flow, then the MCP tools over HTTP, then token refresh', async 
   const mcp = new Client({ name: 'test', version: '1' });
   await mcp.connect(new StreamableHTTPClientTransport(new URL('/mcp', base), { requestInit: { headers: { Authorization: `Bearer ${tokens.access_token}` } } }));
   const { tools } = await mcp.listTools();
-  assert.equal(tools.length, 15);
+  assert.equal(tools.length, 18);
   const result = await mcp.callTool({ name: 'list_activities', arguments: {} });
   assert.equal(JSON.parse((result.content as Array<{ text: string }>)[0]!.text)[0].distance_km, 7.2);
   await mcp.close();

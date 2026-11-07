@@ -23,6 +23,8 @@ This is a personal project. It isn't set up or supported for anyone else.
   data folder; delete that file to be asked again.
 - **Claude connector:** Settings → Claude shows the address (`https://<machine>.ts.net/mcp`). Add it in Claude as a
   custom connector and approve it with the password.
+- **Food log:** ask Claude to log a meal ("log this", with a photo or a description). It only logs when asked. Meals
+  show on Today (removable there) and the last two weeks with feedback on Body.
 - **Backups:** one a day in `data\backups`, automatic. To restore: close the app, then from a clone run
   `npm run restore -- <file>` with `COMPANION_DATA_DIR` pointing at the data folder.
 

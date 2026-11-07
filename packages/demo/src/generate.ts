@@ -25,7 +25,7 @@ export interface DemoOptions {
   now?: number;
 }
 
-export const MISSING_STREAMS = ['dynamics', 'power', 'hrv', 'scale', 'battery-events', 'sleep', 'gps', 'fitness-age'] as const;
+export const MISSING_STREAMS = ['dynamics', 'power', 'hrv', 'scale', 'battery-events', 'sleep', 'gps', 'fitness-age', 'meals'] as const;
 export type MissingStream = (typeof MISSING_STREAMS)[number];
 
 export interface DemoSummary {
@@ -82,6 +82,14 @@ interface Segment {
   intensity: 'active' | 'warmup' | 'interval' | 'recovery' | 'cooldown';
   step: number | null;
 }
+
+/** A typical day of meals: [time, description, kcal, protein g, carbs g, fat g]. */
+const DEMO_MEALS: Array<[string, string, number, number, number, number]> = [
+  ['08:15', 'Greek yogurt with honey, walnuts and a banana', 520, 24, 68, 18],
+  ['13:30', 'Chicken souvlaki pita with tzatziki', 680, 38, 70, 26],
+  ['17:00', 'Toast with peanut butter', 320, 11, 30, 17],
+  ['20:45', 'Pasta with tomato sauce, tuna and a side salad', 760, 40, 105, 18],
+];
 
 export function generateDemo(db: DatabaseSync, options: DemoOptions): DemoSummary {
   const timeZone = options.timeZone ?? DEMO_PLACE.timeZone;
@@ -189,6 +197,19 @@ export function generateDemo(db: DatabaseSync, options: DemoOptions): DemoSummar
         fetched_at: now,
         body: JSON.stringify({ chronologicalAge: 34, fitnessAge: 29, achievableFitnessAge: 27, components }),
       });
+    }
+    // The food log: what the demo runner asked Claude to log over the last three weeks, with the gaps of real use
+    // (a few days not logged, a few only partly).
+    if (!missing.has('meals')) {
+      const insertMeal = db.prepare('INSERT INTO meals (calendar_date, time, description, kcal, protein_g, carbs_g, fat_g, logged_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+      for (let date = addDays(to, -20); date <= to; date = addDays(date, 1)) {
+        if (random.chance(0.15)) continue;
+        const meals = date === to ? DEMO_MEALS.slice(0, 2) : random.chance(0.15) ? DEMO_MEALS.slice(0, 2) : DEMO_MEALS;
+        for (const [time, description, kcal, protein, carbs, fat] of meals) {
+          const scale = 0.85 + random.next() * 0.3;
+          insertMeal.run(date, time, description, Math.round(kcal * scale), Math.round(protein * scale), Math.round(carbs * scale), Math.round(fat * scale), now);
+        }
+      }
     }
     for (const stream of ['activities', 'daily_wellness', 'sleep', 'hrv', 'weigh_ins']) {
       upsert(db, 'sync_state', ['stream'], { stream, newest_date: to, oldest_date: from, backfill_done: 1, empty_streak: 0, updated_at: now });

@@ -12,7 +12,7 @@ import type {
   WeekResponse,
 } from '@companion/queries';
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { BodyReport, FormTrend, Pattern, Progress, Signal, SleepReport, StressReport, WeeklyReport, YearReview } from '@companion/insights';
+import type { BodyReport, FormTrend, Nutrition, Pattern, Progress, Signal, SleepReport, StressReport, WeeklyReport, YearReview } from '@companion/insights';
 import type { RunForecast } from '@companion/weather';
 import { todayLocal } from '../lib/dates.ts';
 import { api } from './client.ts';
@@ -112,6 +112,19 @@ export function useWeeklyReport(start: string) {
 
 export function useBody(date: string) {
   return useQuery({ queryKey: ['body', date], queryFn: () => api<BodyReport>(`/api/body?date=${date}`) });
+}
+
+export function useNutrition(date: string | undefined) {
+  return useQuery({ queryKey: ['nutrition', date], queryFn: () => api<Nutrition>(`/api/nutrition?date=${date}`), enabled: !!date });
+}
+
+/** Meals are logged by Claude; the app only removes them. */
+export function useDeleteMeal() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (mealId: number) => api<void>(`/api/meals/${mealId}`, { method: 'DELETE' }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['nutrition'] }),
+  });
 }
 
 export function useSleep(date: string) {

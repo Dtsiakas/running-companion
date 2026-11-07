@@ -11,3 +11,4 @@ export { getSleepReport, STAGE_IDEAL, type Night, type SleepReport } from './sle
 export { getStressReport, type BatteryDay, type StressReport } from './stress.ts';
 export { getProgress, getYearReview, weekOf, type Milestone, type Progress, type YearReview } from './progress.ts';
 export { getFormTrend, type FormMeasure, type FormSeries, type FormTrend } from './form.ts';
+export { deleteMeal, getNutrition, logMeal, PARTIAL_DAY_KCAL, type FoodDay, type Meal, type MealInput, type Nutrition } from './nutrition.ts';

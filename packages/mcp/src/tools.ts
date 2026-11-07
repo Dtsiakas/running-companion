@@ -3,7 +3,7 @@ import { APP_VERSION } from '@companion/config';
 import { thresholdsFromProfile } from '@companion/metrics';
 import { describeSchema, getActivity, getBestEfforts, getToday, getTrend, getWeeklySummary, listActivities, runQuery, TREND_METRICS } from '@companion/queries';
 import { getRunForecast } from '@companion/weather';
-import { fuelPlan, getBodyReport, getFormTrend, getPatterns, getProgress, getSignals, getSleepReport, getStressReport, getWeeklyReport, getYearReview } from '@companion/insights';
+import { deleteMeal, fuelPlan, getBodyReport, getNutrition, logMeal, getFormTrend, getPatterns, getProgress, getSignals, getSleepReport, getStressReport, getWeeklyReport, getYearReview } from '@companion/insights';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { dataGuide, SERVER_INSTRUCTIONS } from './guide.ts';
@@ -17,8 +17,8 @@ export interface ToolsOptions {
   /** A read-only connection for every read: a mistaken query can't change anything. */
   db: DatabaseSync;
   /**
-   * The one writable connection, used only to cache the weather forecast. No tool can write Garmin data, metrics or
-   * anything else.
+   * The one writable connection: for the weather forecast cache and the food log (log_meal, delete_meal). No tool can
+   * write Garmin data, metrics or anything else.
    */
   writeDb: DatabaseSync;
   /** Runs a Garmin sync. Injected so tests don't call Garmin. */
@@ -270,7 +270,57 @@ export function createMcpServer({ db, writeDb, sync, query = async (sql) => runQ
     },
   );
 
+  // Food log ---------------------------------------------------------------------------------------------
+  server.registerTool(
+    'log_meal',
+    {
+      title: 'Log a meal',
+      description:
+        "Saves one meal or snack to the user's food log. Call this ONLY when the user clearly asks to log, save, add or record what they ate or are eating (\"log this\", \"I had this, add it\", \"καταχώρισέ το\"). Never call it when they ask what something contains, compare options, ask for advice, or are deciding what to eat: that is a question, not a meal. If it isn't clear whether they want it logged, ask first. Estimate kcal, protein, carbohydrate and fat from the photo or description (portion included; restaurant and delivery portions are usually larger than home ones), and say the estimate in your answer so the user can correct it. One call per meal; several items eaten together are one meal. To correct an entry, delete_meal it and log it again. Returns the entry and the day's totals against the day's targets.",
+      inputSchema: {
+        description: z.string().min(1).max(300).describe('What and how much, short: "Chicken souvlaki pita and fries (delivery)"'),
+        kcal: z.number().min(0).max(5000),
+        protein_g: z.number().min(0).max(400),
+        carbs_g: z.number().min(0).max(800),
+        fat_g: z.number().min(0).max(400),
+        date: date.optional().describe("The day it was eaten; defaults to today in the user's time zone"),
+        time: z.string().regex(/^\d{2}:\d{2}$/, 'HH:MM').optional().describe('Local time it was eaten, when known'),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    },
+    async ({ date: day, ...meal }) => {
+      const when = day ?? localToday();
+      const entry = logMeal(writeDb, { ...meal, date: when });
+      const { meals: _meals, days: _days, feedback: _feedback, note: _note, ...dayTotals } = getNutrition(writeDb, when);
+      return json({ logged: entry, day: dayTotals });
+    },
+  );
+
+  server.registerTool(
+    'delete_meal',
+    {
+      title: 'Remove a logged meal',
+      description: 'Removes one entry from the food log, by meal_id (from get_nutrition or log_meal). Only when the user asks to remove or correct an entry.',
+      inputSchema: { meal_id: z.number().int().positive() },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ meal_id }) => json(deleteMeal(writeDb, meal_id) ? { deleted: meal_id } : { error: `No meal ${meal_id}.` }),
+  );
+
+  server.registerTool(
+    'get_nutrition',
+    {
+      title: 'Food log',
+      description:
+        "The user's food log for a day (default today): each meal with its meal_id, the day's kcal, protein, carbohydrate and fat against the targets for their weight and that day's training, the last 14 days next to Garmin's calories burned (days under 1,200 kcal are marked partial: probably not everything was logged), and feedback on the last week (protein, carbohydrate on hard days and before long runs, big gaps between eaten and burned on training days). Amounts are estimates. Use it before advising what to eat today, and to compare options against what's left of the day's targets.",
+      inputSchema: { date: date.optional() },
+      annotations: READ_ONLY,
+    },
+    async ({ date: day }) => json(getNutrition(db, day ?? localToday())),
+  );
+
   return server;
 }
+
 
 

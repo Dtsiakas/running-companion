@@ -78,11 +78,13 @@ test('lists every tool and sends usage instructions', async () => {
   assert.deepEqual(
     tools.map((tool) => tool.name).sort(),
     [
+      'delete_meal',
       'describe_data',
       'get_activity',
       'get_best_efforts',
       'get_body_report',
       'get_insights',
+      'get_nutrition',
       'get_progress',
       'get_run_forecast',
       'get_sleep_stress_report',
@@ -91,6 +93,7 @@ test('lists every tool and sends usage instructions', async () => {
       'get_weekly_report',
       'get_weekly_summary',
       'list_activities',
+      'log_meal',
       'query',
       'sync_garmin',
     ],
@@ -144,4 +147,27 @@ test('get_insights returns signals and patterns for the latest day', async () =>
   // This tiny history records no HRV, sleep score or Body Battery, so comparisons about them are left out, not padded.
   assert.ok(Array.isArray(insights.patterns));
   assert.ok(!insights.patterns.some((p: { results: unknown[] }) => p.results.length === 0));
+});
+
+test('meals are logged, read back and removed; the tool says to log only when asked', async () => {
+  const { tools } = await client.listTools();
+  const logTool = tools.find((tool) => tool.name === 'log_meal')!;
+  assert.match(logTool.description ?? '', /ONLY when the user clearly asks/);
+  assert.equal(logTool.annotations?.readOnlyHint, false);
+
+  const logged = await call('log_meal', { description: 'Banana', kcal: 105, protein_g: 1.3, carbs_g: 27, fat_g: 0.4, date: '2026-10-28', time: '10:30' });
+  assert.equal(logged.isError, false);
+  const { logged: entry, day } = logged.json();
+  assert.equal(entry.kcal, 105);
+  assert.equal(day.totals.carbs_g, 27);
+
+  const read = (await call('get_nutrition', { date: '2026-10-28' })).json();
+  assert.equal(read.meals.length, 1);
+  assert.equal(read.meals[0].description, 'Banana');
+  assert.equal(read.days.length, 14);
+  assert.equal(read.days.at(-1).partial, true);
+
+  assert.deepEqual((await call('delete_meal', { meal_id: entry.meal_id })).json(), { deleted: entry.meal_id });
+  assert.equal((await call('get_nutrition', { date: '2026-10-28' })).json().meals.length, 0);
+  assert.match((await call('delete_meal', { meal_id: entry.meal_id })).text, /No meal/);
 });
