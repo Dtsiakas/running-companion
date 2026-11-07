@@ -20,7 +20,7 @@
     "@companion/weather": "*",
     "@modelcontextprotocol/sdk": "^1.32.2",
     "express": "^5.3.0",
-    "express-rate-limit": "^8.7.1",
+    "express-rate-limit": "^8.7.3",
     "zod": "^4.6.7"
   },
   "devDependencies": {
