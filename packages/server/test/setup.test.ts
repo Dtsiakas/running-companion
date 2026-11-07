@@ -9,7 +9,7 @@ import { after, before, test } from 'node:test';
 import { ensureSessionSecret, fileSettings, memorySettings, moveSecretsFromEnvFile, type SettingsStore } from '@companion/config';
 import { openDatabase } from '@companion/db';
 import { openReadOnly } from '@companion/jobs';
-import { createApp, keyStatus, updateChecker, type App } from '@companion/server';
+import { createApp, keyStatus, type App } from '@companion/server';
 
 const dir = mkdtempSync(join(tmpdir(), 'companion-setup-'));
 const dbFile = join(dir, 'test.db');
@@ -36,11 +36,6 @@ before(async () => {
     writeDb,
     sync: async () => ({ synced: ++syncs }),
     isSyncRunning: () => false,
-    updates: updateChecker({
-      enabled: () => settings.read().checkForUpdates === true,
-      current: '0.3.0',
-      fetch: (async () => new Response(JSON.stringify({ tag_name: 'v0.4.0', html_url: 'https://example.com/v0.4.0' }))) as unknown as typeof fetch,
-    }),
   });
   server.on('request', built.app);
 });
@@ -127,24 +122,6 @@ test('Settings shows Claude’s connection and can sign it out everywhere', asyn
   assert.equal(writeDb.prepare('SELECT COUNT(*) AS n FROM oauth_tokens').get()?.n, 0);
   assert.equal(writeDb.prepare('SELECT COUNT(*) AS n FROM oauth_clients').get()?.n, 0);
   assert.equal((await fetch(`${base}/api/settings/claude`, { method: 'DELETE' })).status, 401, 'needs the login');
-});
-
-test('the update notice is off until turned on, then says a newer version is out', async () => {
-  const put = (enabled: unknown) =>
-    fetch(`${base}/api/settings/updates`, { method: 'PUT', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ enabled }) });
-  const before = (await (await fetch(`${base}/api/settings`, { headers: { cookie } })).json()).updates;
-  assert.equal(before.enabled, false);
-  assert.equal(before.latest, null, 'nothing asked while off');
-
-  const on = await (await put(true)).json();
-  assert.equal(on.updates.enabled, true);
-  assert.equal(on.updates.latest, '0.4.0');
-  assert.equal(on.updates.available, true);
-  assert.equal(on.updates.install, 'source');
-
-  assert.equal((await put('yes')).status, 422);
-  assert.equal((await (await put(false)).json()).updates.enabled, false);
-  assert.equal(settings.read().checkForUpdates, undefined, 'off removes the setting');
 });
 
 test('changing the password needs the current one and logs out other browsers', async () => {

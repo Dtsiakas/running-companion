@@ -1,7 +1,6 @@
 name: Release
 
 # Pushing a tag like v0.2.0 creates the GitHub release, with that version's section of CHANGELOG.md as its notes.
-# The image for the tag is published by docker.yml.
 
 on:
   push:

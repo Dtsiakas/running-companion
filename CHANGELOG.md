@@ -6,6 +6,28 @@ set up or configured, and its notes say what to do.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-07
+
+A personal app from here on: Windows only, for one person. Everything that existed only for other people is gone.
+
+### Removed
+
+- Docker image, Compose files, server deployment scripts and the `npm run up`/`npm run down` laptop setup.
+  The Windows installer is the way to run it.
+- The listings: MCP Registry entry (marked deleted), Glama (deprecated), the awesome-list submission, the Claude
+  skill and `server.json`.
+- Claude Desktop's local (stdio) connector and its installer and doctor. Claude connects over the app's address.
+- Miles, °F and pounds: metric only.
+- The "new version" notice in Settings.
+- macOS and Linux support in the desktop launcher.
+- `npm run discover` and `npm run auth:check`, contributor guides, issue templates, Dependabot, CodeQL, the image scan
+  and the accessibility audit.
+
+### Changed
+
+- Settings → Backups says where the backups are, instead of pointing at commands.
+- CI runs the tests on Linux and the installer test on Windows.
+
 ## [0.3.3] - 2026-11-07
 
 ### Fixed
@@ -144,7 +166,8 @@ The first release.
 - Docker image for amd64 and arm64 at `ghcr.io/dtsiakas/running-companion`, with Compose files for local use,
   Tailscale Funnel and Caddy.
 
-[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/Dtsiakas/running-companion/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Dtsiakas/running-companion/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/Dtsiakas/running-companion/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/Dtsiakas/running-companion/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/Dtsiakas/running-companion/compare/v0.3.0...v0.3.1

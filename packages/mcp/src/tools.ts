@@ -31,8 +31,8 @@ export interface ToolsOptions {
 }
 
 /**
- * An MCP server with all tools registered. Transport-agnostic: Claude Desktop uses it over stdin/stdout
- * (server.ts), the web server over HTTP (packages/server). The caller owns the database connection.
+ * An MCP server with all tools registered, served over HTTP by packages/server. The caller owns the database
+ * connection.
  */
 export function createMcpServer({ db, writeDb, sync, query = async (sql) => runQuery(db, sql) }: ToolsOptions): McpServer {
   /** Today in the user's own time zone (the Garmin profile's), not the server's: near midnight they can differ. */

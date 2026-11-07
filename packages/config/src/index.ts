@@ -6,8 +6,7 @@ export * from './settings.ts';
 
 /**
  * Project paths, derived from this file's location rather than the working directory.
- * That matters for the MCP server: Claude Desktop starts it from its own folder, not from the project.
- * DATA_DIR can be moved with COMPANION_DATA_DIR (a Docker volume, say).
+ * DATA_DIR can be moved with COMPANION_DATA_DIR (the desktop app puts it in %LOCALAPPDATA%).
  */
 /**
  * The project folder (package.json, the built dashboard, .env). The desktop app sets COMPANION_ROOT: installed, the

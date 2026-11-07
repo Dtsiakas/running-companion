@@ -1,20 +1,17 @@
-import { createFormat, INTL_TAG, isLang, isUnits, messages, pickLang, pickUnits, type Format, type Lang, type Locale, type Messages, type Units } from '@companion/i18n';
+import { createFormat, INTL_TAG, isLang, messages, pickLang, type Format, type Lang, type Locale, type Messages } from '@companion/i18n';
 import { useSyncExternalStore } from 'react';
 
 /*
- * The app's language and units. Components read `m` (messages) and `f` (formatting) as plain imports: they're live
+ * The app's language. Components read `m` (messages) and `f` (formatting) as plain imports: they're live
  * bindings that `applyLocale` replaces, and the whole app re-renders when the locale changes (LocaleGate), so nothing
  * has to thread a hook through every function that writes a sentence or a number.
  *
- * The choice is per device, like Appearance: "auto" follows the device's language and region (a US phone gets miles,
- * °F and lb), and Settings can fix either one. It's sent along with every API request, because the server writes
- * some of the sentences and paces itself.
+ * The choice is per device, like Appearance: "auto" follows the device's language, and Settings can fix it. It's
+ * sent along with every API request, because the server writes some of the sentences itself.
  */
 export type LangChoice = Lang | 'auto';
-export type UnitsChoice = Units | 'auto';
 
 const LANG_KEY = 'language';
-const UNITS_KEY = 'units';
 
 function stored(key: string): string | null {
   try {
@@ -29,21 +26,15 @@ export function languageChoice(): LangChoice {
   return isLang(value) ? value : 'auto';
 }
 
-export function unitsChoice(): UnitsChoice {
-  const value = stored(UNITS_KEY);
-  return isUnits(value) ? value : 'auto';
-}
-
 function deviceLocale(): Locale {
   const preferences = navigator.languages?.length ? navigator.languages : [navigator.language];
-  return { lang: pickLang(preferences), units: pickUnits(preferences) };
+  return { lang: pickLang(preferences) };
 }
 
 function chosenLocale(): Locale {
   const device = deviceLocale();
   const lang = languageChoice();
-  const units = unitsChoice();
-  return { lang: lang === 'auto' ? device.lang : lang, units: units === 'auto' ? device.units : units };
+  return { lang: lang === 'auto' ? device.lang : lang };
 }
 
 export let locale: Locale = chosenLocale();
@@ -70,15 +61,11 @@ function save(key: string, value: string): void {
   }
 }
 
-/** Changes the language and/or units on this device and re-renders the app in them. */
-export function setLocaleChoice(choice: { language?: LangChoice; units?: UnitsChoice }): void {
+/** Changes the language on this device and re-renders the app in it. */
+export function setLocaleChoice(choice: { language?: LangChoice }): void {
   if (choice.language) save(LANG_KEY, choice.language);
-  if (choice.units) save(UNITS_KEY, choice.units);
   const device = deviceLocale();
-  applyLocale({
-    lang: choice.language ? (choice.language === 'auto' ? device.lang : choice.language) : locale.lang,
-    units: choice.units ? (choice.units === 'auto' ? device.units : choice.units) : locale.units,
-  });
+  applyLocale({ lang: choice.language ? (choice.language === 'auto' ? device.lang : choice.language) : locale.lang });
   version += 1;
   listeners.forEach((listener) => listener());
 }

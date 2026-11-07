@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { APP_VERSION, type SettingsStore } from '@companion/config';
 import type { BackupStatus } from '@companion/jobs';
-import type { UpdateChecker } from './updates.ts';
 import { getFreshness } from '@companion/queries';
 import { mcpAuthRouter, getOAuthProtectedResourceMetadataUrl } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
@@ -32,8 +31,6 @@ export interface AppDependencies {
   writeDb: DatabaseSync;
   sync: () => Promise<unknown>;
   isSyncRunning: () => boolean;
-  /** The optional new-version check, for Settings. */
-  updates?: UpdateChecker;
   /** The backup folder's contents, for Settings. */
   backups?: () => BackupStatus;
   /** Runs the MCP query tool's SQL; see runQueryIsolated. */
@@ -101,9 +98,6 @@ export function createApp(deps: AppDependencies): App {
       connectorUrl: mcpUrl.href,
       backups: deps.backups,
       backupKeep: config.backupKeep,
-      updates: deps.updates,
-      version: APP_VERSION,
-      install: process.env.COMPANION_INSTALL,
       syncSoon: () => void deps.sync().catch((error: unknown) => console.error(`Sync failed: ${error instanceof Error ? error.message : String(error)}`)),
     }),
   );

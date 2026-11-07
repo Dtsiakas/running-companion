@@ -3,7 +3,7 @@ import type { HttpClient } from './http.ts';
 
 /**
  * Every documented Personal API endpoint. Response types are `unknown` on purpose:
- * Garmin publishes no schemas, so types get written from real responses captured by `npm run discover`.
+ * Garmin publishes no schemas, so types get written from real responses captured from the API.
  *
  * Paths follow Garmin's official client (garmin-connect-personal-api-python).
  */

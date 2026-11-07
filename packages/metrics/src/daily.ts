@@ -58,7 +58,7 @@ const MIN_BASELINE_SAMPLES = 20;
 /** Body weight smoothing: each day moves the trend 10% towards the scale (The Hacker's Diet method). */
 const WEIGHT_SMOOTHING = 0.1;
 
-// Status rules. Each one is a common, conservative rule of thumb; see the README for sources and limits.
+// Status rules. Each one is a common, conservative rule of thumb.
 const HRV_Z_LOW = -1; // 7-day HRV more than 1 SD below your 60-day normal
 const RHR_Z_HIGH = 1.5; // 3-day resting HR 1.5 SD above normal…
 const RHR_MIN_RISE = 2; // …and at least 2 bpm, so a tiny SD can't trigger it

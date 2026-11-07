@@ -15,7 +15,7 @@ export interface TrendView {
   label: string;
   group: TrendGroup;
   kind: 'total' | 'level';
-  /** Turns the API's raw number into the number the chart plots (pace: m/s → seconds per km or mile; km → miles). */
+  /** Turns the API's raw number into the number the chart plots (pace: m/s → seconds per km). */
   toChart?: (raw: number) => number;
   format: (value: number) => string;
   /** Lower is better on the chart (pace): the axis is drawn reversed so "up" is always "better or more". */

@@ -4,7 +4,6 @@
  *   npm run backup                          into data/backups/ (or BACKUP_DIR)
  *   npm run backup -- --out ~/companion.tar.gz
  *   npm run backup -- --without-fit         database and settings only: much smaller
- *   node packages/cli/src/backup.ts --out - > backup.tar.gz      to standard output (from Docker: docker exec)
  *
  * Safe while the app runs. The file holds your password hash and Garmin key: keep it as private as the data folder.
  */

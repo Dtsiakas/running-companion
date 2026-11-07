@@ -7,7 +7,6 @@ import { define } from '../define.ts';
 export const ask = define(
   {
     answerIn: '',
-    units: { metric: '', imperial: 'Give distances in miles, paces per mile, temperatures in °F and weights in pounds.' },
     trainToday: { label: 'Should I train hard today?', hint: 'Recovery, last night and recent load, against Garmin’s plan' },
     healthCheck: { label: 'Health check', hint: 'Two weeks of sleep, HRV, heart rate, breathing and stress' },
     planWeek: { label: 'Plan my week', hint: 'What to watch this week' },
@@ -21,7 +20,6 @@ export const ask = define(
   },
   {
     answerIn: 'Answer in Greek.',
-    units: { metric: '', imperial: 'Give distances in miles, paces per mile, temperatures in °F and weights in pounds.' },
     trainToday: { label: 'Να προπονηθώ δυνατά σήμερα;', hint: 'Αποκατάσταση, χθεσινή νύχτα και πρόσφατο φορτίο, σε σχέση με το πλάνο του Garmin' },
     healthCheck: { label: 'Έλεγχος υγείας', hint: 'Δύο εβδομάδες ύπνου, HRV, παλμών, αναπνοής και στρες' },
     planWeek: { label: 'Σχεδίασε την εβδομάδα μου', hint: 'Τι να προσέξω αυτή την εβδομάδα' },

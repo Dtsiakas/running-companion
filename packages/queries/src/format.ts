@@ -2,7 +2,7 @@ import { ENGLISH, type Format } from '@companion/i18n';
 
 /** Formatting for tool output: what a runner reads, not what the database stores. */
 
-/** "5:22/km", or "8:38/mi" for a reader in miles. */
+/** "5:22/km" */
 export function pace(speedMps: number | null | undefined, f: Format = ENGLISH.f): string | null {
   if (!speedMps || speedMps <= 0) return null;
   return f.pace(speedMps);

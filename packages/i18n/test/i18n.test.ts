@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createFormat, createI18n, LANGS, messages, parseAcceptLanguage, pickLang, pickUnits } from '@companion/i18n';
+import { createFormat, createI18n, LANGS, messages, parseAcceptLanguage, pickLang } from '@companion/i18n';
 
 test('every language has every message, and none is left empty or in English by mistake', () => {
   const en = messages('en');
@@ -26,17 +26,12 @@ test('every language has every message, and none is left empty or in English by 
   }
 });
 
-test('units and decimal commas follow the locale', () => {
-  const metric = createFormat({ lang: 'en', units: 'metric' });
-  const imperial = createFormat({ lang: 'en', units: 'imperial' });
-  const greek = createFormat({ lang: 'el', units: 'metric' });
+test('decimal commas follow the language', () => {
+  const metric = createFormat({ lang: 'en' });
+  const greek = createFormat({ lang: 'el' });
   assert.equal(metric.distance(10), '10 km');
-  assert.equal(imperial.distance(10), '6.2 mi');
   assert.equal(greek.distance(12.34), '12,3 km');
   assert.equal(metric.pace(1000 / 300), '5:00/km');
-  assert.equal(imperial.pace(1000 / 300), '8:03/mi');
-  assert.equal(imperial.temperature(20), '68°F');
-  assert.equal(imperial.weight(70), '154.3 lb');
   assert.equal(greek.number(6407), '6.407');
   assert.equal(metric.signed(-2.5, 1), '−2.5');
   assert.equal(greek.longDay('2026-10-31'), 'Σάββατο 31 Οκτωβρίου');
@@ -44,17 +39,15 @@ test('units and decimal commas follow the locale', () => {
 });
 
 test('durations under an hour read as minutes, not "0h"', () => {
-  const f = createFormat({ lang: 'en', units: 'metric' });
+  const f = createFormat({ lang: 'en' });
   assert.equal(f.hoursMinutes(47 / 60), '47 min');
   assert.equal(f.hoursMinutes(7.43), '7h 26');
   assert.equal(f.hours(0.5), '30 min');
   assert.equal(f.hours(6.6), '6h 36m');
 });
 
-test('language and units from the browser or an Accept-Language header', () => {
+test('language from the browser or an Accept-Language header', () => {
   assert.deepEqual(parseAcceptLanguage('el-GR,el;q=0.9,en;q=0.8'), ['el-GR', 'el', 'en']);
   assert.equal(pickLang(parseAcceptLanguage('fr-FR,el;q=0.5')), 'el');
   assert.equal(pickLang(['de-DE']), 'en');
-  assert.equal(pickUnits(['en-US']), 'imperial');
-  assert.equal(pickUnits(['en-GB']), 'metric');
 });

@@ -6,7 +6,7 @@ import { addDays } from './days.ts';
 type Row = Record<string, unknown>;
 const round = (value: number, digits = 1) => Math.round(value * 10 ** digits) / 10 ** digits;
 
-/** Distance marks in the reader's unit (km or miles). */
+/** Distance marks in km. */
 const DISTANCE_MARKS = [100, 250, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 7500, 10_000, 12_500, 15_000, 20_000];
 const RUN_MARKS = [10, 25, 50, 100, 150, 200, 250, 300, 400, 500, 750, 1000, 1500, 2000];
 /** "First time under" marks per distance (seconds), from slower to faster. */
@@ -57,8 +57,6 @@ export interface Milestone {
  */
 export function getProgress(db: DatabaseSync, today: string, i18n: I18n = ENGLISH) {
   const { m, f } = i18n;
-  // Distance marks count in the reader's unit: a mile runner passes 1,000 miles, not 1,609 km.
-  const unit = f.toKm(1);
   const markTitle = (mark: number) => m.progress.inTotal(`${f.number(mark)} ${f.distanceUnit}`);
   const runs = loadRuns(db, today);
   const milestones: Milestone[] = [];
@@ -66,7 +64,7 @@ export function getProgress(db: DatabaseSync, today: string, i18n: I18n = ENGLIS
   runs.forEach((run, i) => {
     const before = km;
     km += run.km;
-    for (const mark of DISTANCE_MARKS) if (before < mark * unit && km >= mark * unit) milestones.push({ date: run.date, title: markTitle(mark), group: `distance-${mark}`, kind: 'distance', activity_id: run.id });
+    for (const mark of DISTANCE_MARKS) if (before < mark && km >= mark) milestones.push({ date: run.date, title: markTitle(mark), group: `distance-${mark}`, kind: 'distance', activity_id: run.id });
     if (RUN_MARKS.includes(i + 1)) milestones.push({ date: run.date, title: m.progress.runs(f.number(i + 1)), group: `runs-${i + 1}`, kind: 'runs', activity_id: run.id });
   });
   milestones.push(...timeMilestones(db, today, i18n));
@@ -80,14 +78,14 @@ export function getProgress(db: DatabaseSync, today: string, i18n: I18n = ENGLIS
   const kmPerDay = window >= 14 ? recent.reduce((s, r) => s + r.km, 0) / window : 0;
   const runsPerDay = window >= 14 ? recent.length / window : 0;
   const eta = (missing: number, perDay: number) => (perDay > 0 ? addDays(today, Math.ceil(missing / perDay)) : null);
-  const done = km / unit;
+  const done = km;
   const nextMark = DISTANCE_MARKS.find((mark) => mark > done);
   const nextRuns = RUN_MARKS.find((mark) => mark > runs.length);
 
   return {
     totals: { km: Math.round(km), runs: runs.length, hours: Math.round(runs.reduce((s, r) => s + r.seconds, 0) / 3600), climb_m: Math.round(runs.reduce((s, r) => s + r.climb, 0)), since: runs[0]?.date ?? null },
     next: [
-      nextMark ? { title: markTitle(nextMark), progress: round(done), target: nextMark, unit: f.distanceUnit, eta: eta((nextMark - done) * unit, kmPerDay) } : null,
+      nextMark ? { title: markTitle(nextMark), progress: round(done), target: nextMark, unit: f.distanceUnit, eta: eta(nextMark - done, kmPerDay) } : null,
       nextRuns ? { title: m.progress.runs(f.number(nextRuns)), progress: runs.length, target: nextRuns, unit: 'runs', eta: eta(nextRuns - runs.length, runsPerDay) } : null,
     ].filter((x) => x !== null),
     milestones,

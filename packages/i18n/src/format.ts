@@ -1,21 +1,14 @@
 import { INTL_TAG, type Locale } from './locale.ts';
 
-const KM_PER_MILE = 1.609344;
-const LB_PER_KG = 2.2046226;
-const FT_PER_M = 3.2808399;
-const ML_PER_FL_OZ = 29.5735;
-
 /** The placeholder for a missing value, everywhere. */
 export const NONE = '–';
 
 /**
- * Numbers, units and dates for one locale. Everything the app shows passes through here, so metric/imperial and the
- * decimal comma are decided in one place. Values in the database and the API stay metric (metres, m/s, kg, °C);
- * only what a person reads is converted.
+ * Numbers, units and dates for one language. Everything the app shows passes through here, so units and the decimal
+ * comma are decided in one place.
  */
 export function createFormat(locale: Locale) {
   const tag = INTL_TAG[locale.lang];
-  const imperial = locale.units === 'imperial';
   const numberFormats = new Map<number, Intl.NumberFormat>();
   /** Up to `digits` decimals ("10 km", "10.5 km"); `fixed` always shows them, for columns that line up ("0.30 km"). */
   const nf = (digits: number, fixed = false) => {
@@ -55,7 +48,6 @@ export function createFormat(locale: Locale) {
   const format = {
     locale,
     tag,
-    imperial,
 
     /** 1234.5 → "1,234.5" (English) or "1.234,5" (Greek). */
     /** `fixed` keeps trailing zeros ("5.80"), for figures that sit in a column or next to others with two decimals. */
@@ -69,45 +61,41 @@ export function createFormat(locale: Locale) {
     percent: (value: number | null | undefined, digits = 0): string => (missing(value) ? NONE : `${nf(digits).format(round(value, digits))}%`),
 
     // Distance ---------------------------------------------------------------------------------------------------
-    distanceUnit: imperial ? 'mi' : 'km',
-    /** Kilometres in the reader's unit, as a number (for charts and sums). */
-    distanceValue: (km: number | null | undefined): number | null => (missing(km) ? null : imperial ? km / KM_PER_MILE : km),
-    /** "12.3 km" / "7.6 mi" */
-    distance: (km: number | null | undefined, digits = 1, fixed = false): string => (missing(km) ? NONE : `${nf(digits, fixed).format(round(imperial ? km / KM_PER_MILE : km, digits))} ${imperial ? 'mi' : 'km'}`),
-    /** A distance in the reader's unit back to kilometres (milestones, targets). */
-    toKm: (value: number): number => (imperial ? value * KM_PER_MILE : value),
-    /** One unit of distance in metres: 1000 or 1609.344. */
-    unitMetres: imperial ? KM_PER_MILE * 1000 : 1000,
+    distanceUnit: 'km',
+    /** Kilometres as a number (for charts and sums), null when missing. */
+    distanceValue: (km: number | null | undefined): number | null => (missing(km) ? null : km),
+    /** "12.3 km" */
+    distance: (km: number | null | undefined, digits = 1, fixed = false): string => (missing(km) ? NONE : `${nf(digits, fixed).format(round(km, digits))} km`),
 
     // Pace -------------------------------------------------------------------------------------------------------
-    paceUnit: imperial ? '/mi' : '/km',
-    /** Seconds per km or mile. */
-    paceSeconds: (speedMps: number | null | undefined): number | null => (missing(speedMps) || speedMps <= 0 ? null : (imperial ? KM_PER_MILE * 1000 : 1000) / speedMps),
+    paceUnit: '/km',
+    /** Seconds per km. */
+    paceSeconds: (speedMps: number | null | undefined): number | null => (missing(speedMps) || speedMps <= 0 ? null : 1000 / speedMps),
     /** "5:22" (no unit) from m/s. */
-    paceValue: (speedMps: number | null | undefined): string => (missing(speedMps) || speedMps <= 0 ? NONE : clock((imperial ? KM_PER_MILE * 1000 : 1000) / speedMps)),
-    /** "5:22/km" / "8:38/mi" from m/s. */
-    pace: (speedMps: number | null | undefined): string => (missing(speedMps) || speedMps <= 0 ? NONE : `${clock((imperial ? KM_PER_MILE * 1000 : 1000) / speedMps)}${imperial ? '/mi' : '/km'}`),
-    /** A pace in seconds per km, in the reader's unit: "4:21/km" or "7:00/mi". */
-    paceFromSecondsPerKm: (seconds: number | null | undefined): string => (missing(seconds) ? NONE : `${clock(imperial ? seconds * KM_PER_MILE : seconds)}${imperial ? '/mi' : '/km'}`),
-    /** A pace difference in seconds per km, converted ("4 s/km" / "6 s/mi"). */
-    paceDelta: (secondsPerKm: number, digits = 0): string => `${nf(digits).format(round(Math.abs(imperial ? secondsPerKm * KM_PER_MILE : secondsPerKm), digits))} s${imperial ? '/mi' : '/km'}`,
+    paceValue: (speedMps: number | null | undefined): string => (missing(speedMps) || speedMps <= 0 ? NONE : clock(1000 / speedMps)),
+    /** "5:22/km" from m/s. */
+    pace: (speedMps: number | null | undefined): string => (missing(speedMps) || speedMps <= 0 ? NONE : `${clock(1000 / speedMps)}/km`),
+    /** A pace in seconds per km: "4:21/km". */
+    paceFromSecondsPerKm: (seconds: number | null | undefined): string => (missing(seconds) ? NONE : `${clock(seconds)}/km`),
+    /** A pace difference in seconds per km: "4 s/km". */
+    paceDelta: (secondsPerKm: number, digits = 0): string => `${nf(digits).format(round(Math.abs(secondsPerKm), digits))} s/km`,
 
     // Other units ---------------------------------------------------------------------------------------------------
-    temperatureUnit: imperial ? '°F' : '°C',
-    temperatureValue: (celsius: number | null | undefined): number | null => (missing(celsius) ? null : imperial ? celsius * 1.8 + 32 : celsius),
-    temperature: (celsius: number | null | undefined, digits = 0): string => (missing(celsius) ? NONE : `${nf(digits).format(round(imperial ? celsius * 1.8 + 32 : celsius, digits))}${imperial ? '°F' : '°C'}`),
-    /** A temperature difference (no 32° offset). */
-    temperatureDelta: (celsius: number, digits = 0): string => `${nf(digits).format(round(imperial ? celsius * 1.8 : celsius, digits))}${imperial ? '°F' : '°C'}`,
-    weightUnit: imperial ? 'lb' : 'kg',
-    weightValue: (kg: number | null | undefined): number | null => (missing(kg) ? null : imperial ? kg * LB_PER_KG : kg),
-    weight: (kg: number | null | undefined, digits = 1): string => (missing(kg) ? NONE : `${nf(digits).format(round(imperial ? kg * LB_PER_KG : kg, digits))} ${imperial ? 'lb' : 'kg'}`),
-    elevationUnit: imperial ? 'ft' : 'm',
-    elevation: (metres: number | null | undefined): string => (missing(metres) ? NONE : `${nf(0).format(Math.round(imperial ? metres * FT_PER_M : metres))} ${imperial ? 'ft' : 'm'}`),
-    /** Fluids: "500 ml" / "17 fl oz". */
-    volume: (ml: number | null | undefined): string => (missing(ml) ? NONE : imperial ? `${nf(0).format(Math.round(ml / ML_PER_FL_OZ))} fl oz` : `${nf(0).format(Math.round(ml / 10) * 10)} ml`),
-    /** Litres for larger amounts: "1.2 l" / "41 fl oz". */
-    litres: (ml: number | null | undefined): string => (missing(ml) ? NONE : imperial ? `${nf(0).format(Math.round(ml / ML_PER_FL_OZ))} fl oz` : `${nf(1).format(round(ml / 1000, 1))} l`),
-    speed: (kmh: number | null | undefined): string => (missing(kmh) ? NONE : imperial ? `${nf(0).format(Math.round(kmh / KM_PER_MILE))} mph` : `${nf(0).format(Math.round(kmh))} km/h`),
+    temperatureUnit: '°C',
+    temperatureValue: (celsius: number | null | undefined): number | null => (missing(celsius) ? null : celsius),
+    temperature: (celsius: number | null | undefined, digits = 0): string => (missing(celsius) ? NONE : `${nf(digits).format(round(celsius, digits))}°C`),
+    /** A temperature difference. */
+    temperatureDelta: (celsius: number, digits = 0): string => `${nf(digits).format(round(celsius, digits))}°C`,
+    weightUnit: 'kg',
+    weightValue: (kg: number | null | undefined): number | null => (missing(kg) ? null : kg),
+    weight: (kg: number | null | undefined, digits = 1): string => (missing(kg) ? NONE : `${nf(digits).format(round(kg, digits))} kg`),
+    elevationUnit: 'm',
+    elevation: (metres: number | null | undefined): string => (missing(metres) ? NONE : `${nf(0).format(Math.round(metres))} m`),
+    /** Fluids: "500 ml", to the nearest 10. */
+    volume: (ml: number | null | undefined): string => (missing(ml) ? NONE : `${nf(0).format(Math.round(ml / 10) * 10)} ml`),
+    /** Litres for larger amounts: "1.2 l". */
+    litres: (ml: number | null | undefined): string => (missing(ml) ? NONE : `${nf(1).format(round(ml / 1000, 1))} l`),
+    speed: (kmh: number | null | undefined): string => (missing(kmh) ? NONE : `${nf(0).format(Math.round(kmh))} km/h`),
 
     // Time ---------------------------------------------------------------------------------------------------------
     /** "4:21" or "1:02:05" */

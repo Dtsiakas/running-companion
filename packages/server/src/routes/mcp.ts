@@ -15,7 +15,7 @@ export interface McpRouteOptions {
 }
 
 /**
- * The remote MCP endpoint: the same tools as Claude Desktop's local server, over HTTP.
+ * The MCP endpoint Claude connects to, over HTTP.
  *
  * Stateless mode: every POST gets a fresh MCP server and transport, and nothing is kept between requests.
  * Our tools don't need conversation state, so there are no sessions to store, expire or lose on restart.

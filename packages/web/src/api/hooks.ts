@@ -171,17 +171,6 @@ export interface SettingsResponse {
   /** Null in demo mode. */
   claude: { connected: boolean; lastActive: string | null; connectorUrl: string | null } | null;
   backups: { latest: string | null; automatic: number; byHand: number; keep: number } | null;
-  /** Null in demo mode. */
-  updates: {
-    enabled: boolean;
-    current: string | null;
-    available: boolean;
-    install: 'desktop' | 'docker' | 'source' | string;
-    latest: string | null;
-    url: string | null;
-    checkedAt: string | null;
-    error: string | null;
-  } | null;
 }
 
 export function useSettings() {

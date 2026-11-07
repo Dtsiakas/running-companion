@@ -7,7 +7,7 @@ import { useChangeLocale } from '../components/LocaleGate.tsx';
 import { Section } from '../components/Section.tsx';
 import { ErrorState, Loading } from '../components/States.tsx';
 import { keySentence } from '../lib/garminKey.ts';
-import { f, languageChoice, m, unitsChoice, type LangChoice, type UnitsChoice } from '../lib/i18n.ts';
+import { f, languageChoice, m, type LangChoice } from '../lib/i18n.ts';
 import { SOURCE_URL, VERSION } from '../lib/source.ts';
 import blocks from '../styles/blocks.module.css';
 import styles from './Settings.module.css';
@@ -46,7 +46,7 @@ export function Settings() {
       )}
 
       <Section title={t.languageTitle}>
-        <LanguageAndUnits />
+        <Language />
       </Section>
 
       <Section title={m.app.appearance.legend}>
@@ -78,7 +78,6 @@ export function Settings() {
             {t.sourceCode}
           </a>
         </p>
-        {s.updates ? <Updates updates={s.updates} /> : null}
       </Section>
     </div>
   );
@@ -155,43 +154,6 @@ function ClaudeConnection({ claude }: { claude: NonNullable<SettingsResponse['cl
   );
 }
 
-function Updates({ updates }: { updates: NonNullable<SettingsResponse['updates']> }) {
-  const t = m.settings.updates;
-  const save = useSaveSetting<{ enabled: boolean }>('/updates');
-  const how = t.how[updates.install as keyof typeof t.how] ?? t.how.source;
-  return (
-    <div className={styles.updates}>
-      <label className={styles.toggle}>
-        <input type="checkbox" checked={updates.enabled} disabled={save.isPending} onChange={(event) => save.mutate({ enabled: event.target.checked })} />
-        <span>{t.toggle}</span>
-      </label>
-      <p className={styles.small}>{t.explain}</p>
-      {updates.enabled && updates.available && updates.latest ? (
-        <div className={styles.available} role="status">
-          <p>
-            <strong>{t.available(updates.latest)}</strong>{' '}
-            {updates.url ? (
-              <a href={updates.url} target="_blank" rel="noreferrer">
-                {t.whatsNew}
-              </a>
-            ) : null}
-          </p>
-          <p className={styles.small}>{how}</p>
-        </div>
-      ) : updates.enabled && updates.error && updates.checkedAt ? (
-        <p className={styles.small}>{t.failed(updates.error)}</p>
-      ) : updates.enabled && updates.checkedAt ? (
-        <p className={styles.small}>{t.upToDate(f.dayMonthYear(new Date(updates.checkedAt).toLocaleDateString('en-CA')))}</p>
-      ) : null}
-      {save.isError ? (
-        <p className={styles.error} role="alert">
-          {save.error.message}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
 function Backups({ backups }: { backups: NonNullable<SettingsResponse['backups']> }) {
   const t = m.settings.backups;
   return (
@@ -210,7 +172,7 @@ function Backups({ backups }: { backups: NonNullable<SettingsResponse['backups']
 }
 
 /** Per device, like Appearance: a phone can be in Greek while the laptop stays in English. */
-function LanguageAndUnits() {
+function Language() {
   const change = useChangeLocale();
   const t = m.settings;
   return (
@@ -220,16 +182,6 @@ function LanguageAndUnits() {
         value={languageChoice()}
         options={[['auto', t.followDevice], ...LANGS.map((lang): [LangChoice, string] => [lang, LANG_NAMES[lang]])]}
         onChange={(language) => change({ language })}
-      />
-      <Choice<UnitsChoice>
-        legend={t.units}
-        value={unitsChoice()}
-        options={[
-          ['auto', t.followDevice],
-          ['metric', t.metric],
-          ['imperial', t.imperial],
-        ]}
-        onChange={(units) => change({ units })}
       />
     </div>
   );

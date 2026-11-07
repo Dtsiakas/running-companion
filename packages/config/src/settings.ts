@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
  * What the app asks for in its setup page and Settings screen, stored in data/settings.json.
  *
  * Why a file in the data folder and not .env: the app writes it itself (setup, a new Garmin key, a new password), so
- * nobody has to edit a config file, and the data folder is the one thing a Docker container keeps. Environment
+ * nobody has to edit a config file. Environment
  * variables still win, so a server can be configured entirely from outside; a value set that way is "locked" and the
  * app shows it as such instead of offering to change it.
  *
@@ -25,8 +25,6 @@ export interface Settings {
   garminKeyExpiresOn?: string;
   /** Set by a sync when Garmin refuses the key (wrong, expired or deleted); cleared by a working sync or a new key. */
   garminKeyRejectedAt?: string;
-  /** The opt-in "a new version is out" notice: the server asks GitHub for the newest release once a day. */
-  checkForUpdates?: boolean;
 }
 
 

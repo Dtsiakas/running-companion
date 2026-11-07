@@ -22,11 +22,10 @@ export function goToLogin(): never {
  * so there's no token handling here. A 401 means the session expired: go log in, then come back.
  */
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  // Every request says which language and units to answer in: the server writes some sentences and paces itself.
+  // Every request says which language to answer in: the server writes some sentences and paces itself.
   const url = new URL(path, window.location.origin);
   if (url.pathname.startsWith('/api/')) {
     url.searchParams.set('lang', locale.lang);
-    url.searchParams.set('units', locale.units);
   }
   const response = await fetch(url.pathname + url.search, { ...init, headers: { Accept: 'application/json', ...init?.headers } });
   if (response.status === 401) goToLogin();

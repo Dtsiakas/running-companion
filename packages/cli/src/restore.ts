@@ -2,7 +2,6 @@
  * Restores a backup made by `npm run backup` (or an automatic one). Stop the app first.
  *
  *   npm run restore -- data/backups/running-companion-2026-10-31-18-30-00.tar.gz
- *   node packages/cli/src/restore.ts - < backup.tar.gz       from standard input (Docker: docker compose run -T)
  *
  * Nothing is deleted: the current database, settings and FIT files move into data/before-restore-<time>/ first.
  * A backup from an older version is fine (the app updates its database on start); one from a newer version is refused.
@@ -37,7 +36,7 @@ async function appIsRunning(): Promise<boolean> {
   }
 }
 
-if (!args.force && (await appIsRunning())) fail('The app is running. Stop it first (npm run down, or docker compose stop app), then restore. --force skips this check.');
+if (!args.force && (await appIsRunning())) fail('The app is running. Close its window first, then restore. --force skips this check.');
 
 try {
   const archive = source === '-' ? await buffer(process.stdin) : readFileSync(source);

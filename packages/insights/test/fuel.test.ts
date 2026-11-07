@@ -25,10 +25,8 @@ test('short runs need nothing special; long runs get carbohydrate and fluids per
   assert.match(veryLong.during[0]!, /60–90 g of carbohydrate per hour/);
 });
 
-test('the fuel plan speaks the reader’s language and units', async () => {
+test('the fuel plan speaks the reader’s language', async () => {
   const { createI18n } = await import('@companion/i18n');
-  const greek = fuelPlan({ weightKg: 70, minutes: 120, sweatMlPerHour: 1000 }, createI18n({ lang: 'el', units: 'metric' }));
+  const greek = fuelPlan({ weightKg: 70, minutes: 120, sweatMlPerHour: 1000 }, createI18n({ lang: 'el' }));
   assert.match(greek.during[0]!, /υδατανθράκων την ώρα/);
-  const imperial = fuelPlan({ weightKg: 70, minutes: 120, sweatMlPerHour: 1000 }, createI18n({ lang: 'en', units: 'imperial' }));
-  assert.match(imperial.during.join(' '), /fl oz per hour/);
 });

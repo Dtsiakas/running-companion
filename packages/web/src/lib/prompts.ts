@@ -23,8 +23,8 @@ const BASE_RULES =
   'Use my Running Companion connector for the data. Garmin is my coach: complement its plan, don’t replace it. ' +
   'Explain what the numbers mean for me in plain language, and say when something rests on an estimate.';
 
-/** The shared rules, plus the reader's language and units when they aren't English and metric. */
-const rules = () => [BASE_RULES, m.ask.answerIn, m.ask.units[f.locale.units]].filter(Boolean).join(' ');
+/** The shared rules, plus the reader's language when it isn't English. */
+const rules = () => [BASE_RULES, m.ask.answerIn].filter(Boolean).join(' ');
 
 export function todayRequests(date: string): ClaudeRequest[] {
   return [

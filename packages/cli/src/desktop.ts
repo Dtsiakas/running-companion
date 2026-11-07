@@ -1,13 +1,11 @@
 /**
- * The desktop app: what the Running Companion shortcut runs after installing it (see deploy/windows/). One window:
+ * The Windows app: what the Running Companion shortcut runs after installing it (see deploy/windows/). One window:
  * while it's open the app is on, and closing it turns everything off again. Nothing keeps running in the background.
  *
  * - Data lives in the user's own app-data folder, so reinstalling or updating never touches it.
  * - The first start opens the setup page in the browser, setup code filled in; later starts open the dashboard.
  * - With Tailscale connected, it can also give the app a public HTTPS address (Funnel) for the phone and Claude on the
  *   web. It asks once; the answer is kept in desktop.json next to the data.
- *
- * It works from a clone too:  node packages/cli/src/desktop.ts
  *
  *   --set-password    sets a new login password instead of starting (the Start Menu has a shortcut for it)
  */
@@ -41,12 +39,8 @@ function findRoot(): string {
   throw new Error(`Can't find Running Companion's files above ${import.meta.dirname}.`);
 }
 
-/** Where this user's data goes, by the platform's convention. */
-function appHome(): string {
-  if (process.platform === 'win32') return join(process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local'), 'Running Companion');
-  if (process.platform === 'darwin') return join(homedir(), 'Library', 'Application Support', 'Running Companion');
-  return join(process.env.XDG_DATA_HOME ?? join(homedir(), '.local', 'share'), 'running-companion');
-}
+/** Where the data goes: %LOCALAPPDATA%\\Running Companion. */
+const appHome = (): string => join(process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local'), 'Running Companion');
 
 interface Prefs {
   /** Use Tailscale Funnel for a public HTTPS address. Unset until asked. */
@@ -84,8 +78,7 @@ async function finish(code: number, message?: string): Promise<never> {
 function openBrowser(url: string): void {
   if (process.env.COMPANION_NO_BROWSER) return;
   // No shell: the URL is passed as a single argument, never pasted into a command line.
-  const [command, args] = process.platform === 'win32' ? ['explorer.exe', [url]] : process.platform === 'darwin' ? ['open', [url]] : ['xdg-open', [url]];
-  spawn(command, args, { stdio: 'ignore', detached: true }).on('error', () => say(`  Open ${url} in your browser.`)).unref();
+  spawn('explorer.exe', [url], { stdio: 'ignore', detached: true }).on('error', () => say(`  Open ${url} in your browser.`)).unref();
 }
 
 async function healthy(): Promise<boolean> {
@@ -104,7 +97,6 @@ const appEnv = (): NodeJS.ProcessEnv => ({
   NODE_OPTIONS: [process.env.NODE_OPTIONS, `--import=${RESOLVE_HOOK}`].filter(Boolean).join(' '),
   COMPANION_ROOT: ROOT,
   COMPANION_DATA_DIR: DATA_DIR,
-  COMPANION_INSTALL: 'desktop',
 });
 
 // Forgot the password: the way back in, from this computer only. Works whether the app is on or not.
@@ -230,7 +222,7 @@ if (publicUrl) {
       if (stopping) return;
       funnel = null;
       say(`\nThe public address stopped, so the app is on this computer only now.\n${output.trim()}`);
-      if (/funnel.*not (enabled|allowed)|nodeAttrs/i.test(output)) say('Funnel may need to be allowed for your tailnet: see "Tailscale" in the README.');
+      if (/funnel.*not (enabled|allowed)|nodeAttrs/i.test(output)) say('Funnel may need to be allowed for your tailnet, in the Tailscale admin console (Access controls).');
     }, 300),
   );
 }
