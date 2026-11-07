@@ -15,4 +15,11 @@ jobs:
     steps:
       - run: curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/v1.8.8/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
       - run: ./mcp-publisher login github-oidc
-      - run: ./mcp-publisher status --status deleted --all-versions --message "Personal project, not offered for public use." io.github.Dtsiakas/running-companion
+      - name: Mark each published version deleted
+        run: |
+          versions=$(curl -fsS "https://registry.modelcontextprotocol.io/v0/servers/io.github.Dtsiakas%2Frunning-companion/versions" | jq -r '.servers[].server.version')
+          echo "Published: $versions"
+          for v in $versions; do
+            ./mcp-publisher status --status deleted --message "Personal project, not offered for public use." io.github.Dtsiakas/running-companion "$v" || echo "::warning::$v failed"
+          done
+          curl -fsS "https://registry.modelcontextprotocol.io/v0/servers/io.github.Dtsiakas%2Frunning-companion/versions?include_deleted=true" | jq -c '.servers[] | [.server.version, ._meta["io.modelcontextprotocol.registry/official"].status]' || true
